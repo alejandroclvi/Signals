@@ -1,0 +1,26 @@
+<header class="topbar">
+  <div>
+    <div class="crumbs" id="crumbs">Radar / <%= activeContext.label %></div>
+    <div class="title-row">
+      <h1>Signal Radar</h1>
+      <span class="live-dot" aria-hidden="true"></span>
+      <span class="live-text">Live</span>
+    </div>
+  </div>
+  <div class="top-actions">
+    <div class="search-wrap">
+      <span>&#8981;</span>
+      <input id="searchInput" type="search" placeholder="Search topics, phrases, communities..." aria-label="Search topics">
+      <kbd>&#8984;K</kbd>
+    </div>
+    <select class="select fixture-select" id="fixtureSelect" aria-label="Replay fixture">
+      <% for (const f of fixtures) { %>
+        <option value="<%= f.id %>" <%= f.id === activeFixtureId ? 'selected' : '' %>><%= f.label %></option>
+      <% } %>
+    </select>
+    <button class="button" type="button">&#9635; Last 30 days</button>
+    <button class="button" type="button"><span class="source-dot"></span> Reddit</button>
+    <button class="button" type="button" id="btnRefresh" title="Pull live Reddit data">&#8635; Refresh</button>
+    <button class="button primary" type="button">+ Create Alert</button>
+  </div>
+</header>

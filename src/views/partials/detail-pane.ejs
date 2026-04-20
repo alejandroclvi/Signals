@@ -1,0 +1,55 @@
+<section class="detail-grid" aria-label="Selected signal detail">
+  <div class="detail-main">
+    <div class="detail-kicker" id="detailKicker"></div>
+    <div class="detail-head">
+      <div>
+        <h2 id="detailTitle"></h2>
+        <div class="tags" id="detailTags"></div>
+      </div>
+      <div class="detail-actions">
+        <button class="button" type="button">&#9633; Save</button>
+        <button class="button" type="button">&#8855; Dismiss</button>
+        <button class="button" type="button">&#9889; Alert</button>
+      </div>
+    </div>
+
+    <div class="detail-score">
+      <span>Momentum</span>
+      <div>
+        <strong id="momentumText"></strong>
+        <svg class="sparkline" id="detailSpark" viewBox="0 0 120 28" aria-hidden="true"></svg>
+      </div>
+      <span>Driven by</span>
+      <strong id="drivenBy"></strong>
+    </div>
+
+    <div class="section-label">Why it matters</div>
+    <div class="why-box" id="whyBox"></div>
+
+    <div class="section-label">Representative evidence</div>
+    <div class="evidence-list" id="evidenceList"></div>
+  </div>
+
+  <aside class="detail-side">
+    <div class="section-label">Detected phrases</div>
+    <div class="pill-grid" id="phraseGrid"></div>
+
+    <div class="section-label">Top communities</div>
+    <div class="bar-list" id="communityBars"></div>
+
+    <div class="section-label">Related signals</div>
+    <div class="related" id="relatedSignals"></div>
+
+    <div class="section-label">Score components</div>
+    <div class="score-list" id="scoreComponents"></div>
+
+    <div class="suggested">
+      <div class="suggest-icon">&#10038;</div>
+      <div>
+        <div class="suggest-title" id="suggestTitle"></div>
+        <div class="suggest-sub" id="suggestSub"></div>
+      </div>
+      <button class="button" type="button">+ Create</button>
+    </div>
+  </aside>
+</section>

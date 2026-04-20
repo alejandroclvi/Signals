@@ -1,0 +1,39 @@
+<section class="control-plane-grid" aria-label="Source enablement control plane">
+  <div class="control-panel">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Evidence Coverage <span class="panel-sub" id="coverageCaption"></span></h2>
+      </div>
+    </div>
+    <div class="control-body">
+      <div class="layer-ladder" id="layerLadder"></div>
+    </div>
+  </div>
+
+  <div class="control-panel">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Source Nodes <span class="panel-sub">toggle local capacity</span></h2>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><i class="dot" style="background:var(--green)"></i> Enabled</span>
+        <span class="legend-item"><i class="dot" style="background:var(--blue)"></i> Available</span>
+        <span class="legend-item"><i class="dot" style="background:var(--gold)"></i> Gated</span>
+      </div>
+    </div>
+    <div class="control-body">
+      <div class="source-node-grid" id="sourceNodeGrid"></div>
+    </div>
+  </div>
+
+  <div class="control-panel">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">What To Enable Next <span class="panel-sub">ranked lift</span></h2>
+      </div>
+    </div>
+    <div class="control-body">
+      <div class="recommendation-list" id="recommendationList"></div>
+    </div>
+  </div>
+</section>

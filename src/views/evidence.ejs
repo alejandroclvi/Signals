@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evidence Library - Signals</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app">
+    <%- include('partials/sidebar', { contexts: contexts, activeContext: activeContext, page: page, stats: stats }) %>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="crumbs">Evidence / <%= activeContext.label %></div>
+          <div class="title-row">
+            <h1>Evidence Library</h1>
+          </div>
+        </div>
+        <div class="top-actions">
+          <div class="search-wrap">
+            <span>&#8981;</span>
+            <input id="evidenceSearch" type="search" placeholder="Search evidence..." aria-label="Search evidence">
+            <kbd>&#8984;K</kbd>
+          </div>
+          <select class="select" id="filterSource" aria-label="Filter by source">
+            <option value="">All sources</option>
+            <% for (const src of sources) { %>
+              <option value="<%= src %>"><%= src %></option>
+            <% } %>
+          </select>
+          <select class="select" id="filterCommunity" aria-label="Filter by community">
+            <option value="">All communities</option>
+            <% for (const c of communities) { %>
+              <option value="<%= c %>"><%= c %></option>
+            <% } %>
+          </select>
+        </div>
+      </header>
+
+      <div class="evidence-library-header">
+        <span class="evidence-count"><%= evidence.length %> evidence packets</span>
+      </div>
+
+      <div class="evidence-library" id="evidenceLibrary">
+        <% if (!evidence.length) { %>
+          <div class="empty-state">
+            <div class="empty-icon">&#9636;</div>
+            <div class="empty-title">No evidence yet</div>
+            <div class="empty-sub">Evidence packets will appear here once data is ingested.</div>
+          </div>
+        <% } else { %>
+          <table class="evidence-table">
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th>Community</th>
+                <th>Content</th>
+                <th>Author</th>
+                <th>Score</th>
+                <th>Signal</th>
+                <th>Date</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="evidenceBody">
+              <% for (const ep of evidence) { %>
+                <% let m; try { m = JSON.parse(ep.metrics || '{}'); } catch { m = {}; } %>
+                <tr class="evidence-row" data-source="<%= ep.source_id %>" data-community="<%= ep.community %>">
+                  <td><span class="mini-chip"><%= ep.source_id %></span></td>
+                  <td class="evidence-community"><%= ep.community || '-' %></td>
+                  <td class="evidence-content">
+                    <div class="evidence-title"><%= ep.title || '' %></div>
+                    <div class="evidence-body"><%= ep.body || '' %></div>
+                  </td>
+                  <td class="evidence-author"><%= ep.author_ref || '-' %></td>
+                  <td class="evidence-score">&#9650; <%= m.score || 0 %></td>
+                  <td>
+                    <% if (ep.signal_title) { %>
+                      <a href="/?context=<%= activeContext.id %>#<%= ep.signal_id %>" class="evidence-signal-link"><%= ep.signal_title %></a>
+                    <% } else { %>
+                      <span class="faint">unlinked</span>
+                    <% } %>
+                  </td>
+                  <td class="evidence-date"><%= ep.published_at ? new Date(ep.published_at).toLocaleDateString() : 'replay' %></td>
+                  <td>
+                    <% if (ep.url && ep.url !== '#') { %>
+                      <a href="<%= ep.url %>" target="_blank" rel="noopener" class="evidence-source-link">source &#8250;</a>
+                    <% } else { %>
+                      <span class="faint">replay</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Client-side filtering
+    var searchInput = document.getElementById("evidenceSearch");
+    var filterSource = document.getElementById("filterSource");
+    var filterCommunity = document.getElementById("filterCommunity");
+
+    function filterEvidence() {
+      var term = (searchInput.value || "").trim().toLowerCase();
+      var source = filterSource.value;
+      var community = filterCommunity.value;
+      var rows = document.querySelectorAll(".evidence-row");
+      var visible = 0;
+      rows.forEach(function(row) {
+        var matchText = !term || row.textContent.toLowerCase().includes(term);
+        var matchSource = !source || row.dataset.source === source;
+        var matchComm = !community || row.dataset.community === community;
+        var show = matchText && matchSource && matchComm;
+        row.style.display = show ? "" : "none";
+        if (show) visible++;
+      });
+      document.querySelector(".evidence-count").textContent = visible + " evidence packets";
+    }
+
+    if (searchInput) searchInput.addEventListener("input", filterEvidence);
+    if (filterSource) filterSource.addEventListener("change", filterEvidence);
+    if (filterCommunity) filterCommunity.addEventListener("change", filterEvidence);
+
+    // Context switching
+    var contextSelect = document.getElementById("contextSelect");
+    if (contextSelect) {
+      contextSelect.addEventListener("change", function(e) {
+        window.location.href = "/evidence?context=" + encodeURIComponent(e.target.value);
+      });
+    }
+
+    // New context button
+    var btnNew = document.getElementById("btnNewContext");
+    if (btnNew) btnNew.addEventListener("click", function() {
+      if (typeof openNewContextModal === "function") openNewContextModal();
+    });
+  </script>
+</body>
+</html>

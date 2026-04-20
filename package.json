@@ -1,0 +1,22 @@
+{
+  "name": "signals",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Early-warning system for detecting internet momentum",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "migrate": "node src/db/migrate.mjs",
+    "seed": "node scripts/seed-fixtures.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "pnpm": {
+    "onlyBuiltDependencies": ["better-sqlite3"]
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "ejs": "^5.0.2",
+    "express": "^5.2.1"
+  }
+}

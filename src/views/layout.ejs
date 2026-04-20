@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signal Radar</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app">
+    <%- include('partials/sidebar', { contexts: contexts, activeContext: activeContext, page: page, stats: stats }) %>
+
+    <main class="main">
+      <%- include('partials/topbar', { activeContext: activeContext, fixtures: fixtures, activeFixtureId: activeFixtureId }) %>
+
+      <section class="metric-strip" aria-label="Radar metrics" id="metrics"></section>
+
+      <%- include('partials/signal-list') %>
+      <%- include('partials/control-plane') %>
+      <%- include('partials/detail-pane') %>
+    </main>
+  </div>
+
+  <script>window.__SIGNALS_DATA__ = <%- JSON.stringify(radarData) %>;</script>
+  <script src="/app.js"></script>
+</body>
+</html>

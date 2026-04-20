@@ -1,0 +1,17 @@
+{
+  "id": "reddit-live-search",
+  "label": "Reddit live search pull",
+  "context": "AI tools for founders",
+  "crumbs": "Radar / Reddit live pull",
+  "period": "latest pull",
+  "subreddits": ["startups", "Entrepreneur", "SaaS", "ProductManagement", "ChatGPT"],
+  "queries": [
+    "AI research assistant",
+    "competitor monitoring",
+    "AI CRM follow up",
+    "agent framework production",
+    "pricing advisor"
+  ],
+  "limitPerQuery": 12,
+  "sort": "new"
+}

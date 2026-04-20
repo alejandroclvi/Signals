@@ -1,0 +1,2639 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signal Radar</title>
+  <style>
+    :root {
+      --ink: #111820;
+      --muted: #68717d;
+      --faint: #9aa3ad;
+      --line: #dfe4ea;
+      --line-soft: #edf1f5;
+      --page: #f7f8fa;
+      --panel: #ffffff;
+      --black: #101820;
+      --green: #3e9558;
+      --green-soft: #dff3e5;
+      --red: #de5c56;
+      --red-soft: #f8dfdd;
+      --blue: #2d6fbb;
+      --blue-soft: #dceafb;
+      --gold: #bd842f;
+      --gold-soft: #f6ead7;
+      --purple: #875fb4;
+      --purple-soft: #eadff7;
+      --teal: #1b918d;
+      --teal-soft: #d8f0ef;
+      --nav: #f2f4f6;
+      --active: #111820;
+      --shadow: 0 1px 0 rgba(17, 24, 32, .04);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+      letter-spacing: 0;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 248px minmax(980px, 1fr);
+    }
+
+    .sidebar {
+      background: #fbfcfd;
+      border-right: 1px solid var(--line);
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      min-height: 100vh;
+    }
+
+    .brand {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .mark {
+      width: 27px;
+      height: 27px;
+      border-radius: 3px;
+      background: var(--black);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .brand-title {
+      font-size: 17px;
+      line-height: 1;
+      font-weight: 760;
+    }
+
+    .brand-sub {
+      margin-top: 4px;
+      font-size: 10px;
+      color: var(--faint);
+      text-transform: uppercase;
+      letter-spacing: .18em;
+    }
+
+    .context-box {
+      padding: 18px 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      color: var(--faint);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-weight: 720;
+    }
+
+    .context-select {
+      margin-top: 8px;
+      width: 100%;
+      height: 42px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 3px;
+      color: var(--ink);
+      font-weight: 680;
+    }
+
+    .nav-block {
+      padding: 20px 10px;
+    }
+
+    .nav-label {
+      padding: 0 12px 10px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--faint);
+      font-weight: 720;
+    }
+
+    .nav-item {
+      display: grid;
+      grid-template-columns: 24px 1fr auto;
+      align-items: center;
+      min-height: 37px;
+      padding: 0 12px;
+      border-radius: 3px;
+      color: #454e58;
+      text-decoration: none;
+      font-size: 13px;
+      gap: 8px;
+    }
+
+    .nav-item.active {
+      background: var(--active);
+      color: #fff;
+    }
+
+    .nav-count {
+      color: var(--faint);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .nav-icon {
+      width: 15px;
+      height: 15px;
+      display: inline-grid;
+      place-items: center;
+      color: currentColor;
+    }
+
+    .account {
+      height: 64px;
+      border-top: 1px solid var(--line);
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #6c4a5d;
+      color: #fff;
+      font-size: 12px;
+      display: grid;
+      place-items: center;
+      font-weight: 740;
+    }
+
+    .account-name {
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .account-org {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .main {
+      min-width: 0;
+      background: #fff;
+    }
+
+    .topbar {
+      height: 76px;
+      border-bottom: 1px solid var(--line);
+      padding: 15px 26px 13px;
+      display: grid;
+      grid-template-columns: 1fr minmax(480px, 700px);
+      gap: 24px;
+      align-items: center;
+    }
+
+    .crumbs {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 25px;
+      line-height: 1;
+      font-weight: 760;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 3px rgba(62, 149, 88, .12);
+    }
+
+    .live-text {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-weight: 720;
+    }
+
+    .top-actions {
+      display: grid;
+      grid-template-columns: minmax(230px, 1fr) auto auto auto auto auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .search-wrap {
+      height: 38px;
+      display: grid;
+      grid-template-columns: 24px 1fr 24px;
+      align-items: center;
+      border: 1px solid var(--line);
+      background: #fbfcfd;
+      padding: 0 8px;
+      min-width: 250px;
+    }
+
+    .search-wrap input {
+      border: 0;
+      outline: 0;
+      background: transparent;
+      min-width: 0;
+      color: var(--ink);
+      font-size: 12px;
+    }
+
+    .search-wrap kbd {
+      height: 21px;
+      min-width: 24px;
+      border: 1px solid var(--line);
+      background: #f3f5f7;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+      border-radius: 2px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .button,
+    .select {
+      height: 38px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: 680;
+      white-space: nowrap;
+    }
+
+    .button.primary {
+      background: var(--black);
+      color: #fff;
+      border-color: var(--black);
+    }
+
+    .fixture-select {
+      min-width: 190px;
+      max-width: 230px;
+    }
+
+    .source-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      background: var(--red);
+    }
+
+    .metric-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      border-bottom: 1px solid var(--line);
+    }
+
+    .metric {
+      min-height: 118px;
+      padding: 18px 22px 14px;
+      border-right: 1px solid var(--line);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 7px;
+    }
+
+    .metric:last-child {
+      border-right: 0;
+    }
+
+    .metric-title {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      font-weight: 740;
+    }
+
+    .metric-value-row {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+    }
+
+    .metric-number {
+      font-size: 30px;
+      font-weight: 760;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .delta {
+      min-width: 28px;
+      height: 18px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 2px;
+      background: var(--green-soft);
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 780;
+    }
+
+    .metric-caption {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .spark {
+      width: 94px;
+      height: 28px;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(620px, 1fr) 370px;
+      border-bottom: 1px solid var(--line);
+      min-height: 760px;
+    }
+
+    .board {
+      border-right: 1px solid var(--line);
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto minmax(480px, 1fr) auto;
+    }
+
+    .panel-head {
+      height: 58px;
+      padding: 15px 22px 12px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1;
+      font-weight: 720;
+    }
+
+    .panel-sub {
+      color: var(--muted);
+      font-size: 12px;
+      margin-left: 6px;
+      font-weight: 520;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 11px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      background: var(--muted);
+    }
+
+    .segmented {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .segmented button {
+      height: 32px;
+      min-width: 56px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: #fff;
+      font-size: 12px;
+      color: #404954;
+    }
+
+    .segmented button:last-child {
+      border-right: 0;
+    }
+
+    .segmented button.active {
+      background: #f0f3f6;
+      color: var(--ink);
+      font-weight: 720;
+    }
+
+    .bubble-zone {
+      position: relative;
+      min-height: 526px;
+      background:
+        linear-gradient(var(--line-soft) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+      background-size: 25% 33.33%;
+      overflow: hidden;
+    }
+
+    .bubble-zone::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 0 50%;
+      background: rgba(249, 229, 215, .45);
+      pointer-events: none;
+    }
+
+    .axis-label {
+      position: absolute;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: .12em;
+      font-weight: 720;
+      z-index: 3;
+    }
+
+    .axis-label.top-left {
+      left: 18px;
+      top: 16px;
+    }
+
+    .axis-label.top-right {
+      right: 18px;
+      top: 16px;
+      color: #c45a54;
+    }
+
+    .axis-label.bottom-left {
+      left: 18px;
+      bottom: 18px;
+    }
+
+    .axis-label.bottom-right {
+      right: 18px;
+      bottom: 18px;
+    }
+
+    .axis-label.vertical {
+      left: 16px;
+      top: 50%;
+      transform: translate(-43%, -50%) rotate(-90deg);
+    }
+
+    .bubble-svg {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      min-height: 526px;
+      display: block;
+    }
+
+    .bubble {
+      cursor: pointer;
+      transition: opacity .18s ease, stroke-width .18s ease;
+    }
+
+    .bubble.dimmed {
+      opacity: .25;
+    }
+
+    .bubble.selected {
+      stroke: #111820;
+      stroke-width: 2.2;
+    }
+
+    .bubble-label {
+      font-size: 12px;
+      font-weight: 720;
+      fill: var(--ink);
+      pointer-events: none;
+    }
+
+    .bubble-meta {
+      fill: var(--muted);
+      font-size: 10px;
+      pointer-events: none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .chart-row {
+      display: grid;
+      grid-template-columns: 1fr .86fr .72fr;
+      border-top: 1px solid var(--line);
+      min-height: 250px;
+    }
+
+    .chart-card {
+      border-right: 1px solid var(--line);
+      padding: 18px 22px 16px;
+      min-width: 0;
+    }
+
+    .chart-card:last-child {
+      border-right: 0;
+    }
+
+    .chart-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .chart-title strong {
+      font-size: 16px;
+    }
+
+    .chart-title span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .line-chart,
+    .heatmap-chart {
+      width: 100%;
+      height: 142px;
+      display: block;
+    }
+
+    .chart-foot {
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: #323b45;
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .intent-row {
+      display: grid;
+      grid-template-columns: 86px 1fr 36px;
+      gap: 10px;
+      align-items: center;
+      margin: 10px 0;
+      font-size: 12px;
+    }
+
+    .intent-row span:first-child {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #3f4853;
+    }
+
+    .intent-track {
+      height: 9px;
+      background: #f0f2f4;
+      overflow: hidden;
+      border-radius: 0;
+    }
+
+    .intent-fill {
+      height: 100%;
+    }
+
+    .inbox {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      background: #fff;
+    }
+
+    .inbox-tabs {
+      display: flex;
+      gap: 16px;
+      height: 42px;
+      align-items: end;
+      padding: 0 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .inbox-tab {
+      height: 32px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 0;
+    }
+
+    .inbox-tab.active {
+      color: var(--ink);
+      border-bottom-color: var(--ink);
+      font-weight: 740;
+    }
+
+    .tab-count {
+      display: inline-grid;
+      place-items: center;
+      min-width: 19px;
+      height: 17px;
+      padding: 0 5px;
+      background: #eef1f4;
+      color: #5d6671;
+      border-radius: 2px;
+      font-size: 10px;
+      margin-left: 4px;
+    }
+
+    .inbox-tab.active .tab-count {
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .signal-list {
+      overflow: auto;
+    }
+
+    .signal-item {
+      display: grid;
+      gap: 9px;
+      padding: 16px 22px 15px;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+      background: #fff;
+    }
+
+    .signal-item.selected {
+      box-shadow: inset 3px 0 0 var(--ink);
+      background: #fcfdfd;
+    }
+
+    .signal-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+    }
+
+    .rank {
+      font-size: 11px;
+      color: var(--faint);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .signal-state {
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .signal-growth {
+      color: var(--green);
+      font-weight: 760;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .signal-title {
+      font-size: 14px;
+      font-weight: 750;
+      line-height: 1.2;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .tag {
+      height: 19px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 6px;
+      font-size: 10px;
+      font-weight: 720;
+      border-radius: 2px;
+      color: #1e2731;
+    }
+
+    .tag.demand { background: var(--green-soft); color: #277a42; }
+    .tag.frustration { background: var(--red-soft); color: #c94640; }
+    .tag.adoption { background: var(--blue-soft); color: #245f9e; }
+    .tag.comparison { background: var(--gold-soft); color: #96631e; }
+    .tag.narrative { background: var(--purple-soft); color: #6d4699; }
+    .tag.economic { background: var(--teal-soft); color: #126f6c; }
+
+    .signal-summary {
+      color: #38424d;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .signal-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+    }
+
+    .confidence {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #424b55;
+      font-family: inherit;
+    }
+
+    .bars {
+      display: inline-flex;
+      gap: 2px;
+    }
+
+    .bars i {
+      width: 4px;
+      height: 10px;
+      background: var(--ink);
+      display: block;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: minmax(560px, 1fr) 430px;
+      min-height: 620px;
+    }
+
+    .detail-main {
+      border-right: 1px solid var(--line);
+      padding: 23px 26px 28px;
+    }
+
+    .detail-side {
+      padding: 23px 26px 28px;
+      min-width: 0;
+    }
+
+    .detail-kicker {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      margin-bottom: 12px;
+    }
+
+    .detail-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .detail-head h2 {
+      margin: 0 0 10px;
+      font-size: 23px;
+      line-height: 1.15;
+      font-weight: 760;
+    }
+
+    .detail-actions {
+      display: flex;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .detail-score {
+      display: grid;
+      grid-template-columns: 92px 1fr 92px 1fr;
+      gap: 12px;
+      align-items: center;
+      margin: 18px 0 22px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+    }
+
+    .sparkline {
+      width: 120px;
+      height: 28px;
+    }
+
+    .section-label {
+      margin: 22px 0 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: .14em;
+      font-weight: 740;
+    }
+
+    .why-box {
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 14px 16px;
+      line-height: 1.5;
+      color: #2e3843;
+      box-shadow: var(--shadow);
+      font-size: 14px;
+    }
+
+    .evidence-list {
+      border-top: 1px solid var(--line);
+    }
+
+    .evidence {
+      display: grid;
+      grid-template-columns: 34px 1fr auto;
+      gap: 14px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+
+    .evidence-id {
+      color: var(--faint);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+    }
+
+    .quote {
+      font-style: italic;
+      color: #27313c;
+      line-height: 1.45;
+    }
+
+    .evidence-meta {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .source-kind {
+      display: inline-flex;
+      align-items: center;
+      height: 17px;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 0 5px;
+      margin-right: 5px;
+      color: #3f4853;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-weight: 760;
+    }
+
+    .open-link {
+      color: #27313c;
+      font-size: 11px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .replay-link {
+      color: var(--faint);
+      cursor: default;
+    }
+
+    .pill-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .phrase {
+      min-height: 28px;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 6px 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .phrase b {
+      color: var(--faint);
+      font-weight: 560;
+    }
+
+    .bar-list {
+      display: grid;
+      gap: 13px;
+      margin-top: 12px;
+    }
+
+    .community-row {
+      display: grid;
+      grid-template-columns: 100px 1fr 44px;
+      gap: 12px;
+      align-items: center;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .community-track {
+      height: 8px;
+      background: #eff1f3;
+      overflow: hidden;
+    }
+
+    .community-fill {
+      height: 100%;
+      background: #2d333b;
+    }
+
+    .related {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .related-row {
+      display: grid;
+      grid-template-columns: 8px 1fr auto;
+      gap: 9px;
+      align-items: center;
+      font-size: 12px;
+      color: #3a444f;
+    }
+
+    .score-list {
+      display: grid;
+      gap: 11px;
+      margin-top: 12px;
+    }
+
+    .score-row {
+      display: grid;
+      grid-template-columns: 132px 1fr 40px;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px;
+      color: #3a444f;
+    }
+
+    .score-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .score-track {
+      height: 8px;
+      background: #eff1f3;
+      overflow: hidden;
+    }
+
+    .score-fill {
+      height: 100%;
+      background: #111820;
+    }
+
+    .score-value {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .suggested {
+      margin-top: 24px;
+      background: var(--black);
+      color: #fff;
+      padding: 15px;
+      display: grid;
+      grid-template-columns: 30px 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .suggest-icon {
+      width: 28px;
+      height: 28px;
+      border: 1px solid rgba(255, 255, 255, .2);
+      display: grid;
+      place-items: center;
+      color: #d8dde3;
+      font-size: 16px;
+    }
+
+    .suggest-title {
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .suggest-sub {
+      margin-top: 3px;
+      color: #aeb7c2;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .suggested .button {
+      color: var(--ink);
+      background: #fff;
+      border-color: #fff;
+      height: 32px;
+    }
+
+    .control-plane-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .92fr) minmax(520px, 1.36fr) minmax(330px, .92fr);
+      border-bottom: 1px solid var(--line);
+      min-height: 320px;
+      background: #fff;
+    }
+
+    .control-panel {
+      min-width: 0;
+      border-right: 1px solid var(--line);
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .control-panel:last-child {
+      border-right: 0;
+    }
+
+    .control-body {
+      padding: 18px 22px 22px;
+      min-width: 0;
+    }
+
+    .layer-ladder {
+      display: grid;
+      gap: 8px;
+    }
+
+    .layer-row {
+      display: grid;
+      grid-template-columns: 24px 1fr auto;
+      gap: 11px;
+      align-items: center;
+      min-height: 46px;
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      background: #fff;
+    }
+
+    .layer-row.active {
+      border-color: rgba(62, 149, 88, .32);
+      background: rgba(62, 149, 88, .05);
+    }
+
+    .layer-row.available {
+      border-color: rgba(45, 111, 187, .26);
+      background: rgba(45, 111, 187, .04);
+    }
+
+    .layer-row.gated {
+      border-color: rgba(189, 132, 47, .28);
+      background: rgba(189, 132, 47, .05);
+    }
+
+    .layer-row.missing {
+      opacity: .64;
+    }
+
+    .layer-mark {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: #fff;
+      background: #d3d9df;
+    }
+
+    .layer-row.active .layer-mark { background: var(--green); border-color: var(--green); }
+    .layer-row.available .layer-mark { background: var(--blue); border-color: var(--blue); }
+    .layer-row.gated .layer-mark { background: var(--gold); border-color: var(--gold); }
+
+    .layer-name {
+      font-size: 13px;
+      font-weight: 740;
+      line-height: 1.2;
+    }
+
+    .layer-note {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .layer-status {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+      font-weight: 780;
+      white-space: nowrap;
+    }
+
+    .source-node-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .source-node {
+      min-height: 104px;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 12px;
+      text-align: left;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      color: var(--ink);
+    }
+
+    .source-node.enabled {
+      border-color: rgba(62, 149, 88, .34);
+      background: rgba(62, 149, 88, .05);
+    }
+
+    .source-node.available {
+      border-color: rgba(45, 111, 187, .25);
+    }
+
+    .source-node.gated {
+      border-color: rgba(189, 132, 47, .32);
+      background: rgba(189, 132, 47, .05);
+      cursor: default;
+    }
+
+    .node-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .node-title {
+      font-weight: 760;
+      font-size: 13px;
+      line-height: 1.15;
+    }
+
+    .node-state {
+      min-width: 56px;
+      height: 18px;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 780;
+      white-space: nowrap;
+    }
+
+    .source-node.enabled .node-state {
+      border-color: rgba(62, 149, 88, .34);
+      color: var(--green);
+      background: #fff;
+    }
+
+    .source-node.gated .node-state {
+      border-color: rgba(189, 132, 47, .34);
+      color: var(--gold);
+      background: #fff;
+    }
+
+    .node-meta {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .node-layers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .mini-chip {
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      padding: 0 5px;
+      color: #39434e;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 740;
+      background: #fff;
+    }
+
+    .recommendation-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .recommendation {
+      border: 1px solid var(--line);
+      padding: 12px;
+      background: #fff;
+      display: grid;
+      gap: 8px;
+    }
+
+    .recommendation.best {
+      border-color: rgba(62, 149, 88, .34);
+      background: rgba(62, 149, 88, .05);
+    }
+
+    .rec-top {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: baseline;
+    }
+
+    .rec-title {
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .rec-lift {
+      font-size: 12px;
+      color: var(--green);
+      font-weight: 780;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rec-reason {
+      color: #37424d;
+      font-size: 12px;
+      line-height: 1.42;
+    }
+
+    .rec-action {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .rec-action button {
+      height: 28px;
+      border: 1px solid var(--line);
+      background: var(--black);
+      color: #fff;
+      padding: 0 9px;
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    @media (max-width: 1250px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .top-actions {
+        grid-template-columns: 1fr auto auto;
+      }
+
+      .dashboard-grid,
+      .detail-grid,
+      .control-plane-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .board,
+      .detail-main,
+      .control-panel {
+        border-right: 0;
+      }
+
+      .inbox {
+        border-top: 1px solid var(--line);
+      }
+    }
+
+    @media (max-width: 840px) {
+      .metric-strip,
+      .chart-row {
+        grid-template-columns: 1fr;
+      }
+
+      .metric,
+      .chart-card {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .top-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .detail-head,
+      .detail-score {
+        grid-template-columns: 1fr;
+      }
+
+      .source-node-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="mark">S</div>
+        <div>
+          <div class="brand-title">Signals</div>
+          <div class="brand-sub">Intelligence</div>
+        </div>
+      </div>
+
+      <div class="context-box">
+        <div class="eyebrow">Active context</div>
+        <select class="context-select" aria-label="Active context">
+          <option>AI tools for small law firms</option>
+          <option>AI tools for founders</option>
+          <option>Market signal radar</option>
+        </select>
+      </div>
+
+      <nav class="nav-block" aria-label="Workspace">
+        <div class="nav-label">Workspace</div>
+        <a class="nav-item active" href="#">
+          <span class="nav-icon">◎</span><span>Radar</span><span></span>
+        </a>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">□</span><span>Signal Inbox</span><span class="nav-count">24</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">≡</span><span>Watchlist</span><span class="nav-count">12</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">#</span><span>Communities</span><span class="nav-count">38</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">▤</span><span>Evidence Library</span><span class="nav-count">156</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">⌂</span><span>Alerts</span><span class="nav-count">4</span>
+        </a>
+        <div class="nav-label" style="padding-top:26px;">Account</div>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">⚙</span><span>Settings</span><span></span>
+        </a>
+      </nav>
+
+      <div class="account">
+        <div class="avatar">MK</div>
+        <div>
+          <div class="account-name">Maya K.</div>
+          <div class="account-org">Harbor Research</div>
+        </div>
+        <span>›</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="crumbs" id="crumbs">Radar / Law firms</div>
+          <div class="title-row">
+            <h1>Signal Radar</h1>
+            <span class="live-dot" aria-hidden="true"></span>
+            <span class="live-text">Live</span>
+          </div>
+        </div>
+        <div class="top-actions">
+          <div class="search-wrap">
+            <span>⌕</span>
+            <input id="searchInput" type="search" placeholder="Search topics, phrases, communities..." aria-label="Search topics">
+            <kbd>⌘K</kbd>
+          </div>
+          <select class="select fixture-select" id="fixtureSelect" aria-label="Replay fixture">
+            <option value="default">Law firms replay</option>
+          </select>
+          <button class="button" type="button">▣ Last 30 days</button>
+          <button class="button" type="button"><span class="source-dot"></span> Reddit</button>
+          <button class="button" type="button" aria-label="Filter">▽</button>
+          <button class="button primary" type="button">+ Create Alert</button>
+        </div>
+      </header>
+
+      <section class="metric-strip" aria-label="Radar metrics" id="metrics"></section>
+
+      <section class="dashboard-grid">
+        <div class="board">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">Momentum vs Relevance <span class="panel-sub" id="topicSummary">15 topics detected - last 30d</span></h2>
+            </div>
+            <div class="legend">
+              <span class="legend-item"><i class="dot" style="background:var(--green)"></i> Demand</span>
+              <span class="legend-item"><i class="dot" style="background:var(--red)"></i> Frustration</span>
+              <span class="legend-item"><i class="dot" style="background:var(--blue)"></i> Adoption</span>
+              <span class="legend-item"><i class="dot" style="background:var(--gold)"></i> Comparison</span>
+              <span class="legend-item"><i class="dot" style="background:var(--purple)"></i> Narrative</span>
+              <span class="legend-item"><i class="dot" style="background:var(--teal)"></i> Economic</span>
+            </div>
+            <div class="segmented" aria-label="Radar view">
+              <button class="active" type="button">Bubble</button>
+              <button type="button">Matrix</button>
+              <button type="button">List</button>
+            </div>
+          </div>
+          <div class="bubble-zone">
+            <div class="axis-label top-left">Interesting - uncertain</div>
+            <div class="axis-label top-right">Urgent signals</div>
+            <div class="axis-label bottom-left">Ignore / noise</div>
+            <div class="axis-label bottom-right">Watchlist</div>
+            <div class="axis-label vertical">Momentum -></div>
+            <svg class="bubble-svg" id="bubbleSvg" viewBox="0 0 860 526" role="img" aria-label="Momentum versus relevance bubble chart"></svg>
+          </div>
+          <div class="chart-row">
+            <div class="chart-card">
+              <div class="chart-title"><strong>Momentum Timeline</strong><span>30d</span></div>
+              <svg class="line-chart" id="timelineSvg" viewBox="0 0 430 142" role="img" aria-label="Momentum timeline"></svg>
+              <div class="chart-foot">
+                <span>+312% posts vs baseline</span>
+                <span>+218% comments</span>
+                <span>+124 new authors</span>
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-title"><strong>Community Spread</strong><span>weekly</span></div>
+              <svg class="heatmap-chart" id="heatmapSvg" viewBox="0 0 330 142" role="img" aria-label="Community heatmap"></svg>
+              <div class="chart-foot"><span>Low</span><span>mentions/week</span><span>High</span></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-title"><strong>Intent Breakdown</strong><span>classified</span></div>
+              <div id="intentBars"></div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="inbox">
+          <div class="panel-head">
+            <h2 class="panel-title">Signal Inbox</h2>
+            <div class="legend"><span>▽</span><span>...</span></div>
+          </div>
+          <div class="inbox-tabs">
+            <button class="inbox-tab active" type="button">Ranked <span class="tab-count">24</span></button>
+            <button class="inbox-tab" type="button">New <span class="tab-count">7</span></button>
+            <button class="inbox-tab" type="button">Saved <span class="tab-count">12</span></button>
+          </div>
+          <div class="signal-list" id="signalList"></div>
+        </aside>
+      </section>
+
+      <section class="control-plane-grid" aria-label="Source enablement control plane">
+        <div class="control-panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">Evidence Coverage <span class="panel-sub" id="coverageCaption"></span></h2>
+            </div>
+          </div>
+          <div class="control-body">
+            <div class="layer-ladder" id="layerLadder"></div>
+          </div>
+        </div>
+
+        <div class="control-panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">Source Nodes <span class="panel-sub">toggle local capacity</span></h2>
+            </div>
+            <div class="legend">
+              <span class="legend-item"><i class="dot" style="background:var(--green)"></i> Enabled</span>
+              <span class="legend-item"><i class="dot" style="background:var(--blue)"></i> Available</span>
+              <span class="legend-item"><i class="dot" style="background:var(--gold)"></i> Gated</span>
+            </div>
+          </div>
+          <div class="control-body">
+            <div class="source-node-grid" id="sourceNodeGrid"></div>
+          </div>
+        </div>
+
+        <div class="control-panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">What To Enable Next <span class="panel-sub">ranked lift</span></h2>
+            </div>
+          </div>
+          <div class="control-body">
+            <div class="recommendation-list" id="recommendationList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="detail-grid" aria-label="Selected signal detail">
+        <div class="detail-main">
+          <div class="detail-kicker" id="detailKicker"></div>
+          <div class="detail-head">
+            <div>
+              <h2 id="detailTitle"></h2>
+              <div class="tags" id="detailTags"></div>
+            </div>
+            <div class="detail-actions">
+              <button class="button" type="button">□ Save</button>
+              <button class="button" type="button">⊗ Dismiss</button>
+              <button class="button" type="button">⚡ Alert</button>
+            </div>
+          </div>
+
+          <div class="detail-score">
+            <span>Momentum</span>
+            <div>
+              <strong id="momentumText"></strong>
+              <svg class="sparkline" id="detailSpark" viewBox="0 0 120 28" aria-hidden="true"></svg>
+            </div>
+            <span>Driven by</span>
+            <strong id="drivenBy"></strong>
+          </div>
+
+          <div class="section-label">Why it matters</div>
+          <div class="why-box" id="whyBox"></div>
+
+          <div class="section-label">Representative evidence</div>
+          <div class="evidence-list" id="evidenceList"></div>
+        </div>
+
+        <aside class="detail-side">
+          <div class="section-label">Detected phrases</div>
+          <div class="pill-grid" id="phraseGrid"></div>
+
+          <div class="section-label">Top communities</div>
+          <div class="bar-list" id="communityBars"></div>
+
+          <div class="section-label">Related signals</div>
+          <div class="related" id="relatedSignals"></div>
+
+          <div class="section-label">Score components</div>
+          <div class="score-list" id="scoreComponents"></div>
+
+          <div class="suggested">
+            <div class="suggest-icon">✶</div>
+            <div>
+              <div class="suggest-title" id="suggestTitle"></div>
+              <div class="suggest-sub" id="suggestSub"></div>
+            </div>
+            <button class="button" type="button">+ Create</button>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <script src="fixtures/reddit-category-pain-radar.fixture.js"></script>
+  <script src="fixtures/reddit-live-search.fixture.js"></script>
+  <script>
+    const categories = {
+      demand: { label: "demand", color: "#3e9558", soft: "#dff3e5" },
+      frustration: { label: "frustration", color: "#de5c56", soft: "#f8dfdd" },
+      adoption: { label: "adoption", color: "#2d6fbb", soft: "#dceafb" },
+      comparison: { label: "comparison", color: "#bd842f", soft: "#f6ead7" },
+      narrative: { label: "narrative", color: "#875fb4", soft: "#eadff7" },
+      economic: { label: "economic", color: "#1b918d", soft: "#d8f0ef" }
+    };
+
+    let signals = [
+      {
+        id: "ai-discovery",
+        rank: 1,
+        status: "Emerging",
+        title: "AI discovery summaries",
+        growth: "+312%",
+        tags: ["demand", "adoption"],
+        summary: "Solo attorneys are asking how to summarize discovery documents while preserving confidentiality.",
+        communities: ["r/LawFirm", "r/legaltech", "r/paralegal"],
+        mentions: 21,
+        comments: 188,
+        confidence: "High",
+        x: 704,
+        y: 93,
+        r: 41,
+        volume: 289,
+        evidence: [
+          {
+            id: "81",
+            quote: "Has anyone used AI to summarize discovery docs without uploading client data?",
+            source: "r/LawFirm",
+            author: "u/solopractice_atl",
+            age: "2d",
+            score: 147,
+            replies: 62
+          },
+          {
+            id: "82",
+            quote: "I need something cheaper than hiring extra review help. We are drowning in exhibits.",
+            source: "r/legaltech",
+            author: "u/partner_ops",
+            age: "4d",
+            score: 89,
+            replies: 31
+          },
+          {
+            id: "83",
+            quote: "We tried using a general AI tool, but confidentiality is the blocker.",
+            source: "r/paralegal",
+            author: "u/para_j",
+            age: "6d",
+            score: 213,
+            replies: 94
+          },
+          {
+            id: "84",
+            quote: "Looking for on-prem or SOC 2 options that can handle 10k+ page productions.",
+            source: "r/LawFirm",
+            author: "u/litigator_nm",
+            age: "7d",
+            score: 76,
+            replies: 28
+          }
+        ],
+        phrases: [
+          ["summarize discovery", 47],
+          ["client confidentiality", 38],
+          ["legal document review", 31],
+          ["AI for case prep", 24],
+          ["alternative to manual review", 19],
+          ["SOC 2 legal AI", 14],
+          ["on-prem summarization", 11]
+        ],
+        spread: [
+          ["r/LawFirm", 42],
+          ["r/legaltech", 28],
+          ["r/paralegal", 18],
+          ["r/solo_practice", 12]
+        ],
+        related: [
+          ["Confidentiality concerns", "narrative", "r=0.84"],
+          ["Legal document review", "demand", "r=0.71"],
+          ["Paralegal workflow AI", "adoption", "r=0.62"]
+        ],
+        why: "Conversation is moving from curiosity to workflow-specific adoption. Users are asking about confidentiality, document volume, and how to integrate AI into legal review, shifting from \"is this possible\" toward \"which tool handles my caseload.\"",
+        suggested: {
+          title: "Suggested action",
+          sub: "Create alert for confidentiality + discovery summary discussions."
+        },
+        next: "Enable Google Search next to validate active discovery and vendor comparison intent."
+      },
+      {
+        id: "alternative-clio",
+        rank: 2,
+        status: "Growing",
+        title: "Alternative to Clio",
+        growth: "+146%",
+        tags: ["frustration", "comparison"],
+        summary: "Users are comparing legal practice tools around cost, complexity, and automation gaps.",
+        communities: ["r/solo_practice", "r/LawFirm"],
+        mentions: 14,
+        comments: 96,
+        confidence: "Medium",
+        x: 641,
+        y: 169,
+        r: 24,
+        volume: 110,
+        evidence: [
+          { id: "91", quote: "Clio is fine but feels too heavy for a two-person practice.", source: "r/solo_practice", author: "u/founder_attorney", age: "1d", score: 64, replies: 18 },
+          { id: "92", quote: "I want intake, billing, and follow-up automation without paying for the whole suite.", source: "r/LawFirm", author: "u/smallfirm_ops", age: "5d", score: 52, replies: 17 }
+        ],
+        phrases: [["alternative to Clio", 29], ["practice management too expensive", 17], ["small firm automation", 14]],
+        spread: [["r/solo_practice", 48], ["r/LawFirm", 34], ["r/legaltech", 18]],
+        related: [["Client intake automation", "demand", "r=0.68"], ["Billable hour compression", "economic", "r=0.52"]],
+        why: "The signal is less about replacing a brand and more about small firms wanting narrower automation without large-suite overhead.",
+        suggested: { title: "Suggested action", sub: "Enable HN or GitHub only if this becomes a technical tooling signal." },
+        next: "Enable Google Search to check comparison and alternative queries."
+      },
+      {
+        id: "client-intake",
+        rank: 3,
+        status: "Watch",
+        title: "Client intake automation",
+        growth: "+88%",
+        tags: ["demand"],
+        summary: "Small firms are asking for intake workflows that connect forms, email, and document generation.",
+        communities: ["r/legaltech", "r/smallbusiness"],
+        mentions: 9,
+        comments: 61,
+        confidence: "Medium",
+        x: 602,
+        y: 305,
+        r: 23,
+        volume: 88,
+        evidence: [
+          { id: "101", quote: "Is there a simple intake form that creates the first email and document checklist?", source: "r/legaltech", author: "u/intake_ops", age: "3d", score: 41, replies: 19 },
+          { id: "102", quote: "We lose too much time copying client answers into templates.", source: "r/smallbusiness", author: "u/localfirm", age: "8d", score: 37, replies: 12 }
+        ],
+        phrases: [["client intake automation", 18], ["forms to docs", 12], ["intake follow-up", 9]],
+        spread: [["r/legaltech", 43], ["r/smallbusiness", 34], ["r/LawFirm", 23]],
+        related: [["AI discovery summaries", "demand", "r=0.46"], ["Alternative to Clio", "comparison", "r=0.48"]],
+        why: "The pain is operational and repetitive. Evidence is still early but practical enough to justify watching intent sources.",
+        suggested: { title: "Suggested action", sub: "Create alert for intake + forms + document generation." },
+        next: "Enable Google Search to validate active intent."
+      },
+      {
+        id: "confidentiality",
+        rank: 4,
+        status: "Growing",
+        title: "Confidentiality concerns",
+        growth: "+127%",
+        tags: ["narrative"],
+        summary: "Threads debate where client data can safely flow through AI tools, especially for litigation prep.",
+        communities: ["r/LawFirm", "r/lawyertalk"],
+        mentions: 18,
+        comments: 142,
+        confidence: "High",
+        x: 670,
+        y: 178,
+        r: 26,
+        volume: 92,
+        evidence: [
+          { id: "111", quote: "The feature is useful, but where does the client data go?", source: "r/LawFirm", author: "u/riskpartner", age: "2d", score: 128, replies: 44 },
+          { id: "112", quote: "I need a vendor answer on retention before I let staff use AI on case material.", source: "r/lawyertalk", author: "u/legaladmin", age: "9d", score: 77, replies: 27 }
+        ],
+        phrases: [["client data", 42], ["AI retention policy", 21], ["confidentiality blocker", 18]],
+        spread: [["r/LawFirm", 52], ["r/lawyertalk", 30], ["r/paralegal", 18]],
+        related: [["AI discovery summaries", "adoption", "r=0.84"], ["SOC 2 legal AI", "narrative", "r=0.69"]],
+        why: "Confidentiality is becoming a category constraint. This can shape vendor selection and product requirements before buying intent is visible.",
+        suggested: { title: "Suggested action", sub: "Create a watchlist for security-language acceleration." },
+        next: "Enable primary-source/vendor pages to compare security claims."
+      },
+      {
+        id: "billable-compression",
+        rank: 5,
+        status: "Watch",
+        title: "Billable hour compression",
+        growth: "+74%",
+        tags: ["economic"],
+        summary: "Partners note clients pushing back on research hours as AI shortens review time.",
+        communities: ["r/BigLaw", "r/LawFirm"],
+        mentions: 11,
+        comments: 74,
+        confidence: "Medium",
+        x: 528,
+        y: 270,
+        r: 19,
+        volume: 77,
+        evidence: [
+          { id: "121", quote: "Clients are asking why research hours are still high if we use AI tools.", source: "r/BigLaw", author: "u/seniorassoc", age: "6d", score: 53, replies: 22 },
+          { id: "122", quote: "Flat-fee pressure is becoming part of every tech conversation.", source: "r/LawFirm", author: "u/managingpartner", age: "12d", score: 31, replies: 11 }
+        ],
+        phrases: [["billable compression", 11], ["research hours", 19], ["flat fee pressure", 8]],
+        spread: [["r/BigLaw", 50], ["r/LawFirm", 34], ["r/legaltech", 16]],
+        related: [["Alternative to Clio", "comparison", "r=0.39"], ["AI discovery summaries", "economic", "r=0.44"]],
+        why: "The discussion connects workflow automation to pricing pressure. It is not yet product demand, but it points to economic commitment questions.",
+        suggested: { title: "Suggested action", sub: "Watch for jobs and buyer-review evidence later." },
+        next: "Enable G2 or jobs data later to validate economic commitment."
+      },
+      {
+        id: "legal-doc-review",
+        rank: 6,
+        status: "Steady",
+        title: "Legal document review",
+        growth: "+54%",
+        tags: ["demand"],
+        summary: "Ongoing demand for batch-review tools that handle PDFs, contracts, and exhibits.",
+        communities: ["r/paralegal", "r/LawFirm"],
+        mentions: 16,
+        comments: 112,
+        confidence: "High",
+        x: 575,
+        y: 236,
+        r: 22,
+        volume: 138,
+        evidence: [
+          { id: "131", quote: "I need batch review for PDFs, not another chat box.", source: "r/paralegal", author: "u/docreview", age: "10d", score: 88, replies: 36 },
+          { id: "132", quote: "Contract review is useful, discovery review is where the time goes.", source: "r/LawFirm", author: "u/litigationops", age: "14d", score: 67, replies: 24 }
+        ],
+        phrases: [["batch PDF review", 22], ["legal document review", 31], ["not another chatbot", 13]],
+        spread: [["r/paralegal", 45], ["r/LawFirm", 39], ["r/legaltech", 16]],
+        related: [["AI discovery summaries", "demand", "r=0.71"], ["Confidentiality concerns", "narrative", "r=0.53"]],
+        why: "The pain is well-defined but broader than the strongest emerging category. It provides supporting evidence for discovery-summary demand.",
+        suggested: { title: "Suggested action", sub: "Attach as supporting evidence to discovery summaries." },
+        next: "Enable GitHub only if open tooling becomes visible."
+      }
+    ];
+
+    let otherBubbles = [
+      { x: 390, y: 143, r: 14, color: "#1b918d", opacity: .25 },
+      { x: 251, y: 245, r: 10, color: "#875fb4", opacity: .15 },
+      { x: 317, y: 318, r: 10, color: "#de5c56", opacity: .13 },
+      { x: 462, y: 275, r: 13, color: "#2d6fbb", opacity: .25 },
+      { x: 359, y: 210, r: 14, color: "#1b918d", opacity: .22 },
+      { x: 488, y: 337, r: 13, color: "#875fb4", opacity: .24 },
+      { x: 244, y: 416, r: 10, color: "#3e9558", opacity: .14 },
+      { x: 335, y: 397, r: 9, color: "#2d6fbb", opacity: .18 },
+      { x: 536, y: 306, r: 14, color: "#3e9558", opacity: .2 }
+    ];
+
+    let metrics = [
+      { title: "Emerging signals", value: "24", delta: "+6", caption: "detected this period", spark: [12, 13, 16, 18, 23, 26, 31] },
+      { title: "High-confidence", value: "7", delta: "+2", caption: "evidence >= 3 sources", spark: [4, 5, 6, 8, 9, 11, 12] },
+      { title: "Communities monitored", value: "38", delta: "-", caption: "in active context", spark: [19, 19, 24, 24, 24, 24, 24] },
+      { title: "Saved evidence", value: "156", delta: "+34", caption: "threads + comments", spark: [76, 88, 104, 121, 139, 151, 156] }
+    ];
+
+    let timeline = {
+      posts: [17, 18, 15, 17, 18, 16, 19, 16, 17, 19, 18, 19, 17, 18, 19, 18, 18, 20, 22, 25, 29, 35, 39, 46, 58, 69],
+      comments: [14, 13, 12, 14, 15, 14, 15, 14, 13, 15, 15, 16, 14, 15, 16, 15, 14, 16, 18, 20, 24, 27, 31, 36, 41, 44],
+      authors: [9, 9, 8, 10, 9, 10, 9, 11, 10, 10, 11, 11, 10, 12, 11, 12, 12, 13, 13, 14, 15, 16, 18, 20, 22, 24]
+    };
+
+    let heatmap = [
+      ["r/LawFirm", [16, 23, 5, 29]],
+      ["r/legaltech", [9, 17, 22, 25]],
+      ["r/solo_practice", [10, 10, 14, 23]],
+      ["r/paralegal", [14, 15, 5, 23]],
+      ["r/LawSchool", [0, 10, 7, 18]]
+    ];
+
+    let intent = [
+      ["Tool search", 31, "#3e9558"],
+      ["Frustration", 26, "#de5c56"],
+      ["Adoption", 18, "#2d6fbb"],
+      ["Comparison", 15, "#bd842f"],
+      ["Education", 7, "#875fb4"],
+      ["Speculation", 3, "#1b918d"]
+    ];
+
+    let evidenceLayers = [
+      {
+        id: "conversation",
+        label: "Conversation",
+        note: "raw pain language, repeated complaints, community recurrence"
+      },
+      {
+        id: "intent",
+        label: "Intent",
+        note: "active discovery, search demand, vendor comparison"
+      },
+      {
+        id: "behavior",
+        label: "Behavior",
+        note: "build activity, usage traces, workflow artifacts"
+      },
+      {
+        id: "expectation",
+        label: "Expectation",
+        note: "money-backed forecasts and probability repricing"
+      },
+      {
+        id: "economic",
+        label: "Economic commitment",
+        note: "reviews, hiring, procurement, budget allocation"
+      },
+      {
+        id: "capital",
+        label: "Capital-market response",
+        note: "public market price, volume, volatility, sector movement"
+      },
+      {
+        id: "truth",
+        label: "Primary truth",
+        note: "official sources, filings, docs, vendor claims, fact checks"
+      }
+    ];
+
+    let sourceNodes = [
+      {
+        id: "reddit",
+        name: "Reddit",
+        state: "enabled",
+        layers: ["conversation"],
+        lift: 0,
+        adds: "Pain language and repeated complaints.",
+        cannot: "Cannot prove buying intent, budget, or adoption."
+      },
+      {
+        id: "google-search",
+        name: "Google Search",
+        state: "available",
+        layers: ["intent"],
+        lift: 11,
+        adds: "Active discovery and comparison intent.",
+        cannot: "Cannot prove purchase or retention."
+      },
+      {
+        id: "google-trends",
+        name: "Google Trends",
+        state: "gated",
+        layers: ["intent"],
+        lift: 8,
+        adds: "Broad search-demand direction.",
+        cannot: "Weak for very early small signals."
+      },
+      {
+        id: "hacker-news",
+        name: "Hacker News",
+        state: "available",
+        layers: ["conversation"],
+        lift: 7,
+        adds: "Builder debate and technical skepticism.",
+        cannot: "Narrow audience, not broad demand."
+      },
+      {
+        id: "github",
+        name: "GitHub",
+        state: "available",
+        layers: ["behavior"],
+        lift: 9,
+        adds: "Implementation artifacts and developer adoption.",
+        cannot: "Cannot prove buyer budget."
+      },
+      {
+        id: "linkedin",
+        name: "LinkedIn",
+        state: "gated",
+        layers: ["conversation", "economic"],
+        lift: 8,
+        adds: "Professional normalization and hiring signals.",
+        cannot: "Access constraints limit full public coverage."
+      },
+      {
+        id: "g2-jobs",
+        name: "G2 / Jobs",
+        state: "gated",
+        layers: ["economic"],
+        lift: 10,
+        adds: "Buyer reviews, categories, and hiring commitment.",
+        cannot: "Usually later than early pain signals."
+      },
+      {
+        id: "polymarket",
+        name: "Polymarket",
+        state: "available",
+        layers: ["expectation"],
+        lift: 6,
+        adds: "Money-backed probability movement.",
+        cannot: "Not useful for every product-category question."
+      },
+      {
+        id: "stocks",
+        name: "Stock Prices",
+        state: "available",
+        layers: ["capital"],
+        lift: 6,
+        adds: "Capital-market response and divergence.",
+        cannot: "Cannot prove causality by itself."
+      },
+      {
+        id: "primary",
+        name: "Primary Sources",
+        state: "available",
+        layers: ["truth"],
+        lift: 10,
+        adds: "Official confirmation, filings, docs, vendor claims.",
+        cannot: "Often validates later than social discovery."
+      }
+    ];
+
+    const defaultFixture = {
+      id: "default",
+      label: "Law firms replay",
+      context: "AI tools for small law firms",
+      crumbs: "Radar / Law firms",
+      selectedId: "ai-discovery",
+      signals,
+      otherBubbles,
+      metrics,
+      timeline,
+      heatmap,
+      intent,
+      evidenceLayers,
+      sourceNodes
+    };
+
+    const fixtureLibrary = [defaultFixture, ...((window.signalRadarFixtures || []).filter((fixture) => fixture.id !== "default"))];
+    let activeFixtureId = "default";
+    let enabledNodes = new Set(sourceNodes.filter((node) => node.state === "enabled").map((node) => node.id));
+
+    let selectedId = "ai-discovery";
+
+    function cloneData(value) {
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function setupFixtureSelector() {
+      const select = document.getElementById("fixtureSelect");
+      select.innerHTML = fixtureLibrary.map((fixture) => `<option value="${fixture.id}">${fixture.label}</option>`).join("");
+      select.value = activeFixtureId;
+      select.addEventListener("change", (event) => {
+        applyFixture(event.target.value, true);
+      });
+    }
+
+    function evidencePacketToDetail(packet) {
+      const metrics = packet.metrics || {};
+      return {
+        id: packet.id || packet.source_item_id || "evidence",
+        quote: packet.body || packet.title || "",
+        source: packet.community || packet.source_id || "source",
+        author: packet.author_ref || "anonymous",
+        age: packet.age || relativeAge(packet.published_at),
+        score: metrics.score ?? metrics.upvotes ?? 0,
+        replies: metrics.comments ?? metrics.replies ?? 0,
+        url: packet.url || "#",
+        sourceKind: packet.source_kind || inferSourceKind(packet.source_item_id),
+        sourceLayer: packet.source_layer || "conversation",
+        packet
+      };
+    }
+
+    function inferSourceKind(sourceItemId = "") {
+      if (sourceItemId.startsWith("t1_")) return "comment";
+      if (sourceItemId.startsWith("t3_")) return "post";
+      return "source";
+    }
+
+    function relativeAge(isoDate) {
+      if (!isoDate) return "replay";
+      const then = new Date(isoDate).getTime();
+      if (Number.isNaN(then)) return "replay";
+      const days = Math.max(0, Math.round((Date.now() - then) / 86400000));
+      return days <= 0 ? "today" : `${days}d`;
+    }
+
+    function hydrateSignalEvidence(signal, evidencePacketsById) {
+      const evidence = signal.evidence || [];
+      signal.evidence = evidence.map((item) => {
+        if (typeof item === "string") {
+          const packet = evidencePacketsById.get(item);
+          return packet ? evidencePacketToDetail(packet) : { id: item, quote: "Missing evidence packet", source: "fixture", author: "system", age: "missing", score: 0, replies: 0, url: "#" };
+        }
+        if (item && item.packet_id) {
+          const packet = evidencePacketsById.get(item.packet_id);
+          return packet ? { ...evidencePacketToDetail(packet), ...item } : item;
+        }
+        return item;
+      });
+      return signal;
+    }
+
+    function hydrateSignalsFromEvidencePackets(nextSignals, evidencePackets = []) {
+      const evidencePacketsById = new Map(evidencePackets.map((packet) => [packet.id, packet]));
+      return nextSignals.map((signal) => hydrateSignalEvidence(signal, evidencePacketsById));
+    }
+
+    function applyFixture(fixtureId, shouldRender = false) {
+      const fixture = fixtureLibrary.find((item) => item.id === fixtureId) || defaultFixture;
+      activeFixtureId = fixture.id;
+      signals = hydrateSignalsFromEvidencePackets(cloneData(fixture.signals || defaultFixture.signals), cloneData(fixture.evidencePackets || []));
+      otherBubbles = cloneData(fixture.otherBubbles || defaultFixture.otherBubbles);
+      metrics = cloneData(fixture.metrics || defaultFixture.metrics);
+      timeline = cloneData(fixture.timeline || defaultFixture.timeline);
+      heatmap = cloneData(fixture.heatmap || defaultFixture.heatmap);
+      intent = cloneData(fixture.intent || defaultFixture.intent);
+      evidenceLayers = cloneData(fixture.evidenceLayers || defaultFixture.evidenceLayers);
+      sourceNodes = cloneData(fixture.sourceNodes || defaultFixture.sourceNodes);
+      selectedId = fixture.selectedId || signals[0]?.id || selectedId;
+      enabledNodes = new Set(sourceNodes.filter((node) => node.state === "enabled").map((node) => node.id));
+
+      document.getElementById("crumbs").textContent = fixture.crumbs || defaultFixture.crumbs;
+      document.getElementById("topicSummary").textContent = `${fixture.topicCount || signals.length} topics detected - ${fixture.period || "last 30d"}`;
+      const contextSelect = document.querySelector(".context-select");
+      if (contextSelect && fixture.context) {
+        const existing = Array.from(contextSelect.options).find((option) => option.value === fixture.context);
+        if (!existing) {
+          contextSelect.add(new Option(fixture.context, fixture.context));
+        }
+        contextSelect.value = fixture.context;
+      }
+
+      const searchInput = document.getElementById("searchInput");
+      if (searchInput) searchInput.value = "";
+
+      if (shouldRender) {
+        renderAll();
+      }
+    }
+
+    function selectedSignal() {
+      return signals.find((signal) => signal.id === selectedId) || signals[0];
+    }
+
+    function tagHtml(tag) {
+      const meta = categories[tag];
+      return `<span class="tag ${tag}">${meta ? meta.label : tag}</span>`;
+    }
+
+    function linePoints(values, width, height, pad = 8) {
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const span = max - min || 1;
+      return values.map((value, index) => {
+        const x = pad + index * ((width - pad * 2) / (values.length - 1));
+        const y = height - pad - ((value - min) / span) * (height - pad * 2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(" ");
+    }
+
+    function renderMetrics() {
+      const root = document.getElementById("metrics");
+      root.innerHTML = metrics.map((metric) => `
+        <div class="metric">
+          <div class="metric-title">${metric.title}</div>
+          <div class="metric-value-row">
+            <div class="metric-number">${metric.value}</div>
+            <span class="delta">${metric.delta}</span>
+          </div>
+          <div class="metric-caption">
+            <span>${metric.caption}</span>
+            <svg class="spark" viewBox="0 0 94 28" aria-hidden="true">
+              <polyline points="${linePoints(metric.spark, 94, 28, 2)}" fill="none" stroke="#3e9558" stroke-width="1.7"></polyline>
+              <path d="M2 26 L${linePoints(metric.spark, 94, 28, 2).split(" ").join(" L")} L92 26 Z" fill="rgba(62,149,88,.10)"></path>
+            </svg>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderBubbleChart() {
+      const svg = document.getElementById("bubbleSvg");
+      const width = 860;
+      const height = 526;
+      svg.innerHTML = `
+        <line x1="430" y1="0" x2="430" y2="${height}" stroke="#dfe4ea"></line>
+        <line x1="0" y1="263" x2="${width}" y2="263" stroke="#dfe4ea"></line>
+      `;
+
+      otherBubbles.forEach((bubble) => {
+        const node = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        node.setAttribute("cx", bubble.x);
+        node.setAttribute("cy", bubble.y);
+        node.setAttribute("r", bubble.r);
+        node.setAttribute("fill", bubble.color);
+        node.setAttribute("fill-opacity", bubble.opacity);
+        node.setAttribute("stroke", bubble.color);
+        node.setAttribute("stroke-dasharray", "3 3");
+        svg.appendChild(node);
+      });
+
+      signals.forEach((signal) => {
+        const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        group.setAttribute("data-signal", signal.id);
+        group.setAttribute("class", `bubble ${signal.id === selectedId ? "selected" : ""}`);
+        const color = categories[signal.tags[0]].color;
+        const fill = categories[signal.tags[0]].soft;
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", signal.x);
+        circle.setAttribute("cy", signal.y);
+        circle.setAttribute("r", signal.r);
+        circle.setAttribute("fill", fill);
+        circle.setAttribute("fill-opacity", signal.id === selectedId ? ".9" : ".62");
+        circle.setAttribute("stroke", color);
+        circle.setAttribute("stroke-width", signal.id === selectedId ? "2.2" : "1.2");
+        group.appendChild(circle);
+
+        if (signal.rank <= 4) {
+          const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          label.setAttribute("x", signal.x - 92);
+          label.setAttribute("y", signal.y - signal.r - 12);
+          label.setAttribute("class", "bubble-label");
+          label.textContent = signal.title;
+          group.appendChild(label);
+
+          const meta = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          meta.setAttribute("x", signal.x - 92);
+          meta.setAttribute("y", signal.y - signal.r + 4);
+          meta.setAttribute("class", "bubble-meta");
+          meta.textContent = `vol ${signal.volume} · ${signal.confidence.toLowerCase()}`;
+          group.appendChild(meta);
+        }
+
+        group.addEventListener("click", () => {
+          selectedId = signal.id;
+          renderAll();
+        });
+        svg.appendChild(group);
+      });
+    }
+
+    function renderSignalList() {
+      const list = document.getElementById("signalList");
+      list.innerHTML = signals.map((signal) => `
+        <article class="signal-item ${signal.id === selectedId ? "selected" : ""}" data-signal="${signal.id}">
+          <div class="signal-top">
+            <span><span class="rank">#${String(signal.rank).padStart(2, "0")}</span> <span class="signal-state">${signal.status}</span></span>
+            <span class="signal-growth">${signal.growth}</span>
+          </div>
+          <div class="signal-title">${signal.title}</div>
+          <div class="tags">${signal.tags.map(tagHtml).join("")}</div>
+          <div class="signal-summary">${signal.summary}</div>
+          <div class="signal-meta">
+            <span>${signal.communities.join(" · ")}</span>
+            <span class="confidence"><span class="bars"><i></i><i></i><i style="opacity:${signal.confidence === "High" ? "1" : ".32"}"></i></span>${signal.confidence}</span>
+          </div>
+        </article>
+      `).join("");
+
+      list.querySelectorAll(".signal-item").forEach((item) => {
+        item.addEventListener("click", () => {
+          selectedId = item.dataset.signal;
+          renderAll();
+        });
+      });
+    }
+
+    function renderLineChart() {
+      const svg = document.getElementById("timelineSvg");
+      svg.innerHTML = "";
+      const width = 430;
+      const height = 142;
+      [0, 34, 69].forEach((value, index) => {
+        const y = 126 - index * 48;
+        svg.innerHTML += `<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="#edf1f5"></line><text x="0" y="${y - 4}" fill="#9aa3ad" font-size="9">${value}</text>`;
+      });
+      svg.innerHTML += `
+        <rect x="236" y="12" width="194" height="116" fill="rgba(62,149,88,.07)"></rect>
+        <text x="242" y="21" fill="#3e9558" font-size="9" font-weight="700">ACCELERATION - DAY 18</text>
+        <polyline points="${linePoints(timeline.posts, width, height, 18)}" fill="none" stroke="#2d6fbb" stroke-width="2"></polyline>
+        <polyline points="${linePoints(timeline.comments, width, height, 18)}" fill="none" stroke="#111820" stroke-width="2"></polyline>
+        <polyline points="${linePoints(timeline.authors, width, height, 18)}" fill="none" stroke="#3e9558" stroke-width="1.7" stroke-dasharray="4 4"></polyline>
+      `;
+    }
+
+    function renderHeatmap() {
+      const svg = document.getElementById("heatmapSvg");
+      svg.innerHTML = "";
+      const cellW = 54;
+      const cellH = 22;
+      const max = Math.max(...heatmap.flatMap((row) => row[1]));
+      ["W1", "W2", "W3", "W4"].forEach((label, index) => {
+        svg.innerHTML += `<text x="${112 + index * cellW + 22}" y="11" text-anchor="middle" fill="#68717d" font-size="9">${label}</text>`;
+      });
+      heatmap.forEach(([label, values], row) => {
+        const y = 23 + row * cellH;
+        svg.innerHTML += `<text x="0" y="${y + 15}" fill="#3a444f" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">${label}</text>`;
+        values.forEach((value, col) => {
+          const opacity = .12 + (value / max) * .78;
+          const x = 112 + col * cellW;
+          svg.innerHTML += `<rect x="${x}" y="${y}" width="${cellW - 2}" height="${cellH - 2}" fill="#2d6fbb" fill-opacity="${opacity.toFixed(2)}"></rect>`;
+          svg.innerHTML += `<text x="${x + 25}" y="${y + 14}" text-anchor="middle" fill="${opacity > .55 ? "#fff" : "#334155"}" font-size="10">${value}</text>`;
+        });
+      });
+    }
+
+    function renderIntentBars() {
+      const root = document.getElementById("intentBars");
+      root.innerHTML = intent.map(([label, value, color]) => `
+        <div class="intent-row">
+          <span><i class="dot" style="background:${color}"></i>${label}</span>
+          <div class="intent-track"><div class="intent-fill" style="background:${color};width:${value}%"></div></div>
+          <span>${value}%</span>
+        </div>
+      `).join("");
+    }
+
+    function activeNodeNamesForLayer(layerId) {
+      return sourceNodes
+        .filter((node) => enabledNodes.has(node.id) && node.layers.includes(layerId))
+        .map((node) => node.name);
+    }
+
+    function layerStatus(layer) {
+      const candidates = sourceNodes.filter((node) => node.layers.includes(layer.id));
+      const active = candidates.filter((node) => enabledNodes.has(node.id));
+      if (active.length) {
+        return {
+          state: "active",
+          label: "active",
+          note: `${active.map((node) => node.name).join(" + ")} supplying ${layer.label.toLowerCase()} evidence.`
+        };
+      }
+
+      const available = candidates.filter((node) => node.state !== "gated");
+      if (available.length) {
+        return {
+          state: "available",
+          label: "available",
+          note: `${available.map((node) => node.name).join(" / ")} can add this layer.`
+        };
+      }
+
+      const gated = candidates.filter((node) => node.state === "gated");
+      if (gated.length) {
+        return {
+          state: "gated",
+          label: "gated",
+          note: `${gated.map((node) => node.name).join(" / ")} needs access before this layer can be used.`
+        };
+      }
+
+      return {
+        state: "missing",
+        label: "missing",
+        note: "No configured local node currently provides this layer."
+      };
+    }
+
+    function nodeVisualState(node) {
+      if (enabledNodes.has(node.id)) return "enabled";
+      return node.state;
+    }
+
+    function recommendationScore(node, signal) {
+      const text = `${signal.title} ${signal.summary} ${signal.next} ${signal.tags.join(" ")}`.toLowerCase();
+      let score = node.lift;
+      if (text.includes("google") && node.id === "google-search") score += 12;
+      if (text.includes("search") && node.id === "google-search") score += 6;
+      if (text.includes("g2") && node.id === "g2-jobs") score += 8;
+      if (text.includes("jobs") && node.id === "g2-jobs") score += 8;
+      if (text.includes("github") && node.id === "github") score += 8;
+      if (text.includes("primary") && node.id === "primary") score += 8;
+      if (text.includes("vendor") && node.id === "primary") score += 5;
+      if (signal.tags.includes("comparison") && node.id === "google-search") score += 7;
+      if (signal.tags.includes("economic") && node.layers.includes("economic")) score += 8;
+      if (signal.tags.includes("adoption") && node.id === "github") score += 3;
+      if (signal.tags.includes("narrative") && node.id === "primary") score += 4;
+      if (node.state === "gated") score -= 4;
+      return score;
+    }
+
+    function recommendationReason(node, signal) {
+      if (node.id === "google-search") {
+        return "Validates whether Reddit pain has turned into active discovery, comparison, or vendor-search intent.";
+      }
+      if (node.id === "primary") {
+        return "Checks official claims, policies, filings, docs, and vendor pages so the signal is not only social interpretation.";
+      }
+      if (node.id === "github") {
+        return "Looks for developer behavior and implementation artifacts that would move the signal beyond conversation.";
+      }
+      if (node.id === "g2-jobs") {
+        return "Adds buyer reviews and hiring commitment, which are stronger but later economic validation layers.";
+      }
+      if (node.id === "hacker-news") {
+        return "Adds technical skepticism and builder-facing corroboration when the category is developer or AI-tooling heavy.";
+      }
+      if (node.id === "polymarket") {
+        return "Adds money-backed expectation movement when the signal maps to an event or forecastable market.";
+      }
+      if (node.id === "stocks") {
+        return "Adds public-market response when the signal maps to listed companies, ETFs, or sectors.";
+      }
+      if (node.id === "google-trends") {
+        return "Adds broad demand direction, but it may miss small early signals and needs access handling.";
+      }
+      return node.adds;
+    }
+
+    function rankedRecommendations(signal) {
+      return sourceNodes
+        .filter((node) => !enabledNodes.has(node.id))
+        .map((node) => ({ node, score: recommendationScore(node, signal) }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 4);
+    }
+
+    function toggleNode(nodeId) {
+      const node = sourceNodes.find((item) => item.id === nodeId);
+      if (!node || node.state === "gated") return;
+      if (enabledNodes.has(nodeId)) {
+        enabledNodes.delete(nodeId);
+      } else {
+        enabledNodes.add(nodeId);
+      }
+      renderControlPlane();
+      renderDetail();
+    }
+
+    function renderControlPlane() {
+      const signal = selectedSignal();
+      const activeLayers = evidenceLayers.filter((layer) => activeNodeNamesForLayer(layer.id).length);
+      document.getElementById("coverageCaption").textContent = `${activeLayers.length}/${evidenceLayers.length} active for selected signal`;
+
+      document.getElementById("layerLadder").innerHTML = evidenceLayers.map((layer) => {
+        const status = layerStatus(layer);
+        const mark = status.state === "active" ? "✓" : status.state === "available" ? "+" : status.state === "gated" ? "!" : "-";
+        return `
+          <div class="layer-row ${status.state}">
+            <span class="layer-mark">${mark}</span>
+            <div>
+              <div class="layer-name">${layer.label}</div>
+              <div class="layer-note">${status.note}</div>
+            </div>
+            <span class="layer-status">${status.label}</span>
+          </div>
+        `;
+      }).join("");
+
+      document.getElementById("sourceNodeGrid").innerHTML = sourceNodes.map((node) => {
+        const visualState = nodeVisualState(node);
+        const action = node.state === "gated" ? "access" : enabledNodes.has(node.id) ? "disable" : "enable";
+        return `
+          <button class="source-node ${visualState}" type="button" data-node="${node.id}" ${node.state === "gated" ? "aria-disabled=\"true\"" : ""}>
+            <span class="node-top">
+              <span class="node-title">${node.name}</span>
+              <span class="node-state">${visualState}</span>
+            </span>
+            <span class="node-meta">${node.adds}</span>
+            <span class="node-layers">${node.layers.map((layer) => `<span class="mini-chip">${layer}</span>`).join("")}</span>
+            <span class="node-meta">${action} node</span>
+          </button>
+        `;
+      }).join("");
+
+      document.querySelectorAll(".source-node").forEach((nodeButton) => {
+        nodeButton.addEventListener("click", () => toggleNode(nodeButton.dataset.node));
+      });
+
+      document.getElementById("recommendationList").innerHTML = rankedRecommendations(signal).map(({ node, score }, index) => {
+        const gated = node.state === "gated";
+        return `
+          <article class="recommendation ${index === 0 ? "best" : ""}">
+            <div class="rec-top">
+              <div class="rec-title">${index + 1}. ${node.name}</div>
+              <div class="rec-lift">+${Math.max(1, Math.round(score))} pts</div>
+            </div>
+            <div class="rec-reason">${recommendationReason(node, signal)}</div>
+            <div class="rec-action">
+              <span>${node.layers.join(" + ")} · ${gated ? "access needed" : "available now"}</span>
+              <button type="button" data-node="${node.id}" ${gated ? "disabled" : ""}>${gated ? "Access" : "Enable"}</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+
+      document.querySelectorAll(".recommendation button:not([disabled])").forEach((button) => {
+        button.addEventListener("click", () => toggleNode(button.dataset.node));
+      });
+    }
+
+    function scoreComponents(signal) {
+      const activeLayerCount = evidenceLayers.filter((layer) => activeNodeNamesForLayer(layer.id).length).length;
+      const phraseWeight = signal.phrases.reduce((sum, phrase) => sum + phrase[1], 0);
+      return [
+        ["Repetition", Math.min(100, Math.round(signal.mentions * 4.3))],
+        ["Pain intensity", Math.min(100, signal.tags.includes("frustration") ? 82 : signal.tags.includes("demand") ? 74 : 62)],
+        ["Cross-community", Math.min(100, signal.communities.length * 24)],
+        ["Tool request", Math.min(100, Math.round(phraseWeight / 1.7))],
+        ["Engagement quality", Math.min(100, Math.round(signal.comments / 1.65))],
+        ["Freshness", Math.max(42, 96 - signal.rank * 8)],
+        ["Missing evidence penalty", Math.max(8, 78 - activeLayerCount * 10)]
+      ];
+    }
+
+    function renderDetail() {
+      const signal = selectedSignal();
+      document.getElementById("detailKicker").innerHTML = `SIGNAL DETAIL · first detected Mar 28 2026 · <span style="color:var(--green);font-family:inherit;font-weight:760">${signal.status}</span>`;
+      document.getElementById("detailTitle").textContent = signal.title;
+      document.getElementById("detailTags").innerHTML = signal.tags.map(tagHtml).join("") + ` <span class="confidence"><span class="bars"><i></i><i></i><i style="opacity:${signal.confidence === "High" ? "1" : ".32"}"></i></span>${signal.confidence} confidence</span>`;
+      document.getElementById("momentumText").textContent = `${signal.growth} vs 14-day rolling baseline`;
+      document.getElementById("drivenBy").textContent = `${(signal.volume / 100).toFixed(1)}x post volume · ${signal.communities.length} communities`;
+      document.getElementById("whyBox").textContent = signal.why;
+      document.getElementById("detailSpark").innerHTML = `<polyline points="${linePoints([3, 4, 4, 5, 6, 8, 11, 15, 22], 120, 28, 2)}" fill="none" stroke="#3e9558" stroke-width="1.7"></polyline>`;
+
+      document.getElementById("evidenceList").innerHTML = signal.evidence.map((item) => {
+        const hasSourceUrl = item.url && item.url !== "#";
+        const sourceKind = item.sourceKind || inferSourceKind(item.packet?.source_item_id || "");
+        return `
+          <article class="evidence">
+            <div class="evidence-id">${item.id}</div>
+            <div>
+              <div class="quote">"${item.quote}"</div>
+              <div class="evidence-meta"><span class="source-kind">${sourceKind}</span>${item.source} · ${item.author} · ${item.age} · ▲ ${item.score} · ${item.replies} replies</div>
+            </div>
+            ${hasSourceUrl ? `<a class="open-link" href="${item.url}" target="_blank" rel="noreferrer">source ›</a>` : `<span class="open-link replay-link">replay</span>`}
+          </article>
+        `;
+      }).join("");
+
+      document.getElementById("phraseGrid").innerHTML = signal.phrases.map(([label, count]) => `<span class="phrase">${label} <b>${count}</b></span>`).join("");
+      document.getElementById("communityBars").innerHTML = signal.spread.map(([label, value]) => `
+        <div class="community-row">
+          <span>${label}</span>
+          <div class="community-track"><div class="community-fill" style="width:${value}%"></div></div>
+          <span>${value}%</span>
+        </div>
+      `).join("");
+      document.getElementById("relatedSignals").innerHTML = signal.related.map(([label, tag, score]) => `
+        <div class="related-row">
+          <i class="dot" style="background:${categories[tag]?.color || "#68717d"}"></i>
+          <span>${label}</span>
+          <span>${score} ›</span>
+        </div>
+      `).join("");
+      document.getElementById("scoreComponents").innerHTML = scoreComponents(signal).map(([label, value]) => `
+        <div class="score-row">
+          <span class="score-label">${label}</span>
+          <div class="score-track"><div class="score-fill" style="width:${value}%"></div></div>
+          <span class="score-value">${value}</span>
+        </div>
+      `).join("");
+      document.getElementById("suggestTitle").textContent = signal.suggested.title;
+      document.getElementById("suggestSub").textContent = `${signal.suggested.sub} ${signal.next}`;
+    }
+
+    function renderAll() {
+      renderMetrics();
+      renderBubbleChart();
+      renderSignalList();
+      renderLineChart();
+      renderHeatmap();
+      renderIntentBars();
+      renderControlPlane();
+      renderDetail();
+    }
+
+    document.getElementById("searchInput").addEventListener("input", (event) => {
+      const term = event.target.value.trim().toLowerCase();
+      const items = document.querySelectorAll(".signal-item");
+      items.forEach((item) => {
+        const haystack = item.textContent.toLowerCase();
+        item.style.display = haystack.includes(term) ? "grid" : "none";
+      });
+    });
+
+    setupFixtureSelector();
+    applyFixture(activeFixtureId);
+    renderAll();
+  </script>
+</body>
+</html>

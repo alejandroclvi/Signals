@@ -1,0 +1,48 @@
+<aside class="sidebar">
+  <div class="brand">
+    <div class="mark">S</div>
+    <div>
+      <div class="brand-title">Signals</div>
+      <div class="brand-sub">Intelligence</div>
+    </div>
+  </div>
+
+  <div class="context-box">
+    <div class="eyebrow">Active context</div>
+    <select class="context-select" id="contextSelect" aria-label="Active context">
+      <% for (const ctx of contexts) { %>
+        <option value="<%= ctx.id %>" <%= ctx.id === activeContext.id ? 'selected' : '' %>><%= ctx.label %></option>
+      <% } %>
+    </select>
+    <button class="context-add" type="button" id="btnNewContext" title="New context">+</button>
+  </div>
+
+  <nav class="nav-block" aria-label="Workspace">
+    <div class="nav-label">Workspace</div>
+    <a class="nav-item<%= page === 'radar' ? ' active' : '' %>" href="/?context=<%= activeContext.id %>">
+      <span class="nav-icon">&#9678;</span><span>Radar</span><span></span>
+    </a>
+    <a class="nav-item<%= page === 'evidence' ? ' active' : '' %>" href="/evidence?context=<%= activeContext.id %>">
+      <span class="nav-icon">&#9636;</span><span>Evidence Library</span><span class="nav-count"><%= stats.evidence %></span>
+    </a>
+    <a class="nav-item" href="/?context=<%= activeContext.id %>">
+      <span class="nav-icon">&#8801;</span><span>Watchlist</span><span class="nav-count"><%= stats.saved %></span>
+    </a>
+    <a class="nav-item" href="/?context=<%= activeContext.id %>">
+      <span class="nav-icon">#</span><span>Communities</span><span class="nav-count"><%= stats.communities %></span>
+    </a>
+    <div class="nav-label" style="padding-top:26px;">Account</div>
+    <a class="nav-item" href="/?context=<%= activeContext.id %>">
+      <span class="nav-icon">&#9881;</span><span>Settings</span><span></span>
+    </a>
+  </nav>
+
+  <div class="account">
+    <div class="avatar">MK</div>
+    <div>
+      <div class="account-name">Maya K.</div>
+      <div class="account-org">Harbor Research</div>
+    </div>
+    <span>&#8250;</span>
+  </div>
+</aside>
