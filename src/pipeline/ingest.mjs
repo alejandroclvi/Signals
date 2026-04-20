@@ -72,7 +72,14 @@ export async function ingestReddit(options) {
   // 2b. Fetch comments for high-engagement posts
   const COMMENT_THRESHOLD = 5;
   const COMMENT_LIMIT = 8;
-  const highEngagement = rawPosts.filter(p => (p.num_comments || 0) >= COMMENT_THRESHOLD);
+  // Deduplicate by permalink to avoid fetching comments for the same post twice
+  const seenPermalinks = new Set();
+  const highEngagement = rawPosts.filter(p => {
+    if ((p.num_comments || 0) < COMMENT_THRESHOLD || !p.permalink) return false;
+    if (seenPermalinks.has(p.permalink)) return false;
+    seenPermalinks.add(p.permalink);
+    return true;
+  });
 
   if (highEngagement.length > 0) {
     if (onProgress) onProgress({ stage: "comments", message: "Fetching comments for " + highEngagement.length + " high-engagement posts..." });

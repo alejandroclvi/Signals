@@ -81,6 +81,9 @@ export function extractSignals(evidencePackets, contextId) {
     if (packets.length >= 3 && communities.length >= 2) confidence = "Medium";
     if (packets.length >= 6 && communities.length >= 3 && authors.length >= 4) confidence = "High";
 
+    // Classify signal tags once
+    const tags = classifyTags(packets);
+
     // Bubble position — higher rank = upper-right quadrant
     const x = Math.min(780, 400 + Math.round(packets.length * 18 + communities.length * 30));
     const y = Math.max(60, 400 - Math.round(packets.length * 22 + totalComments * 0.3));
@@ -93,7 +96,7 @@ export function extractSignals(evidencePackets, contextId) {
       status,
       title: group.topic,
       growth: "+ live",
-      tags: JSON.stringify(classifyTags(packets)),
+      tags: JSON.stringify(tags),
       summary: buildSummary(group.topic, packets, communities),
       communities: JSON.stringify(communities),
       mentions: packets.length,
@@ -105,7 +108,7 @@ export function extractSignals(evidencePackets, contextId) {
         authors.length + " unique authors.",
       suggested_title: "Suggested action",
       suggested_sub: "Inspect evidence and enable additional sources for corroboration.",
-      next_source: recommendNextSource(classifyTags(packets)),
+      next_source: recommendNextSource(tags),
       bubble_x: x,
       bubble_y: y,
       bubble_r: r,

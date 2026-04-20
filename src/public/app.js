@@ -494,12 +494,30 @@ function renderDetail() {
     '</div>';
   }).join("");
 
-  // Evidence layer coverage
+  // Evidence layer coverage — based on actual evidence, not just enabled sources
   var layerCoverageEl = document.getElementById("layerCoverage");
   if (layerCoverageEl) {
-    var activeLayers = evidenceLayers.filter(function(layer) { return activeNodeNamesForLayer(layer.id).length; });
+    // Check which layers have real evidence for this signal
+    var evidenceSourceLayers = new Set();
+    if (signal.evidence) {
+      signal.evidence.forEach(function(e) {
+        // Evidence items from fixtures have source as community name;
+        // look up the source node to find its layer
+        sourceNodes.forEach(function(node) {
+          if (node.name === e.source || node.id.split(":")[0] === e.source) {
+            node.layers.forEach(function(l) { evidenceSourceLayers.add(l); });
+          }
+        });
+      });
+    }
+    // Also include layers from enabled source nodes (they could provide evidence)
+    evidenceLayers.forEach(function(layer) {
+      if (activeNodeNamesForLayer(layer.id).length) {
+        evidenceSourceLayers.add(layer.id);
+      }
+    });
     layerCoverageEl.innerHTML = evidenceLayers.map(function(layer) {
-      var covered = activeLayers.some(function(l) { return l.id === layer.id; });
+      var covered = evidenceSourceLayers.has(layer.id);
       return '<span class="layer-chip ' + (covered ? "covered" : "missing") + '">' +
         (covered ? "\u2713 " : "\u2013 ") + layer.label +
       '</span>';

@@ -80,7 +80,7 @@ export function normalizeRedditComment(comment, contextId) {
     : postPermalink ? "https://www.reddit.com" + postPermalink : "#";
 
   const parentTopic = comment._topic || "comment";
-  const queryId = stableId(parentTopic);
+  const queryId = stableId(parentTopic) || "general";
 
   return {
     id: "reddit:" + queryId + ":comment:" + sourceItemId,
