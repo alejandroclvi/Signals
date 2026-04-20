@@ -1,18 +1,24 @@
 /**
- * Ingest orchestrator — runs the full pipeline:
- *   fetch → normalize → write evidence → extract signals → score → write signals
+ * Ingest orchestrator — runs the full pipeline through 4 stages:
+ *   collect → classify → extract → validate
+ *
+ * Each stage has a quality gate. Pipeline run metadata is stored
+ * for observability. Same external signature as before.
  *
  * Can be called from the API or CLI.
  */
 
 import { getDb } from "../db/connection.mjs";
-import { fetchReddit, fetchPostComments } from "./fetchers/reddit.mjs";
-import { normalizeRedditPosts, normalizeRedditComments } from "./normalizer.mjs";
-import { extractSignals } from "./signal-extractor.mjs";
-import { scoreSignal, confidenceFromScore } from "./scorer.mjs";
+import { collect } from "./stages/collect.mjs";
+import { classify } from "./stages/classify.mjs";
+import { extract } from "./stages/extract.mjs";
+import { validate } from "./stages/validate.mjs";
 import crypto from "node:crypto";
 
-const DELAY_MS = 1200;
+function safeParseJson(value, fallback) {
+  if (typeof value === "object" && value !== null) return value;
+  try { return JSON.parse(value); } catch { return fallback; }
+}
 
 /**
  * Run a Reddit ingestion for a given context.
@@ -25,11 +31,13 @@ const DELAY_MS = 1200;
  *   sort - Reddit sort order (default "new")
  *   onProgress - callback for progress updates
  *
- * Returns { evidenceCount, signalCount, errors }
+ * Returns { evidenceCount, signalCount, errors, runId }
  */
 export async function ingestReddit(options) {
   const db = getDb();
   const { contextId, onProgress } = options;
+  const runId = crypto.randomUUID();
+  const startedAt = new Date().toISOString();
 
   // Load context config
   const context = db.prepare("SELECT * FROM contexts WHERE id = ?").get(contextId);
@@ -38,38 +46,17 @@ export async function ingestReddit(options) {
   const subreddits = options.subreddits || safeParseJson(context.subreddits, []);
   const queries = options.queries || safeParseJson(context.queries, []);
 
-  if (!subreddits.length || !queries.length) {
-    throw new Error("Context has no subreddits or queries configured");
+  if (!queries.length) {
+    throw new Error("Context has no queries configured");
   }
 
-  // Clean subreddit names (remove r/ prefix if present)
-  const cleanSubs = subreddits.map(s => s.replace(/^r\//, ""));
+  // Discovery mode: empty subreddits = search all of Reddit
+  // The fetcher handles null subreddits by using Reddit's global search
+  const cleanSubs = subreddits.length > 0
+    ? subreddits.map(s => s.replace(/^r\//, ""))
+    : [];
 
-  const errors = [];
-
-  // 1. Fetch
-  if (onProgress) onProgress({ stage: "fetch", message: "Fetching from Reddit..." });
-
-  const rawPosts = await fetchReddit({
-    subreddits: cleanSubs,
-    queries,
-    limitPerQuery: options.limitPerQuery || 12,
-    sort: options.sort || "new",
-    onProgress: (info) => {
-      if (info.error) errors.push(info.error);
-      if (onProgress) onProgress({ stage: "fetch", ...info });
-    },
-  });
-
-  if (!rawPosts.length) {
-    return { evidenceCount: 0, signalCount: 0, errors };
-  }
-
-  // 2. Normalize
-  if (onProgress) onProgress({ stage: "normalize", message: "Normalizing " + rawPosts.length + " posts..." });
-  const allNormalized = normalizeRedditPosts(rawPosts, contextId);
-
-  // 2a. Skip evidence we already have (resume support)
+  // Resume support: load existing evidence IDs
   const existingIds = new Set(
     db.prepare("SELECT id FROM evidence_packets WHERE context_id = ?")
       .all(contextId).map(r => r.id)
@@ -79,72 +66,45 @@ export async function ingestReddit(options) {
       .all(contextId).map(r => r.source_item_id)
   );
 
-  const evidencePackets = allNormalized.filter(ep => !existingIds.has(ep.id));
-  const skippedPosts = allNormalized.length - evidencePackets.length;
-  if (skippedPosts > 0 && onProgress) {
-    onProgress({ stage: "normalize", message: "Skipped " + skippedPosts + " already-ingested posts, " + evidencePackets.length + " new" });
-  }
+  const stageResults = {};
+  const qualityGates = {};
+  let allErrors = [];
 
-  // 2b. Fetch comments for high-engagement posts (skip posts we already have comments for)
-  const COMMENT_THRESHOLD = 5;
-  const COMMENT_LIMIT = 8;
-  const seenPermalinks = new Set();
-  const highEngagement = rawPosts.filter(p => {
-    if ((p.num_comments || 0) < COMMENT_THRESHOLD || !p.permalink) return false;
-    if (seenPermalinks.has(p.permalink)) return false;
-    seenPermalinks.add(p.permalink);
-    // Skip if we already have comments for this post (source_item_id starts with t1_ for comments, but we check if the post's own ID is already known)
-    const postItemId = p.name || ("t3_" + p.id);
-    if (existingSourceItems.has(postItemId) && skippedPosts > 0) return false;
-    return true;
+  // --- Stage 1: Collection ---
+  const collected = await collect({
+    contextId, subreddits: cleanSubs, queries,
+    limitPerQuery: options.limitPerQuery, sort: options.sort,
+    existingIds, existingSourceItems, onProgress,
   });
+  stageResults.collection = collected.stats;
+  qualityGates.collection = collected.gate;
+  allErrors = allErrors.concat(collected.errors || []);
 
-  if (highEngagement.length > 0) {
-    if (onProgress) onProgress({ stage: "comments", message: "Fetching comments for " + highEngagement.length + " high-engagement posts..." });
-
-    const seenHashes = new Set(evidencePackets.map(ep => ep.content_hash));
-    let commentsFetched = 0;
-
-    for (const post of highEngagement) {
-      if (!post.permalink) continue;
-      const comments = await fetchPostComments(post.permalink, {
-        limit: COMMENT_LIMIT,
-        onProgress: (info) => {
-          if (info.error) errors.push(info.error);
-        },
-      });
-
-      if (comments.length > 0) {
-        for (const c of comments) {
-          c._topic = post._subreddit_query || "";
-          c.link_title = post.title || "";
-        }
-        const commentPackets = normalizeRedditComments(comments, contextId, seenHashes);
-        // Filter out comments we already have
-        const newComments = commentPackets.filter(ep => !existingIds.has(ep.id));
-        evidencePackets.push(...newComments);
-        commentsFetched += newComments.length;
-      }
-
-      await new Promise(r => setTimeout(r, DELAY_MS));
-    }
-
-    if (onProgress) onProgress({ stage: "comments", message: commentsFetched + " new comments, " + evidencePackets.length + " total new evidence" });
-  }
-
-  // 3. Write evidence to SQLite
-  if (onProgress) onProgress({ stage: "store", message: "Storing " + evidencePackets.length + " evidence packets..." });
-
-  if (!evidencePackets.length) {
+  if (!collected.output.evidencePackets.length) {
+    finishRun(db, runId, contextId, startedAt, stageResults, qualityGates, 0, 0, 0, "completed");
     if (onProgress) onProgress({ stage: "done", message: "No new evidence to ingest." });
-    return { evidenceCount: 0, signalCount: 0, errors };
+    return { evidenceCount: 0, signalCount: 0, errors: allErrors, runId };
   }
+
+  // --- Stage 2: Classification ---
+  const classified = classify({
+    evidencePackets: collected.output.evidencePackets,
+    onProgress,
+  });
+  stageResults.classification = classified.stats;
+  qualityGates.classification = classified.gate;
+
+  const evidencePackets = classified.output.evidencePackets;
+
+  // --- Write evidence to SQLite ---
+  if (onProgress) onProgress({ stage: "store", message: "Storing " + evidencePackets.length + " evidence packets..." });
 
   const insertEvidence = db.prepare(
     `INSERT OR IGNORE INTO evidence_packets
      (id, context_id, source_id, source_layer, source_item_id, url, title, body,
-      author_ref, community, observed_at, published_at, metrics, topics, raw_ref, content_hash, intent)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      author_ref, community, observed_at, published_at, metrics, topics, raw_ref, content_hash,
+      intent, awareness_level, evidence_weight, quality_score, pipeline_run_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
 
   const writeEvidence = db.transaction(() => {
@@ -153,15 +113,14 @@ export async function ingestReddit(options) {
         ep.id, ep.context_id, ep.source_id, ep.source_layer, ep.source_item_id,
         ep.url, ep.title, ep.body, ep.author_ref, ep.community,
         ep.observed_at, ep.published_at, ep.metrics, ep.topics, ep.raw_ref, ep.content_hash,
-        ep.intent || "question"
+        ep.intent || "question", ep.awareness_level || "problem_aware", ep.evidence_weight || 1.0,
+        ep.quality_score || null, runId
       );
     }
   });
   writeEvidence();
 
-  // 4. Extract signals from ALL evidence in this context (cumulative)
-  if (onProgress) onProgress({ stage: "extract", message: "Extracting signals from all evidence..." });
-
+  // --- Stage 3: Extraction (from ALL evidence in context, cumulative) ---
   const allEvidence = db.prepare(
     "SELECT * FROM evidence_packets WHERE context_id = ?"
   ).all(contextId).map(row => ({
@@ -172,25 +131,29 @@ export async function ingestReddit(options) {
 
   if (onProgress) onProgress({ stage: "extract", message: "Extracting signals from " + allEvidence.length + " total packets..." });
 
-  const { signals, signalEvidence } = extractSignals(allEvidence, contextId);
+  const extracted = extract({
+    allEvidence, contextId, onProgress,
+  });
+  stageResults.extraction = extracted.stats;
+  qualityGates.extraction = extracted.gate;
 
-  // 5. Score signals
-  if (onProgress) onProgress({ stage: "score", message: "Scoring " + signals.length + " signals..." });
+  // --- Stage 4: Validation ---
+  const validated = validate({
+    signals: extracted.output.signals,
+    signalEvidence: extracted.output.signalEvidence,
+    allEvidence, onProgress,
+  });
+  stageResults.validation = validated.stats;
+  qualityGates.validation = validated.gate;
 
-  for (const signal of signals) {
-    const packetIds = signalEvidence.get(signal.id) || [];
-    const packets = allEvidence.filter(ep => packetIds.includes(ep.id));
-    const { components, total } = scoreSignal(signal, packets);
-    signal.confidence = confidenceFromScore(total);
-    signal._scoreComponents = components;
-    signal._scoreTotal = total;
-  }
+  const signals = validated.output.signals;
+  const signalEvidence = validated.output.signalEvidence;
 
-  // 6. Write signals to SQLite
+  // --- Write signals to SQLite ---
   if (onProgress) onProgress({ stage: "store", message: "Storing " + signals.length + " signals..." });
 
   const writeSignals = db.transaction(() => {
-    // Clear previous live signals for this context
+    // Clear previous live signals and their extractions for this context
     const oldSignals = db.prepare("SELECT id FROM signals WHERE context_id = ? AND id LIKE 'live:%'").all(contextId);
     for (const old of oldSignals) {
       db.prepare("DELETE FROM signal_related WHERE signal_id = ?").run(old.id);
@@ -200,13 +163,19 @@ export async function ingestReddit(options) {
       db.prepare("DELETE FROM scoring_runs WHERE signal_id = ?").run(old.id);
     }
     db.prepare("DELETE FROM signals WHERE context_id = ? AND id LIKE 'live:%'").run(contextId);
+    db.prepare(
+      `DELETE FROM evidence_extractions WHERE evidence_id IN
+       (SELECT id FROM evidence_packets WHERE context_id = ?)`
+    ).run(contextId);
 
     const insertSignal = db.prepare(
       `INSERT OR REPLACE INTO signals
        (id, context_id, rank, status, title, growth, tags, summary, communities,
         mentions, comments, confidence, volume, why, suggested_title, suggested_sub,
-        next_source, dominant_intent, intent_mix, bubble_x, bubble_y, bubble_r)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        next_source, dominant_intent, intent_mix, awareness_distribution, dominant_awareness,
+        desire_type, top_extractions, failed_solutions,
+        bubble_x, bubble_y, bubble_r)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
 
     const insertSE = db.prepare("INSERT OR REPLACE INTO signal_evidence (signal_id, evidence_id) VALUES (?, ?)");
@@ -214,6 +183,11 @@ export async function ingestReddit(options) {
     const insertSpread = db.prepare("INSERT INTO signal_spread (signal_id, community, percentage) VALUES (?, ?, ?)");
     const insertScoringRun = db.prepare(
       "INSERT INTO scoring_runs (id, signal_id, components, total) VALUES (?, ?, ?, ?)"
+    );
+    const insertExtraction = db.prepare(
+      `INSERT OR IGNORE INTO evidence_extractions
+       (id, evidence_id, extraction_type, surface_text, deeper_text, confidence, upvotes)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     );
 
     for (const signal of signals) {
@@ -224,6 +198,8 @@ export async function ingestReddit(options) {
         signal.confidence, signal.volume, signal.why,
         signal.suggested_title, signal.suggested_sub, signal.next_source,
         signal.dominant_intent || "question", signal.intent_mix || "{}",
+        signal.awareness_distribution || "{}", signal.dominant_awareness || "problem_aware",
+        signal.desire_type || null, signal.top_extractions || "[]", signal.failed_solutions || "[]",
         signal.bubble_x, signal.bubble_y, signal.bubble_r
       );
 
@@ -256,11 +232,21 @@ export async function ingestReddit(options) {
           signal._scoreTotal
         );
       }
+
+      // Deep extractions
+      if (signal._deepExtractions && signal._deepExtractions.length) {
+        for (const ext of signal._deepExtractions) {
+          insertExtraction.run(
+            ext.id, ext.evidence_id, ext.extraction_type,
+            ext.surface_text, ext.deeper_text, ext.confidence, ext.upvotes
+          );
+        }
+      }
     }
   });
   writeSignals();
 
-  // 7. Write timeline snapshot for spark history (cumulative totals for this context)
+  // --- Timeline snapshot ---
   const today = new Date().toISOString().slice(0, 10);
   const totalPosts = db.prepare(
     "SELECT COUNT(*) as c FROM evidence_packets WHERE context_id = ? AND (source_item_id IS NULL OR source_item_id NOT LIKE 't1_%')"
@@ -277,16 +263,36 @@ export async function ingestReddit(options) {
      VALUES (?, ?, ?, ?, ?)`
   ).run(contextId, today, totalPosts, totalComments, totalAuthors);
 
-  if (onProgress) onProgress({ stage: "done", message: "Done. " + evidencePackets.length + " new packets, " + signals.length + " signals." });
+  // --- Store pipeline run ---
+  finishRun(db, runId, contextId, startedAt, stageResults, qualityGates,
+    evidencePackets.length, evidencePackets.length, signals.length, "completed");
+
+  if (onProgress) {
+    const gatesSummary = Object.entries(qualityGates)
+      .map(([k, v]) => k + ": " + (v.passed ? "pass" : "FAIL"))
+      .join(", ");
+    onProgress({
+      stage: "done",
+      message: "Done. " + evidencePackets.length + " new packets, " + signals.length + " signals. Gates: " + gatesSummary,
+    });
+  }
 
   return {
     evidenceCount: evidencePackets.length,
     signalCount: signals.length,
-    errors,
+    errors: allErrors,
+    runId,
   };
 }
 
-function safeParseJson(value, fallback) {
-  if (typeof value === "object" && value !== null) return value;
-  try { return JSON.parse(value); } catch { return fallback; }
+function finishRun(db, runId, contextId, startedAt, stageResults, qualityGates, evidenceIn, evidenceOut, signalsProduced, status) {
+  db.prepare(
+    `INSERT OR REPLACE INTO pipeline_runs
+     (id, context_id, started_at, completed_at, stage_results, quality_gates, evidence_in, evidence_out, signals_produced, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    runId, contextId, startedAt, new Date().toISOString(),
+    JSON.stringify(stageResults), JSON.stringify(qualityGates),
+    evidenceIn, evidenceOut, signalsProduced, status
+  );
 }

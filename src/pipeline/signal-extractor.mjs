@@ -4,8 +4,11 @@
  * Grouping logic:
  * - Evidence packets share a query/topic → group into one candidate signal
  * - Computes volume, velocity, community spread, phrase frequency
+ * - Runs deep extraction for behavioral drivers, failed solutions, desire type
  * - Does NOT score — that's the scorer's job
  */
+
+import { extractDeepPatterns, classifyDesireType, aggregateFailedSolutions } from "./deep-extractor.mjs";
 
 function stableId(value) {
   return String(value)
@@ -20,19 +23,19 @@ function stableId(value) {
  * Returns { signals: [], signalEvidence: Map<signalId, evidenceId[]> }
  */
 export function extractSignals(evidencePackets, contextId) {
-  // Group by query/topic
+  // Group by COMMUNITY — each subreddit is a distinct conversation context.
+  // This prevents noise from mixing (r/SaaS about competitors ≠ r/FanFiction about "shipping").
+  // The signal title comes from the community + its dominant theme, not the query that found it.
   const groups = new Map();
 
   for (const ep of evidencePackets) {
-    const topics = safeParseJson(ep.topics, []);
-    for (const topic of topics) {
-      const key = stableId(topic);
-      if (!key) continue;
-      if (!groups.has(key)) {
-        groups.set(key, { topic, key, packets: [] });
-      }
-      groups.get(key).packets.push(ep);
+    const community = ep.community || "unknown";
+    const key = stableId(community);
+    if (!key) continue;
+    if (!groups.has(key)) {
+      groups.set(key, { topic: community, key, packets: [] });
     }
+    groups.get(key).packets.push(ep);
   }
 
   // Convert groups to candidate signals
@@ -93,17 +96,55 @@ export function extractSignals(evidencePackets, contextId) {
     const dominantIntent = Object.entries(intentCounts)
       .sort((a, b) => b[1] - a[1])[0]?.[0] || "question";
 
+    // Awareness distribution — count evidence by awareness level
+    const awarenessCounts = {};
+    for (const p of packets) {
+      const level = p.awareness_level || "problem_aware";
+      awarenessCounts[level] = (awarenessCounts[level] || 0) + 1;
+    }
+    const dominantAwareness = Object.entries(awarenessCounts)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || "problem_aware";
+
+    // Deep extraction — behavioral drivers, failed solutions, identity pain
+    const deepExtractions = extractDeepPatterns(packets);
+    const desireType = classifyDesireType(packets, awarenessCounts, deepExtractions);
+    const failedSolutions = aggregateFailedSolutions(deepExtractions);
+
+    // Top extractions by confidence (prioritize not_x_its_y and identity_statement)
+    const topExtractions = deepExtractions
+      .sort((a, b) => {
+        const typePriority = { not_x_its_y: 4, identity_statement: 3, failed_solution: 2, problem_language: 1 };
+        const aPri = typePriority[a.extraction_type] || 0;
+        const bPri = typePriority[b.extraction_type] || 0;
+        if (aPri !== bPri) return bPri - aPri;
+        return b.confidence - a.confidence;
+      })
+      .slice(0, 5)
+      .map(e => ({
+        type: e.extraction_type,
+        surface: e.surface_text,
+        deeper: e.deeper_text,
+        confidence: e.confidence,
+        upvotes: e.upvotes,
+      }));
+
     // Bubble position — higher rank = upper-right quadrant
     const x = Math.min(780, 400 + Math.round(packets.length * 18 + communities.length * 30));
     const y = Math.max(60, 400 - Math.round(packets.length * 22 + totalComments * 0.3));
     const r = Math.max(16, Math.min(44, 16 + packets.length * 3));
+
+    // Build a descriptive title from the community + top phrases
+    const topPhrase = phrases.length > 0 ? phrases[0][0] : "";
+    const signalTitle = topPhrase
+      ? group.topic + ": " + topPhrase
+      : group.topic;
 
     const signal = {
       id: signalId,
       context_id: contextId,
       rank,
       status,
-      title: group.topic,
+      title: signalTitle,
       growth: "+ live",
       tags: JSON.stringify(tags),
       summary: buildSummary(group.topic, packets, communities),
@@ -120,6 +161,11 @@ export function extractSignals(evidencePackets, contextId) {
       next_source: recommendNextSource(tags),
       dominant_intent: dominantIntent,
       intent_mix: JSON.stringify(intentCounts),
+      awareness_distribution: JSON.stringify(awarenessCounts),
+      dominant_awareness: dominantAwareness,
+      desire_type: desireType,
+      top_extractions: JSON.stringify(topExtractions),
+      failed_solutions: JSON.stringify(failedSolutions),
       bubble_x: x,
       bubble_y: y,
       bubble_r: r,
@@ -128,9 +174,10 @@ export function extractSignals(evidencePackets, contextId) {
     signals.push(signal);
     signalEvidence.set(signalId, packets.map(p => p.id));
 
-    // Attach phrases and spread for later insertion
+    // Attach phrases, spread, and extractions for later insertion
     signal._phrases = phrases;
     signal._spread = spread;
+    signal._deepExtractions = deepExtractions;
   }
 
   return { signals, signalEvidence };
@@ -158,7 +205,25 @@ function extractPhrases(packets) {
   }
 
   // Filter stopword-heavy phrases and sort by frequency
-  const stopwords = new Set(["the", "and", "for", "that", "this", "with", "are", "was", "has", "have", "but", "not", "you", "can", "any", "all", "from", "been", "will", "its"]);
+  const stopwords = new Set([
+    "the", "and", "for", "that", "this", "with", "are", "was", "has", "have",
+    "but", "not", "you", "can", "any", "all", "from", "been", "will", "its",
+    "they", "their", "them", "than", "then", "what", "when", "where", "which",
+    "who", "how", "why", "did", "does", "don", "didn", "doesn", "won", "wouldn",
+    "could", "would", "should", "just", "like", "also", "really", "very", "much",
+    "even", "still", "about", "into", "more", "most", "some", "only", "over",
+    "such", "own", "same", "being", "here", "there", "every", "each", "both",
+    "many", "well", "way", "get", "got", "one", "two", "out", "now", "new",
+    "make", "made", "use", "used", "know", "think", "want", "need", "see",
+    "say", "said", "come", "going", "thing", "things", "people", "right",
+    "good", "time", "year", "years", "day", "days", "lot", "back", "first",
+    "last", "long", "work", "take", "too", "her", "his", "she", "him", "our",
+    "your", "my", "had", "were", "been", "other", "after", "before", "because",
+    "those", "these", "while", "through", "between", "might", "another",
+    "something", "anything", "everything", "nothing", "someone", "everyone",
+    "always", "never", "often", "already", "keep", "let", "put", "went",
+    "comment", "post", "reddit", "edit", "deleted", "removed", "http", "https",
+  ]);
   return [...freq.entries()]
     .filter(([phrase, count]) => {
       if (count < 2) return false;

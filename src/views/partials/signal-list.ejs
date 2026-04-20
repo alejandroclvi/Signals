@@ -2,44 +2,29 @@
   <div class="board">
     <div class="panel-head">
       <div>
-        <h2 class="panel-title">Momentum vs Relevance <span class="panel-sub" id="topicSummary">15 topics detected - last 30d</span></h2>
+        <h2 class="panel-title">Signal Radar <span class="panel-sub" id="topicSummary"></span></h2>
       </div>
       <div class="legend">
-        <span class="legend-item"><i class="dot" style="background:var(--green)"></i> Demand</span>
-        <span class="legend-item"><i class="dot" style="background:var(--red)"></i> Frustration</span>
-        <span class="legend-item"><i class="dot" style="background:var(--blue)"></i> Adoption</span>
-        <span class="legend-item"><i class="dot" style="background:var(--gold)"></i> Comparison</span>
-        <span class="legend-item"><i class="dot" style="background:var(--purple)"></i> Narrative</span>
-        <span class="legend-item"><i class="dot" style="background:var(--teal)"></i> Economic</span>
-      </div>
-      <div class="segmented" aria-label="Radar view">
-        <button class="active" type="button">Bubble</button>
-        <button type="button">Matrix</button>
-        <button type="button">List</button>
+        <span class="legend-item" data-tag="demand"><i class="dot" style="background:var(--green)"></i> Demand</span>
+        <span class="legend-item" data-tag="frustration"><i class="dot" style="background:var(--red)"></i> Frustration</span>
+        <span class="legend-item" data-tag="adoption"><i class="dot" style="background:var(--blue)"></i> Adoption</span>
+        <span class="legend-item" data-tag="comparison"><i class="dot" style="background:var(--gold)"></i> Comparison</span>
+        <span class="legend-item" data-tag="narrative"><i class="dot" style="background:var(--purple)"></i> Narrative</span>
+        <span class="legend-item" data-tag="economic"><i class="dot" style="background:var(--teal)"></i> Economic</span>
       </div>
     </div>
-    <div class="bubble-zone">
-      <div class="axis-label top-left">Interesting - uncertain</div>
-      <div class="axis-label top-right">Urgent signals</div>
-      <div class="axis-label bottom-left">Ignore / noise</div>
-      <div class="axis-label bottom-right">Watchlist</div>
-      <div class="axis-label vertical">Momentum -></div>
-      <svg class="bubble-svg" id="bubbleSvg" viewBox="0 0 860 526" role="img" aria-label="Momentum versus relevance bubble chart"></svg>
+    <div class="bubble-zone" id="bubbleZone">
+      <svg class="bubble-svg" id="bubbleSvg" role="img" aria-label="Signal radar chart"></svg>
     </div>
-    <div class="chart-row">
+    <!-- chart-row hidden — radar chart is the primary view -->
+    <div class="chart-row" style="display:none">
       <div class="chart-card">
         <div class="chart-title"><strong>Momentum Timeline</strong><span>30d</span></div>
-        <svg class="line-chart" id="timelineSvg" viewBox="0 0 430 142" role="img" aria-label="Momentum timeline"></svg>
-        <div class="chart-foot">
-          <span>+312% posts vs baseline</span>
-          <span>+218% comments</span>
-          <span>+124 new authors</span>
-        </div>
+        <svg class="line-chart" id="timelineSvg" viewBox="0 0 430 142" role="img"></svg>
       </div>
       <div class="chart-card">
         <div class="chart-title"><strong>Community Spread</strong><span>weekly</span></div>
-        <svg class="heatmap-chart" id="heatmapSvg" viewBox="0 0 330 142" role="img" aria-label="Community heatmap"></svg>
-        <div class="chart-foot"><span>Low</span><span>mentions/week</span><span>High</span></div>
+        <svg class="heatmap-chart" id="heatmapSvg" viewBox="0 0 330 142" role="img"></svg>
       </div>
       <div class="chart-card">
         <div class="chart-title"><strong>Intent Breakdown</strong><span>classified</span></div>
@@ -54,9 +39,9 @@
       <div class="legend"><span>&#9661;</span><span>...</span></div>
     </div>
     <div class="inbox-tabs">
-      <button class="inbox-tab active" type="button">Ranked <span class="tab-count">24</span></button>
-      <button class="inbox-tab" type="button">New <span class="tab-count">7</span></button>
-      <button class="inbox-tab" type="button">Saved <span class="tab-count">12</span></button>
+      <button class="inbox-tab active" type="button">Ranked <span class="tab-count" id="rankedCount">0</span></button>
+      <button class="inbox-tab" type="button">New <span class="tab-count">-</span></button>
+      <button class="inbox-tab" type="button">Saved <span class="tab-count" id="savedCount">0</span></button>
     </div>
     <div class="intent-filters" id="intentFilters">
       <button class="intent-btn active" type="button" data-intent="all">All</button>

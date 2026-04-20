@@ -28,7 +28,11 @@ CREATE TABLE IF NOT EXISTS evidence_packets (
   topics          TEXT,  -- JSON array
   raw_ref         TEXT,
   content_hash    TEXT,
-  intent          TEXT   -- pain, promotion, insight, question, comparison
+  intent          TEXT,  -- pain, promotion, insight, question, comparison
+  awareness_level TEXT,  -- unaware, problem_aware, solution_aware, product_aware, most_aware
+  evidence_weight REAL DEFAULT 1.0,
+  quality_score   REAL,
+  pipeline_run_id TEXT
 );
 
 CREATE TABLE IF NOT EXISTS signals (
@@ -51,6 +55,11 @@ CREATE TABLE IF NOT EXISTS signals (
   next_source     TEXT,
   dominant_intent TEXT,  -- pain, promotion, insight, question, comparison
   intent_mix      TEXT,  -- JSON {pain: N, promotion: N, ...}
+  awareness_distribution TEXT, -- JSON {problem_aware: N, ...}
+  dominant_awareness     TEXT, -- most frequent awareness level
+  desire_type     TEXT,        -- mass_instinct | mass_technological
+  top_extractions TEXT,        -- JSON: top 5 deep extractions
+  failed_solutions TEXT,       -- JSON: [{name, count, validation}]
   bubble_x        REAL,
   bubble_y        REAL,
   bubble_r        REAL,
@@ -121,6 +130,30 @@ CREATE TABLE IF NOT EXISTS timeline_snapshots (
   comments      INTEGER,
   authors       INTEGER,
   PRIMARY KEY (context_id, snapshot_date)
+);
+
+CREATE TABLE IF NOT EXISTS pipeline_runs (
+  id              TEXT PRIMARY KEY,
+  context_id      TEXT REFERENCES contexts(id) ON DELETE CASCADE,
+  started_at      TEXT DEFAULT (datetime('now')),
+  completed_at    TEXT,
+  stage_results   TEXT,  -- JSON: per-stage stats
+  quality_gates   TEXT,  -- JSON: per-stage pass/fail
+  evidence_in     INTEGER,
+  evidence_out    INTEGER,
+  signals_produced INTEGER,
+  status          TEXT DEFAULT 'running'
+);
+
+CREATE TABLE IF NOT EXISTS evidence_extractions (
+  id              TEXT PRIMARY KEY,
+  evidence_id     TEXT REFERENCES evidence_packets(id) ON DELETE CASCADE,
+  extraction_type TEXT NOT NULL,  -- not_x_its_y, failed_solution, problem_language, identity_statement
+  surface_text    TEXT,
+  deeper_text     TEXT,
+  confidence      REAL,
+  upvotes         INTEGER,
+  created_at      TEXT DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS fixture_meta (

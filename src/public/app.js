@@ -18,9 +18,12 @@ let heatmap = initialData.heatmap || [];
 let intent = initialData.intent || [];
 let evidenceLayers = initialData.evidenceLayers || [];
 let sourceNodes = initialData.sourceNodes || [];
+let pipelineHealth = initialData.pipelineHealth || null;
 let enabledNodes = new Set(sourceNodes.filter((node) => node.state === "enabled").map((node) => node.id));
 let selectedId = initialData.selectedId || (signals[0] && signals[0].id) || "";
 let activeIntentFilter = "all";
+let activeInboxTab = "ranked"; // ranked | new | saved
+let activeTagFilter = null; // null = all, or "demand", "frustration", etc.
 
 var intentColors = {
   pain: "#de5c56",
@@ -28,6 +31,22 @@ var intentColors = {
   insight: "#3e9558",
   comparison: "#bd842f",
   promotion: "#9aa3ad"
+};
+
+var awarenessColors = {
+  unaware: "#9aa3ad",
+  problem_aware: "#de5c56",
+  solution_aware: "#bd842f",
+  product_aware: "#2d6fbb",
+  most_aware: "#875fb4"
+};
+
+var awarenessLabels = {
+  unaware: "Unaware",
+  problem_aware: "Problem Aware",
+  solution_aware: "Solution Aware",
+  product_aware: "Product Aware",
+  most_aware: "Most Aware"
 };
 
 // Fixture switching
@@ -121,75 +140,243 @@ function renderMetrics() {
       '</div>' +
     '</div>';
   }).join("");
+
+  // Pipeline health indicator
+  var healthEl = document.getElementById("pipelineHealth");
+  if (healthEl && pipelineHealth) {
+    var gates = pipelineHealth.gates || {};
+    var gateHtml = Object.entries(gates).map(function(entry) {
+      var name = entry[0];
+      var gate = entry[1];
+      var color = gate.passed ? "var(--green)" : "var(--red)";
+      var icon = gate.passed ? "\u2713" : "\u2717";
+      return '<span class="gate-indicator" style="color:' + color + '" title="' + (gate.reason || "") + '">' +
+        icon + ' ' + name +
+      '</span>';
+    }).join("");
+    var ago = pipelineHealth.completedAt ? relativeTime(pipelineHealth.completedAt) : "running";
+    healthEl.innerHTML =
+      '<span class="pipeline-label">Pipeline</span>' +
+      '<span class="pipeline-status ' + pipelineHealth.status + '">' + pipelineHealth.status + '</span>' +
+      gateHtml +
+      '<span class="pipeline-meta">' + (pipelineHealth.evidenceIn || 0) + ' in \u2192 ' + (pipelineHealth.signalsProduced || 0) + ' signals \u00b7 ' + ago + '</span>';
+  }
 }
+
+function relativeTime(iso) {
+  if (!iso) return "";
+  var ms = Date.now() - new Date(iso).getTime();
+  if (ms < 60000) return "just now";
+  if (ms < 3600000) return Math.round(ms / 60000) + "m ago";
+  if (ms < 86400000) return Math.round(ms / 3600000) + "h ago";
+  return Math.round(ms / 86400000) + "d ago";
+}
+
+// --- Interactive Bubble Chart ---
+var chartState = { scale: 1, panX: 0, panY: 0, dragging: false, lastX: 0, lastY: 0 };
+var bubblePositions = {}; // signalId → {x, y, r}
+var CHART_W = 860, CHART_H = 500, CHART_PAD = 50;
 
 function renderBubbleChart() {
   var svg = document.getElementById("bubbleSvg");
-  var width = 860;
-  var height = 526;
-  svg.innerHTML =
-    '<line x1="430" y1="0" x2="430" y2="' + height + '" stroke="#dfe4ea"></line>' +
-    '<line x1="0" y1="263" x2="' + width + '" y2="263" stroke="#dfe4ea"></line>';
+  if (!svg) return;
 
-  otherBubbles.forEach(function(bubble) {
-    var node = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    node.setAttribute("cx", bubble.x);
-    node.setAttribute("cy", bubble.y);
-    node.setAttribute("r", bubble.r);
-    node.setAttribute("fill", bubble.color);
-    node.setAttribute("fill-opacity", bubble.opacity);
-    node.setAttribute("stroke", bubble.color);
-    node.setAttribute("stroke-dasharray", "3 3");
-    svg.appendChild(node);
+  svg.setAttribute("viewBox", "0 0 " + CHART_W + " " + CHART_H);
+
+  if (!signals.length) {
+    svg.innerHTML = '<text x="' + CHART_W/2 + '" y="' + CHART_H/2 + '" text-anchor="middle" fill="#9aa3ad">No signals to display</text>';
+    return;
+  }
+
+  // --- Scatter plot: Relevance (X) vs Momentum (Y) ---
+  // Use rank-based normalization so signals spread evenly regardless of data skew
+  var pad = CHART_PAD;
+  var plotW = CHART_W - pad * 2;
+  var plotH = CHART_H - pad * 2;
+
+  // Rank-normalize: sort by volume for X, by mentions for Y
+  var byVolume = signals.slice().sort(function(a, b) { return (a.volume || 0) - (b.volume || 0); });
+  var byMentions = signals.slice().sort(function(a, b) { return (a.mentions || 0) - (b.mentions || 0); });
+  var volRank = {}; byVolume.forEach(function(s, i) { volRank[s.id] = i / Math.max(1, byVolume.length - 1); });
+  var menRank = {}; byMentions.forEach(function(s, i) { menRank[s.id] = i / Math.max(1, byMentions.length - 1); });
+
+  var positioned = signals.map(function(signal) {
+    var xRatio = volRank[signal.id] || 0;
+    var yRatio = menRank[signal.id] || 0;
+    var x = pad + xRatio * plotW;
+    var y = pad + (1 - yRatio) * plotH; // invert Y so high = top
+    var r = Math.max(12, Math.min(36, 8 + Math.sqrt(signal.mentions || 1) * 2.5));
+    bubblePositions[signal.id] = { x: x, y: y, r: r };
+    return { signal: signal, x: x, y: y, r: r };
   });
 
-  signals.forEach(function(signal) {
-    var group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    group.setAttribute("data-signal", signal.id);
-    group.setAttribute("class", "bubble " + (signal.id === selectedId ? "selected" : ""));
+  var content = '';
+  // Background
+  content += '<rect x="0" y="0" width="' + CHART_W + '" height="' + CHART_H + '" fill="white"/>';
+  // Right half tint (high relevance zone)
+  var mx = pad + plotW / 2;
+  var my = pad + plotH / 2;
+  content += '<rect x="' + mx + '" y="' + pad + '" width="' + (plotW / 2) + '" height="' + (plotH / 2) + '" fill="rgba(249,229,215,.25)"/>';
+  // Grid
+  content += '<line x1="' + mx + '" y1="' + pad + '" x2="' + mx + '" y2="' + (CHART_H - pad) + '" stroke="#e8eaee" stroke-dasharray="4 3"/>';
+  content += '<line x1="' + pad + '" y1="' + my + '" x2="' + (CHART_W - pad) + '" y2="' + my + '" stroke="#e8eaee" stroke-dasharray="4 3"/>';
+  // Axes
+  content += '<line x1="' + pad + '" y1="' + (CHART_H - pad) + '" x2="' + (CHART_W - pad) + '" y2="' + (CHART_H - pad) + '" stroke="#dfe4ea"/>';
+  content += '<line x1="' + pad + '" y1="' + pad + '" x2="' + pad + '" y2="' + (CHART_H - pad) + '" stroke="#dfe4ea"/>';
+  // Quadrant labels
+  content += '<text x="' + (pad + 6) + '" y="' + (pad + 14) + '" class="quadrant-text">Interesting \u00b7 uncertain</text>';
+  content += '<text x="' + (CHART_W - pad - 4) + '" y="' + (pad + 14) + '" text-anchor="end" class="quadrant-text" fill="#c45a54">Urgent signals</text>';
+  content += '<text x="' + (pad + 6) + '" y="' + (CHART_H - pad - 6) + '" class="quadrant-text">Ignore / noise</text>';
+  content += '<text x="' + (CHART_W - pad - 4) + '" y="' + (CHART_H - pad - 6) + '" text-anchor="end" class="quadrant-text">Watchlist</text>';
+  // Axis labels
+  content += '<text x="' + (CHART_W / 2) + '" y="' + (CHART_H - 8) + '" text-anchor="middle" class="axis-text">Relevance \u2192</text>';
+  content += '<text x="14" y="' + (CHART_H / 2) + '" text-anchor="middle" transform="rotate(-90 14 ' + (CHART_H / 2) + ')" class="axis-text">Momentum \u2192</text>';
+
+  // Bubbles
+  positioned.forEach(function(p) {
+    var signal = p.signal;
     var tag = (signal.tags && signal.tags[0]) ? signal.tags[0] : "demand";
     var cat = categories[tag] || categories.demand;
-    var color = cat.color;
-    var fill = cat.soft;
-    var circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circle.setAttribute("cx", signal.x);
-    circle.setAttribute("cy", signal.y);
-    circle.setAttribute("r", signal.r);
-    circle.setAttribute("fill", fill);
-    circle.setAttribute("fill-opacity", signal.id === selectedId ? ".9" : ".62");
-    circle.setAttribute("stroke", color);
-    circle.setAttribute("stroke-width", signal.id === selectedId ? "2.2" : "1.2");
-    group.appendChild(circle);
+    var sel = signal.id === selectedId;
 
-    if (signal.rank <= 4) {
-      var label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      label.setAttribute("x", signal.x - 92);
-      label.setAttribute("y", signal.y - signal.r - 12);
-      label.setAttribute("class", "bubble-label");
-      label.textContent = signal.title;
-      group.appendChild(label);
-
-      var meta = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      meta.setAttribute("x", signal.x - 92);
-      meta.setAttribute("y", signal.y - signal.r + 4);
-      meta.setAttribute("class", "bubble-meta");
-      meta.textContent = "vol " + signal.volume + " \u00b7 " + signal.confidence.toLowerCase();
-      group.appendChild(meta);
-    }
-
-    group.addEventListener("click", function() {
-      selectedId = signal.id;
-      renderAll();
-    });
-    svg.appendChild(group);
+    content += '<g class="bubble' + (sel ? ' selected' : '') + '" data-signal="' + signal.id + '">';
+    content += '<circle cx="' + p.x + '" cy="' + p.y + '" r="' + p.r + '" fill="' + cat.soft + '" fill-opacity="' + (sel ? '.95' : '.7') + '" stroke="' + cat.color + '" stroke-width="' + (sel ? '2.5' : '1') + '"/>';
+    // Rank inside bubble
+    content += '<text x="' + p.x + '" y="' + (p.y + 4) + '" text-anchor="middle" class="bubble-rank">' + signal.rank + '</text>';
+    // Label — only for top 5 or selected, hidden by default on others (show on hover via CSS)
+    var label = signal.title.replace(/^r\//, "").split(":")[0];
+    if (label.length > 18) label = label.slice(0, 16) + "\u2026";
+    var labelClass = (sel || signal.rank <= 5) ? "bubble-label" : "bubble-label bubble-label-hover";
+    content += '<text x="' + p.x + '" y="' + (p.y - p.r - 4) + '" text-anchor="middle" class="' + labelClass + '">' + label + '</text>';
+    content += '</g>';
   });
+
+  svg.innerHTML = '<g id="chartGroup" transform="translate(' + chartState.panX + ',' + chartState.panY + ') scale(' + chartState.scale + ')">' + content + '</g>';
+
+  // Summary
+  var summaryEl = document.getElementById("topicSummary");
+  if (summaryEl) summaryEl.textContent = signals.length + " signals detected";
+  var rankedEl = document.getElementById("rankedCount");
+  if (rankedEl) rankedEl.textContent = signals.length;
+  var savedEl = document.getElementById("savedCount");
+  if (savedEl) savedEl.textContent = signals.filter(function(s) { return s.saved; }).length;
+
+  // Click handlers on bubbles
+  svg.querySelectorAll(".bubble").forEach(function(g) {
+    g.addEventListener("click", function(e) {
+      e.stopPropagation();
+      selectedId = g.dataset.signal;
+      renderAll();
+      scrollInboxToSignal(selectedId);
+    });
+  });
+
+  setupChartInteractions(svg);
+}
+
+function focusBubble(signalId) {
+  var pos = bubblePositions[signalId];
+  if (!pos) return;
+  var svg = document.getElementById("bubbleSvg");
+  if (!svg) return;
+  var rect = svg.getBoundingClientRect();
+  var svgW = rect.width || CHART_W;
+  var svgH = rect.height || CHART_H;
+  // Scale so the bubble is prominent
+  var targetScale = 1.8;
+  // Center the bubble in the viewport
+  var scaleRatio = svgW / CHART_W;
+  chartState.scale = targetScale;
+  chartState.panX = (svgW / 2) / scaleRatio - pos.x * targetScale;
+  chartState.panY = (svgH / 2) / scaleRatio - pos.y * targetScale;
+  var group = document.getElementById("chartGroup");
+  if (group) group.setAttribute("transform", "translate(" + chartState.panX + "," + chartState.panY + ") scale(" + chartState.scale + ")");
+}
+
+function scrollInboxToSignal(signalId) {
+  var card = document.querySelector('.signal-item[data-signal="' + signalId + '"]');
+  if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+var _chartInteractionsSet = false;
+function setupChartInteractions(svg) {
+  if (_chartInteractionsSet) return;
+  _chartInteractionsSet = true;
+
+  // Zoom — clamped between 0.8x and 3x
+  svg.addEventListener("wheel", function(e) {
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? 0.92 : 1.08;
+    var newScale = Math.max(0.8, Math.min(3, chartState.scale * delta));
+    var svgRect = svg.getBoundingClientRect();
+    var mx = (e.clientX - svgRect.left) * (CHART_W / svgRect.width);
+    var my = (e.clientY - svgRect.top) * (CHART_H / svgRect.height);
+    chartState.panX = mx - (mx - chartState.panX) * (newScale / chartState.scale);
+    chartState.panY = my - (my - chartState.panY) * (newScale / chartState.scale);
+    chartState.scale = newScale;
+    var group = document.getElementById("chartGroup");
+    if (group) group.setAttribute("transform", "translate(" + chartState.panX + "," + chartState.panY + ") scale(" + chartState.scale + ")");
+  }, { passive: false });
+
+  // Pan
+  svg.addEventListener("mousedown", function(e) {
+    if (e.target.closest(".bubble")) return;
+    chartState.dragging = true;
+    chartState.lastX = e.clientX;
+    chartState.lastY = e.clientY;
+    svg.style.cursor = "grabbing";
+  });
+  window.addEventListener("mousemove", function(e) {
+    if (!chartState.dragging) return;
+    var svgRect = svg.getBoundingClientRect();
+    chartState.panX += (e.clientX - chartState.lastX) * (CHART_W / svgRect.width);
+    chartState.panY += (e.clientY - chartState.lastY) * (CHART_H / svgRect.height);
+    chartState.lastX = e.clientX;
+    chartState.lastY = e.clientY;
+    var group = document.getElementById("chartGroup");
+    if (group) group.setAttribute("transform", "translate(" + chartState.panX + "," + chartState.panY + ") scale(" + chartState.scale + ")");
+  });
+  window.addEventListener("mouseup", function() {
+    chartState.dragging = false;
+    svg.style.cursor = "grab";
+  });
+
+  // Double-click to reset view
+  svg.addEventListener("dblclick", function() {
+    chartState.scale = 1;
+    chartState.panX = 0;
+    chartState.panY = 0;
+    var group = document.getElementById("chartGroup");
+    if (group) group.setAttribute("transform", "translate(0,0) scale(1)");
+  });
+
+  svg.style.cursor = "grab";
 }
 
 function renderSignalList() {
   var list = document.getElementById("signalList");
+
+  // Tab filter
+  var tabFiltered = signals;
+  if (activeInboxTab === "saved") {
+    tabFiltered = signals.filter(function(s) { return s.saved; });
+  } else if (activeInboxTab === "new") {
+    tabFiltered = signals.filter(function(s) { return !s.dismissed && !s.saved; });
+  }
+
+  // Intent filter
   var filtered = activeIntentFilter === "all"
-    ? signals
-    : signals.filter(function(s) { return s.dominant_intent === activeIntentFilter; });
+    ? tabFiltered
+    : tabFiltered.filter(function(s) { return s.dominant_intent === activeIntentFilter; });
+
+  // Sort matching tag signals to the top when a legend filter is active
+  if (activeTagFilter) {
+    filtered = filtered.slice().sort(function(a, b) {
+      var aMatch = (a.tags && a.tags.indexOf(activeTagFilter) !== -1) ? 0 : 1;
+      var bMatch = (b.tags && b.tags.indexOf(activeTagFilter) !== -1) ? 0 : 1;
+      return aMatch - bMatch;
+    });
+  }
 
   list.innerHTML = filtered.map(function(signal) {
     var intentLabel = signal.dominant_intent || "question";
@@ -198,6 +385,7 @@ function renderSignalList() {
       '<div class="signal-top">' +
         '<span><span class="rank">#' + String(signal.rank).padStart(2, "0") + '</span> <span class="signal-state">' + signal.status + '</span></span>' +
         '<span class="intent-badge" style="color:' + intentColor + '">' + intentLabel + '</span>' +
+        (signal.desire_type ? '<span class="desire-badge ' + signal.desire_type + '">' + (signal.desire_type === "mass_technological" ? "Replacement" : "Discovery") + '</span>' : '') +
       '</div>' +
       '<div class="signal-title">' + signal.title + '</div>' +
       '<div class="tags">' + signal.tags.map(tagHtml).join("") + '</div>' +
@@ -213,6 +401,7 @@ function renderSignalList() {
     item.addEventListener("click", function() {
       selectedId = item.dataset.signal;
       renderAll();
+      focusBubble(selectedId);
     });
   });
 
@@ -221,11 +410,27 @@ function renderSignalList() {
   if (filterEl) {
     filterEl.querySelectorAll(".intent-btn").forEach(function(btn) {
       var intentValue = btn.dataset.intent;
-      var count = intentValue === "all" ? signals.length : signals.filter(function(s) { return s.dominant_intent === intentValue; }).length;
+      var count = intentValue === "all" ? tabFiltered.length : tabFiltered.filter(function(s) { return s.dominant_intent === intentValue; }).length;
       btn.textContent = (intentValue === "all" ? "All" : intentValue.charAt(0).toUpperCase() + intentValue.slice(1)) + (count ? " " + count : "");
       btn.className = "intent-btn" + (intentValue === activeIntentFilter ? " active" : "");
     });
   }
+
+  // Update inbox tab counts + active state
+  var tabs = document.querySelectorAll(".inbox-tab");
+  var tabCounts = {
+    ranked: signals.length,
+    new: signals.filter(function(s) { return !s.dismissed && !s.saved; }).length,
+    saved: signals.filter(function(s) { return s.saved; }).length,
+  };
+  var tabLabels = { ranked: "Ranked", new: "New", saved: "Saved" };
+  var tabKeys = ["ranked", "new", "saved"];
+  tabs.forEach(function(tab, i) {
+    var key = tabKeys[i];
+    if (!key) return;
+    tab.querySelector(".tab-count").textContent = tabCounts[key];
+    tab.className = "inbox-tab" + (activeInboxTab === key ? " active" : "");
+  });
 }
 
 function renderLineChart() {
@@ -537,6 +742,64 @@ function renderDetail() {
     intentEl.innerHTML = '<div class="intent-bar">' + barParts + '</div><div class="intent-labels">' + labels + '</div>';
   }
 
+  // Awareness distribution bar
+  var awarenessEl = document.getElementById("awarenessComposition");
+  if (awarenessEl) {
+    var awDist = signal.awareness_distribution || {};
+    var awTotal = Object.values(awDist).reduce(function(s, v) { return s + v; }, 0) || 1;
+    var awOrder = ["unaware", "problem_aware", "solution_aware", "product_aware", "most_aware"];
+    var awEntries = awOrder.filter(function(k) { return awDist[k]; }).map(function(k) { return [k, awDist[k]]; });
+    if (awEntries.length) {
+      var awBarParts = awEntries.map(function(entry) {
+        var pct = Math.round(entry[1] / awTotal * 100);
+        var color = awarenessColors[entry[0]] || "#9aa3ad";
+        return '<div class="intent-bar-seg" style="width:' + pct + '%;background:' + color + '" title="' + (awarenessLabels[entry[0]] || entry[0]) + ': ' + pct + '%"></div>';
+      }).join("");
+      var awLabels = awEntries.map(function(entry) {
+        var pct = Math.round(entry[1] / awTotal * 100);
+        var color = awarenessColors[entry[0]] || "#9aa3ad";
+        return '<span class="intent-label"><i class="dot" style="background:' + color + '"></i>' + (awarenessLabels[entry[0]] || entry[0]) + ' ' + pct + '%</span>';
+      }).join("");
+      awarenessEl.innerHTML = '<div class="intent-bar">' + awBarParts + '</div><div class="intent-labels">' + awLabels + '</div>';
+    } else {
+      awarenessEl.innerHTML = '<span class="faint">No awareness data</span>';
+    }
+  }
+
+  // Deep extractions — "Not X, it's Y" and failed solutions
+  var extractionsEl = document.getElementById("deepExtractions");
+  if (extractionsEl) {
+    var topEx = signal.top_extractions || [];
+    var failedSols = signal.failed_solutions || [];
+    var html = "";
+
+    if (topEx.length) {
+      html += topEx.map(function(ext) {
+        var typeLabel = { not_x_its_y: "Not X, it's Y", failed_solution: "Failed solution", problem_language: "Problem language", identity_statement: "Identity" }[ext.type] || ext.type;
+        var typeColor = { not_x_its_y: "var(--purple)", failed_solution: "var(--red)", problem_language: "var(--gold)", identity_statement: "var(--teal)" }[ext.type] || "var(--muted)";
+        var surfaceHtml = ext.surface ? '<div class="extraction-surface">"' + ext.surface + '"</div>' : '';
+        var deeperHtml = ext.deeper ? '<div class="extraction-deeper">"' + ext.deeper + '"</div>' : '';
+        return '<div class="extraction-card">' +
+          '<div class="extraction-type" style="color:' + typeColor + '">' + typeLabel + (ext.upvotes ? ' \u00b7 \u25b2' + ext.upvotes : '') + '</div>' +
+          surfaceHtml + deeperHtml +
+        '</div>';
+      }).join("");
+    }
+
+    if (failedSols.length) {
+      html += '<div class="failed-solutions-header">Failed solutions</div>';
+      html += failedSols.map(function(sol) {
+        return '<div class="failed-solution-row">' +
+          '<span class="failed-name">' + sol.name + '</span>' +
+          '<span class="failed-meta">' + sol.count + 'x \u00b7 \u25b2' + sol.validation + '</span>' +
+          (sol.top_reason ? '<div class="failed-reason">' + sol.top_reason + '</div>' : '') +
+        '</div>';
+      }).join("");
+    }
+
+    extractionsEl.innerHTML = html || '<span class="faint">No deep patterns detected</span>';
+  }
+
   document.getElementById("phraseGrid").innerHTML = signal.phrases.map(function(entry) {
     return '<span class="phrase">' + entry[0] + ' <b>' + entry[1] + '</b></span>';
   }).join("");
@@ -804,6 +1067,51 @@ if (intentFiltersEl) {
     renderBubbleChart();
   });
 }
+
+// Legend tag filter — click to highlight, click again to clear
+document.querySelectorAll(".legend-item[data-tag]").forEach(function(item) {
+  item.style.cursor = "pointer";
+  item.addEventListener("click", function() {
+    var tag = item.dataset.tag;
+    activeTagFilter = activeTagFilter === tag ? null : tag;
+    // Update legend active state
+    document.querySelectorAll(".legend-item[data-tag]").forEach(function(el) {
+      el.style.opacity = (!activeTagFilter || el.dataset.tag === activeTagFilter) ? "1" : ".35";
+      el.style.fontWeight = (el.dataset.tag === activeTagFilter) ? "700" : "";
+    });
+    renderSignalList();
+    applyTagFilter();
+  });
+});
+
+function applyTagFilter() {
+  // Dim bubbles in chart
+  document.querySelectorAll("#bubbleSvg .bubble").forEach(function(g) {
+    var sid = g.dataset.signal;
+    var signal = signals.find(function(s) { return s.id === sid; });
+    if (!signal) return;
+    var matches = !activeTagFilter || (signal.tags && signal.tags.indexOf(activeTagFilter) !== -1);
+    g.style.opacity = matches ? "1" : ".15";
+  });
+  // Dim signal cards in inbox
+  document.querySelectorAll(".signal-item").forEach(function(card) {
+    var sid = card.dataset.signal;
+    var signal = signals.find(function(s) { return s.id === sid; });
+    if (!signal) return;
+    var matches = !activeTagFilter || (signal.tags && signal.tags.indexOf(activeTagFilter) !== -1);
+    card.style.opacity = matches ? "1" : ".25";
+  });
+}
+
+// Inbox tabs: Ranked / New / Saved
+document.querySelectorAll(".inbox-tab").forEach(function(tab, i) {
+  var tabKeys = ["ranked", "new", "saved"];
+  tab.addEventListener("click", function() {
+    activeInboxTab = tabKeys[i];
+    activeIntentFilter = "all";
+    renderSignalList();
+  });
+});
 
 setupFixtureSelector();
 renderAll();

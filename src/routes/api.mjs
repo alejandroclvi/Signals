@@ -58,6 +58,11 @@ router.get("/api/signals/:id", (req, res) => {
     communities: safeJson(signal.communities, []),
     dominant_intent: signal.dominant_intent || "question",
     intent_mix: safeJson(signal.intent_mix, {}),
+    awareness_distribution: safeJson(signal.awareness_distribution, {}),
+    dominant_awareness: signal.dominant_awareness || null,
+    desire_type: signal.desire_type || null,
+    top_extractions: safeJson(signal.top_extractions, []),
+    failed_solutions: safeJson(signal.failed_solutions, []),
     evidence: evidence.map(formatEvidencePacket),
     phrases: phrases.map(p => [p.phrase, p.count]),
     spread: spread.map(s => [s.community, s.percentage]),
@@ -260,6 +265,29 @@ router.get("/api/evidence", (req, res) => {
   });
 });
 
+router.get("/api/pipeline-runs", (req, res) => {
+  const db = getDb();
+  const contextId = req.query.context;
+  const limit = Math.min(parseInt(req.query.limit) || 10, 50);
+
+  let rows;
+  if (contextId) {
+    rows = db.prepare(
+      "SELECT * FROM pipeline_runs WHERE context_id = ? ORDER BY started_at DESC LIMIT ?"
+    ).all(contextId, limit);
+  } else {
+    rows = db.prepare(
+      "SELECT * FROM pipeline_runs ORDER BY started_at DESC LIMIT ?"
+    ).all(limit);
+  }
+
+  res.json(rows.map(row => ({
+    ...row,
+    stage_results: safeJson(row.stage_results, {}),
+    quality_gates: safeJson(row.quality_gates, {}),
+  })));
+});
+
 router.get("/api/stats", (req, res) => {
   const db = getDb();
   const contextId = req.query.context;
@@ -386,8 +414,24 @@ export function buildRadarData(contextId, fixtureId) {
     liveIntent = intentRows.map(r => [r.intent, r.c, intentColors[r.intent] || "#9aa3ad"]);
   }
 
+  // Pipeline health — last run for this context
+  const lastRun = db.prepare(
+    "SELECT * FROM pipeline_runs WHERE context_id = ? ORDER BY started_at DESC LIMIT 1"
+  ).get(contextId);
+  const pipelineHealth = lastRun ? {
+    runId: lastRun.id,
+    status: lastRun.status,
+    startedAt: lastRun.started_at,
+    completedAt: lastRun.completed_at,
+    evidenceIn: lastRun.evidence_in,
+    evidenceOut: lastRun.evidence_out,
+    signalsProduced: lastRun.signals_produced,
+    gates: safeJson(lastRun.quality_gates, {}),
+  } : null;
+
   return {
     contextId,
+    pipelineHealth,
     crumbs: fixtureMeta ? fixtureMeta.crumbs : "Radar / " + context.label,
     period: fixtureMeta ? fixtureMeta.period : "last 30d",
     topicCount: fixtureMeta ? fixtureMeta.topic_count : signals.length,
@@ -443,6 +487,11 @@ function formatSignal(row) {
     why: row.why,
     dominant_intent: row.dominant_intent || "question",
     intent_mix: safeJson(row.intent_mix, {}),
+    awareness_distribution: safeJson(row.awareness_distribution, {}),
+    dominant_awareness: row.dominant_awareness || null,
+    desire_type: row.desire_type || null,
+    top_extractions: safeJson(row.top_extractions, []),
+    failed_solutions: safeJson(row.failed_solutions, []),
     suggested: {
       title: row.suggested_title || "Suggested action",
       sub: row.suggested_sub || "",
@@ -467,6 +516,9 @@ function formatEvidencePacket(row) {
     source_id: row.source_id || "",
     source_layer: row.source_layer || "",
     intent: row.intent || "question",
+    awareness_level: row.awareness_level || null,
+    evidence_weight: row.evidence_weight || 1.0,
+    quality_score: row.quality_score || null,
     author: row.author_ref || "anonymous",
     age: relativeAge(row.published_at),
     score: metrics.score || 0,

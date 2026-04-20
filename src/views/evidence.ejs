@@ -42,6 +42,14 @@
               <option value="<%= i %>"><%= i %></option>
             <% } %>
           </select>
+          <select class="select" id="filterAwareness" aria-label="Filter by awareness">
+            <option value="">All awareness</option>
+            <option value="unaware">Unaware</option>
+            <option value="problem_aware">Problem Aware</option>
+            <option value="solution_aware">Solution Aware</option>
+            <option value="product_aware">Product Aware</option>
+            <option value="most_aware">Most Aware</option>
+          </select>
         </div>
       </header>
 
@@ -65,6 +73,7 @@
                 <th>Content</th>
                 <th>Author</th>
                 <th>Score</th>
+                <th>Awareness</th>
                 <th>Signal</th>
                 <th>Date</th>
                 <th></th>
@@ -73,18 +82,19 @@
             <tbody id="evidenceBody">
               <% for (const ep of evidence) { %>
                 <% let m; try { m = JSON.parse(ep.metrics || '{}'); } catch { m = {}; } %>
-                <tr class="evidence-row" data-source="<%= ep.source_id %>" data-community="<%= ep.community %>" data-intent="<%= ep.intent || '' %>">
+                <tr class="evidence-row" data-source="<%= ep.source_id %>" data-community="<%= ep.community %>" data-intent="<%= ep.intent || '' %>" data-awareness="<%= ep.awareness_level || '' %>">
                   <td><span class="mini-chip"><%= ep.source_id %></span></td>
                   <td class="evidence-community"><%= ep.community || '-' %></td>
                   <td class="evidence-content">
-                    <div class="evidence-title"><%= ep.title || '' %></div>
+                    <div class="evidence-title"><% if (ep.url && ep.url !== '#') { %><a href="<%= ep.url %>" target="_blank" rel="noopener"><%= ep.title || '' %></a><% } else { %><%= ep.title || '' %><% } %></div>
                     <div class="evidence-body"><%= ep.body || '' %></div>
                   </td>
                   <td class="evidence-author"><%= ep.author_ref || '-' %></td>
                   <td class="evidence-score">&#9650; <%= m.score || 0 %></td>
+                  <td><% if (ep.awareness_level) { %><span class="mini-chip awareness-<%= ep.awareness_level %>"><%= ep.awareness_level.replace(/_/g, ' ') %></span><% } %></td>
                   <td>
                     <% if (ep.signal_title) { %>
-                      <a href="/?context=<%= activeContext.id %>#<%= ep.signal_id %>" class="evidence-signal-link"><%= ep.signal_title %></a>
+                      <a href="/?context=<%= activeContext.id %>#<%= ep.signal_id %>" class="evidence-signal-link" title="View in radar"><%= ep.signal_title %></a>
                     <% } else { %>
                       <span class="faint">unlinked</span>
                     <% } %>
@@ -112,12 +122,14 @@
     var filterSource = document.getElementById("filterSource");
     var filterCommunity = document.getElementById("filterCommunity");
     var filterIntent = document.getElementById("filterIntent");
+    var filterAwareness = document.getElementById("filterAwareness");
 
     function filterEvidence() {
       var term = (searchInput.value || "").trim().toLowerCase();
       var source = filterSource.value;
       var community = filterCommunity.value;
       var intent = filterIntent.value;
+      var awareness = filterAwareness ? filterAwareness.value : "";
       var rows = document.querySelectorAll(".evidence-row");
       var visible = 0;
       rows.forEach(function(row) {
@@ -125,7 +137,8 @@
         var matchSource = !source || row.dataset.source === source;
         var matchComm = !community || row.dataset.community === community;
         var matchIntent = !intent || row.dataset.intent === intent;
-        var show = matchText && matchSource && matchComm && matchIntent;
+        var matchAwareness = !awareness || row.dataset.awareness === awareness;
+        var show = matchText && matchSource && matchComm && matchIntent && matchAwareness;
         row.style.display = show ? "" : "none";
         if (show) visible++;
       });
@@ -140,14 +153,18 @@
     if (params.get("intent") && filterIntent) {
       filterIntent.value = params.get("intent");
     }
+    if (params.get("awareness") && filterAwareness) {
+      filterAwareness.value = params.get("awareness");
+    }
 
     if (searchInput) searchInput.addEventListener("input", filterEvidence);
     if (filterSource) filterSource.addEventListener("change", filterEvidence);
     if (filterCommunity) filterCommunity.addEventListener("change", filterEvidence);
     if (filterIntent) filterIntent.addEventListener("change", filterEvidence);
+    if (filterAwareness) filterAwareness.addEventListener("change", filterEvidence);
 
     // Apply initial filter if URL params set
-    if (params.get("community") || params.get("intent")) filterEvidence();
+    if (params.get("community") || params.get("intent") || params.get("awareness")) filterEvidence();
 
     // Context switching
     var contextSelect = document.getElementById("contextSelect");

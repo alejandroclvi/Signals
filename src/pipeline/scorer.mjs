@@ -20,8 +20,9 @@ export function scoreSignal(signal, evidencePackets) {
   const tags = safeParseJson(signal.tags, []);
   const communities = safeParseJson(signal.communities, []);
 
-  // 1. Repetition — how many evidence packets support this signal
-  const repetition = Math.min(100, Math.round(signal.mentions * 4.3));
+  // 1. Repetition — weighted evidence support (crowd-validated comments count more)
+  const weightedSum = evidencePackets.reduce((sum, ep) => sum + (ep.evidence_weight || 1.0), 0);
+  const repetition = Math.min(100, Math.round(weightedSum * 4.3));
 
   // 2. Pain intensity — presence of frustration/demand language
   let painIntensity = 62;
@@ -36,8 +37,13 @@ export function scoreSignal(signal, evidencePackets) {
   const phraseWeight = phrases.reduce((sum, p) => sum + p[1], 0);
   const toolRequest = Math.min(100, Math.round(phraseWeight / 1.7));
 
-  // 5. Engagement quality — comment depth relative to mentions
-  const engagementQuality = Math.min(100, Math.round(signal.comments / Math.max(1, signal.mentions) * 4));
+  // 5. Engagement quality — weighted engagement (high-upvote comments boost this)
+  const weightedEngagement = evidencePackets.reduce((sum, ep) => {
+    const m = safeParseJson(ep.metrics, {});
+    const w = ep.evidence_weight || 1.0;
+    return sum + (m.comments || 0) * w;
+  }, 0);
+  const engagementQuality = Math.min(100, Math.round(weightedEngagement / Math.max(1, signal.mentions) * 3));
 
   // 6. Freshness — recency of evidence
   let freshness = 72;
@@ -70,6 +76,17 @@ export function scoreSignal(signal, evidencePackets) {
   else if (dominantIntent === "insight") signalQuality = 50;
   else if (dominantIntent === "promotion") signalQuality = 20;
 
+  // 10. Insight depth — deep extraction patterns found
+  const extractions = signal._deepExtractions || [];
+  const notXitsY = extractions.filter(e => e.extraction_type === "not_x_its_y").length;
+  const identityCount = extractions.filter(e => e.extraction_type === "identity_statement").length;
+  const insightDepth = Math.min(100, extractions.length * 12 + notXitsY * 20 + identityCount * 20);
+
+  // 11. Solution gap — failed solutions with community validation
+  const failedSols = extractions.filter(e => e.extraction_type === "failed_solution");
+  const failedValidation = failedSols.reduce((sum, e) => sum + (e.upvotes || 0), 0);
+  const solutionGap = Math.min(100, failedSols.length * 20 + Math.round(failedValidation / 10));
+
   const components = [
     ["Repetition", repetition],
     ["Pain intensity", painIntensity],
@@ -80,6 +97,8 @@ export function scoreSignal(signal, evidencePackets) {
     ["Author diversity", authorDiversity],
     ["Signal quality", signalQuality],
     ["Missing evidence penalty", missingPenalty],
+    ["Insight depth", insightDepth],
+    ["Solution gap", solutionGap],
   ];
 
   const total = components.reduce((sum, c) => sum + c[1], 0);

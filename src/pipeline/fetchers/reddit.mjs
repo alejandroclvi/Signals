@@ -12,9 +12,15 @@ const DELAY_MS = 1200;
 const MAX_RETRIES = 3;
 
 function searchUrl(subreddit, query, sort, limit) {
-  const url = new URL(`https://www.reddit.com/r/${encodeURIComponent(subreddit)}/search.json`);
+  // Discovery mode: no subreddit → search ALL of Reddit
+  // This lets Reddit discover which communities the pain surfaces in,
+  // instead of us pre-selecting communities based on assumptions.
+  const base = subreddit
+    ? `https://www.reddit.com/r/${encodeURIComponent(subreddit)}/search.json`
+    : `https://www.reddit.com/search.json`;
+  const url = new URL(base);
   url.searchParams.set("q", query);
-  url.searchParams.set("restrict_sr", "1");
+  if (subreddit) url.searchParams.set("restrict_sr", "1");
   url.searchParams.set("sort", sort);
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("raw_json", "1");
@@ -54,7 +60,7 @@ async function fetchListing(subreddit, query, sort, limit) {
   return (json?.data?.children || []).map(child => ({
     ...child.data,
     _subreddit_query: query,
-    _subreddit_target: subreddit,
+    _subreddit_target: subreddit || child.data.subreddit || "discovered",
   }));
 }
 
@@ -67,15 +73,20 @@ export async function fetchReddit({ subreddits, queries, limitPerQuery, sort, on
   const sortBy = sort || DEFAULT_SORT;
   const results = [];
 
-  for (const subreddit of subreddits) {
+  // Discovery mode: empty subreddits → search all of Reddit per query
+  // The avatar's pain phrases go to Reddit's global search, which discovers
+  // the communities where those conversations actually happen.
+  const subs = subreddits && subreddits.length > 0 ? subreddits : [null];
+
+  for (const subreddit of subs) {
     for (const query of queries) {
       try {
         const posts = await fetchListing(subreddit, query, sortBy, limit);
         results.push(...posts);
-        if (onProgress) onProgress({ subreddit, query, count: posts.length });
+        if (onProgress) onProgress({ subreddit: subreddit || "all", query, count: posts.length });
         await sleep(DELAY_MS);
       } catch (err) {
-        if (onProgress) onProgress({ subreddit, query, count: 0, error: err.message });
+        if (onProgress) onProgress({ subreddit: subreddit || "all", query, count: 0, error: err.message });
       }
     }
   }

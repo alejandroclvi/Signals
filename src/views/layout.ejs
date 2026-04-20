@@ -14,6 +14,7 @@
       <%- include('partials/topbar', { activeContext: activeContext, fixtures: fixtures, activeFixtureId: activeFixtureId }) %>
 
       <section class="metric-strip" aria-label="Radar metrics" id="metrics"></section>
+      <div class="pipeline-health-bar" id="pipelineHealth"></div>
 
       <%- include('partials/signal-list') %>
       <%- include('partials/control-plane') %>

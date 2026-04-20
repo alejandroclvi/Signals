@@ -23,6 +23,43 @@ safeAlter("ALTER TABLE signals ADD COLUMN dominant_intent TEXT");
 safeAlter("ALTER TABLE signals ADD COLUMN intent_mix TEXT");
 safeAlter("ALTER TABLE signals ADD COLUMN alerted INTEGER DEFAULT 0");
 
+// Phase 1: Awareness classification + evidence weighting
+safeAlter("ALTER TABLE evidence_packets ADD COLUMN awareness_level TEXT");
+safeAlter("ALTER TABLE evidence_packets ADD COLUMN evidence_weight REAL DEFAULT 1.0");
+safeAlter("ALTER TABLE signals ADD COLUMN awareness_distribution TEXT");
+safeAlter("ALTER TABLE signals ADD COLUMN dominant_awareness TEXT");
+
+// Phase 2: Deep extraction — desire type, extractions, failed solutions
+db.exec(`CREATE TABLE IF NOT EXISTS evidence_extractions (
+  id              TEXT PRIMARY KEY,
+  evidence_id     TEXT REFERENCES evidence_packets(id) ON DELETE CASCADE,
+  extraction_type TEXT NOT NULL,
+  surface_text    TEXT,
+  deeper_text     TEXT,
+  confidence      REAL,
+  upvotes         INTEGER,
+  created_at      TEXT DEFAULT (datetime('now'))
+)`);
+safeAlter("ALTER TABLE signals ADD COLUMN desire_type TEXT");
+safeAlter("ALTER TABLE signals ADD COLUMN top_extractions TEXT");
+safeAlter("ALTER TABLE signals ADD COLUMN failed_solutions TEXT");
+
+// Phase 3: Pipeline stages + quality gates
+db.exec(`CREATE TABLE IF NOT EXISTS pipeline_runs (
+  id              TEXT PRIMARY KEY,
+  context_id      TEXT REFERENCES contexts(id) ON DELETE CASCADE,
+  started_at      TEXT DEFAULT (datetime('now')),
+  completed_at    TEXT,
+  stage_results   TEXT,
+  quality_gates   TEXT,
+  evidence_in     INTEGER,
+  evidence_out    INTEGER,
+  signals_produced INTEGER,
+  status          TEXT DEFAULT 'running'
+)`);
+safeAlter("ALTER TABLE evidence_packets ADD COLUMN quality_score REAL");
+safeAlter("ALTER TABLE evidence_packets ADD COLUMN pipeline_run_id TEXT");
+
 // Seed evidence layers (static reference data)
 const upsertLayer = db.prepare(
   "INSERT OR REPLACE INTO evidence_layers (id, label, note, sort_order) VALUES (?, ?, ?, ?)"
