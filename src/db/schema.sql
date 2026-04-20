@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS signals (
   last_seen       TEXT,
   dismissed       INTEGER DEFAULT 0,
   saved           INTEGER DEFAULT 0,
+  alerted         INTEGER DEFAULT 0,
   created_at      TEXT DEFAULT (datetime('now')),
   updated_at      TEXT DEFAULT (datetime('now'))
 );

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Watchlist - Signals</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app">
+    <%- include('partials/sidebar', { contexts: contexts, activeContext: activeContext, page: page, stats: stats }) %>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="crumbs">Watchlist / <%= activeContext.label %></div>
+          <div class="title-row">
+            <h1>Watchlist</h1>
+          </div>
+        </div>
+      </header>
+
+      <div class="evidence-library-header">
+        <span class="evidence-count"><%= saved.length %> saved signals</span>
+      </div>
+
+      <div class="evidence-library" id="watchlistBody">
+        <% if (!saved.length && !dismissed.length) { %>
+          <div class="empty-state">
+            <div class="empty-icon">&#9633;</div>
+            <div class="empty-title">No saved signals</div>
+            <div class="empty-sub">Save signals from the Radar to track them here.</div>
+          </div>
+        <% } %>
+
+        <% if (saved.length) { %>
+          <table class="evidence-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Signal</th>
+                <th>Status</th>
+                <th>Confidence</th>
+                <th>Tags</th>
+                <th>Communities</th>
+                <th>Evidence</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% for (const s of saved) { %>
+                <% const tags = (() => { try { return JSON.parse(s.tags || '[]'); } catch { return []; } })(); %>
+                <% const comms = (() => { try { return JSON.parse(s.communities || '[]'); } catch { return []; } })(); %>
+                <% const evCount = s.evidence_ids ? s.evidence_ids.split(',').length : 0; %>
+                <tr class="evidence-row">
+                  <td class="evidence-score"><%= s.rank %></td>
+                  <td>
+                    <a href="/?context=<%= activeContext.id %>#<%= s.id %>" class="evidence-signal-link"><%= s.title %></a>
+                    <div class="evidence-body" style="font-size:12px;margin-top:4px"><%= s.summary || '' %></div>
+                  </td>
+                  <td><span class="mini-chip"><%= s.status %></span></td>
+                  <td><%= s.confidence %></td>
+                  <td><%= tags.join(', ') %></td>
+                  <td class="evidence-community"><%= comms.slice(0, 3).join(', ') %></td>
+                  <td class="evidence-score"><%= evCount %></td>
+                  <td>
+                    <a href="/?context=<%= activeContext.id %>#<%= s.id %>" class="evidence-source-link">view &#8250;</a>
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        <% } %>
+
+        <% if (dismissed.length) { %>
+          <div class="evidence-library-header" style="margin-top:32px">
+            <span class="evidence-count" style="color:var(--muted)"><%= dismissed.length %> dismissed</span>
+          </div>
+          <table class="evidence-table">
+            <thead>
+              <tr>
+                <th>Signal</th>
+                <th>Status</th>
+                <th>Confidence</th>
+                <th>Tags</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% for (const s of dismissed) { %>
+                <% const tags = (() => { try { return JSON.parse(s.tags || '[]'); } catch { return []; } })(); %>
+                <tr class="evidence-row" style="opacity:0.5">
+                  <td><%= s.title %></td>
+                  <td><span class="mini-chip"><%= s.status %></span></td>
+                  <td><%= s.confidence %></td>
+                  <td><%= tags.join(', ') %></td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    var contextSelect = document.getElementById("contextSelect");
+    if (contextSelect) {
+      contextSelect.addEventListener("change", function(e) {
+        window.location.href = "/watchlist?context=" + encodeURIComponent(e.target.value);
+      });
+    }
+    var btnNew = document.getElementById("btnNewContext");
+    if (btnNew) btnNew.addEventListener("click", function() {
+      if (typeof openNewContextModal === "function") openNewContextModal();
+    });
+  </script>
+</body>
+</html>

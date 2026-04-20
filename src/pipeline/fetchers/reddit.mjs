@@ -9,6 +9,7 @@
 const DEFAULT_LIMIT = 12;
 const DEFAULT_SORT = "new";
 const DELAY_MS = 1200;
+const MAX_RETRIES = 3;
 
 function searchUrl(subreddit, query, sort, limit) {
   const url = new URL(`https://www.reddit.com/r/${encodeURIComponent(subreddit)}/search.json`);
@@ -20,29 +21,41 @@ function searchUrl(subreddit, query, sort, limit) {
   return url;
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(url, retries = MAX_RETRIES) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "SignalsLocalPoC/0.1 by local-developer",
+      },
+    });
+
+    if (response.ok) return response;
+
+    if (response.status === 429 && attempt < retries) {
+      const retryAfter = parseInt(response.headers.get("Retry-After") || "0", 10);
+      const backoff = Math.max(retryAfter * 1000, DELAY_MS * Math.pow(2, attempt + 1));
+      await sleep(backoff);
+      continue;
+    }
+
+    throw new Error(`Reddit fetch failed ${response.status}: ${url}`);
+  }
+}
+
 async function fetchListing(subreddit, query, sort, limit) {
   const url = searchUrl(subreddit, query, sort, limit);
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "SignalsLocalPoC/0.1 by local-developer",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Reddit search failed ${response.status}: ${url}`);
-  }
-
+  const response = await fetchWithRetry(url);
   const json = await response.json();
   return (json?.data?.children || []).map(child => ({
     ...child.data,
     _subreddit_query: query,
     _subreddit_target: subreddit,
   }));
-}
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
@@ -84,18 +97,7 @@ export async function fetchPostComments(permalink, { limit = 10, onProgress } = 
   url.searchParams.set("raw_json", "1");
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "SignalsLocalPoC/0.1 by local-developer",
-      },
-    });
-
-    if (!response.ok) {
-      if (onProgress) onProgress({ permalink, count: 0, error: `Comment fetch failed ${response.status}` });
-      return [];
-    }
-
+    const response = await fetchWithRetry(url);
     const json = await response.json();
     // Reddit returns [post_listing, comment_listing]
     const commentListing = json[1];

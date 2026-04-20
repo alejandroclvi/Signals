@@ -21,6 +21,7 @@ const safeAlter = (sql) => { try { db.exec(sql); } catch {} };
 safeAlter("ALTER TABLE evidence_packets ADD COLUMN intent TEXT");
 safeAlter("ALTER TABLE signals ADD COLUMN dominant_intent TEXT");
 safeAlter("ALTER TABLE signals ADD COLUMN intent_mix TEXT");
+safeAlter("ALTER TABLE signals ADD COLUMN alerted INTEGER DEFAULT 0");
 
 // Seed evidence layers (static reference data)
 const upsertLayer = db.prepare(

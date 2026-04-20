@@ -67,17 +67,35 @@ export async function ingestReddit(options) {
 
   // 2. Normalize
   if (onProgress) onProgress({ stage: "normalize", message: "Normalizing " + rawPosts.length + " posts..." });
-  const evidencePackets = normalizeRedditPosts(rawPosts, contextId);
+  const allNormalized = normalizeRedditPosts(rawPosts, contextId);
 
-  // 2b. Fetch comments for high-engagement posts
+  // 2a. Skip evidence we already have (resume support)
+  const existingIds = new Set(
+    db.prepare("SELECT id FROM evidence_packets WHERE context_id = ?")
+      .all(contextId).map(r => r.id)
+  );
+  const existingSourceItems = new Set(
+    db.prepare("SELECT source_item_id FROM evidence_packets WHERE context_id = ?")
+      .all(contextId).map(r => r.source_item_id)
+  );
+
+  const evidencePackets = allNormalized.filter(ep => !existingIds.has(ep.id));
+  const skippedPosts = allNormalized.length - evidencePackets.length;
+  if (skippedPosts > 0 && onProgress) {
+    onProgress({ stage: "normalize", message: "Skipped " + skippedPosts + " already-ingested posts, " + evidencePackets.length + " new" });
+  }
+
+  // 2b. Fetch comments for high-engagement posts (skip posts we already have comments for)
   const COMMENT_THRESHOLD = 5;
   const COMMENT_LIMIT = 8;
-  // Deduplicate by permalink to avoid fetching comments for the same post twice
   const seenPermalinks = new Set();
   const highEngagement = rawPosts.filter(p => {
     if ((p.num_comments || 0) < COMMENT_THRESHOLD || !p.permalink) return false;
     if (seenPermalinks.has(p.permalink)) return false;
     seenPermalinks.add(p.permalink);
+    // Skip if we already have comments for this post (source_item_id starts with t1_ for comments, but we check if the post's own ID is already known)
+    const postItemId = p.name || ("t3_" + p.id);
+    if (existingSourceItems.has(postItemId) && skippedPosts > 0) return false;
     return true;
   });
 
@@ -85,6 +103,7 @@ export async function ingestReddit(options) {
     if (onProgress) onProgress({ stage: "comments", message: "Fetching comments for " + highEngagement.length + " high-engagement posts..." });
 
     const seenHashes = new Set(evidencePackets.map(ep => ep.content_hash));
+    let commentsFetched = 0;
 
     for (const post of highEngagement) {
       if (!post.permalink) continue;
@@ -96,26 +115,33 @@ export async function ingestReddit(options) {
       });
 
       if (comments.length > 0) {
-        // Tag comments with the query topic from their parent post
         for (const c of comments) {
           c._topic = post._subreddit_query || "";
           c.link_title = post.title || "";
         }
         const commentPackets = normalizeRedditComments(comments, contextId, seenHashes);
-        evidencePackets.push(...commentPackets);
+        // Filter out comments we already have
+        const newComments = commentPackets.filter(ep => !existingIds.has(ep.id));
+        evidencePackets.push(...newComments);
+        commentsFetched += newComments.length;
       }
 
       await new Promise(r => setTimeout(r, DELAY_MS));
     }
 
-    if (onProgress) onProgress({ stage: "comments", message: "Total evidence after comments: " + evidencePackets.length });
+    if (onProgress) onProgress({ stage: "comments", message: commentsFetched + " new comments, " + evidencePackets.length + " total new evidence" });
   }
 
   // 3. Write evidence to SQLite
   if (onProgress) onProgress({ stage: "store", message: "Storing " + evidencePackets.length + " evidence packets..." });
 
+  if (!evidencePackets.length) {
+    if (onProgress) onProgress({ stage: "done", message: "No new evidence to ingest." });
+    return { evidenceCount: 0, signalCount: 0, errors };
+  }
+
   const insertEvidence = db.prepare(
-    `INSERT OR REPLACE INTO evidence_packets
+    `INSERT OR IGNORE INTO evidence_packets
      (id, context_id, source_id, source_layer, source_item_id, url, title, body,
       author_ref, community, observed_at, published_at, metrics, topics, raw_ref, content_hash, intent)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -133,17 +159,27 @@ export async function ingestReddit(options) {
   });
   writeEvidence();
 
-  // 4. Extract signals
-  if (onProgress) onProgress({ stage: "extract", message: "Extracting signals..." });
+  // 4. Extract signals from ALL evidence in this context (cumulative)
+  if (onProgress) onProgress({ stage: "extract", message: "Extracting signals from all evidence..." });
 
-  const { signals, signalEvidence } = extractSignals(evidencePackets, contextId);
+  const allEvidence = db.prepare(
+    "SELECT * FROM evidence_packets WHERE context_id = ?"
+  ).all(contextId).map(row => ({
+    ...row,
+    metrics: row.metrics,
+    topics: row.topics,
+  }));
+
+  if (onProgress) onProgress({ stage: "extract", message: "Extracting signals from " + allEvidence.length + " total packets..." });
+
+  const { signals, signalEvidence } = extractSignals(allEvidence, contextId);
 
   // 5. Score signals
   if (onProgress) onProgress({ stage: "score", message: "Scoring " + signals.length + " signals..." });
 
   for (const signal of signals) {
     const packetIds = signalEvidence.get(signal.id) || [];
-    const packets = evidencePackets.filter(ep => packetIds.includes(ep.id));
+    const packets = allEvidence.filter(ep => packetIds.includes(ep.id));
     const { components, total } = scoreSignal(signal, packets);
     signal.confidence = confidenceFromScore(total);
     signal._scoreComponents = components;
@@ -224,7 +260,24 @@ export async function ingestReddit(options) {
   });
   writeSignals();
 
-  if (onProgress) onProgress({ stage: "done", message: "Done. " + evidencePackets.length + " packets, " + signals.length + " signals." });
+  // 7. Write timeline snapshot for spark history (cumulative totals for this context)
+  const today = new Date().toISOString().slice(0, 10);
+  const totalPosts = db.prepare(
+    "SELECT COUNT(*) as c FROM evidence_packets WHERE context_id = ? AND (source_item_id IS NULL OR source_item_id NOT LIKE 't1_%')"
+  ).get(contextId).c;
+  const totalComments = db.prepare(
+    "SELECT COUNT(*) as c FROM evidence_packets WHERE context_id = ? AND source_item_id LIKE 't1_%'"
+  ).get(contextId).c;
+  const totalAuthors = db.prepare(
+    "SELECT COUNT(DISTINCT author_ref) as c FROM evidence_packets WHERE context_id = ? AND author_ref IS NOT NULL"
+  ).get(contextId).c;
+
+  db.prepare(
+    `INSERT OR REPLACE INTO timeline_snapshots (context_id, snapshot_date, posts, comments, authors)
+     VALUES (?, ?, ?, ?, ?)`
+  ).run(contextId, today, totalPosts, totalComments, totalAuthors);
+
+  if (onProgress) onProgress({ stage: "done", message: "Done. " + evidencePackets.length + " new packets, " + signals.length + " signals." });
 
   return {
     evidenceCount: evidencePackets.length,

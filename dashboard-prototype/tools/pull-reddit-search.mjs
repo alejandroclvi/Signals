@@ -91,7 +91,7 @@ function buildSignals(evidencePackets) {
   return config.queries.map((query, index) => {
     const queryId = stableId(query);
     const packets = evidencePackets
-      .filter((packet) => packet.id.includes(`reddit:${queryId}:`))
+      .filter((packet) => packet.topics.includes(query))
       .sort((a, b) => (b.metrics.score + b.metrics.comments) - (a.metrics.score + a.metrics.comments))
       .slice(0, 4);
 
@@ -148,8 +148,8 @@ function buildFixture(evidencePackets) {
     metrics: [
       { title: "Emerging signals", value: String(signals.length), delta: "+live", caption: "from latest pull", spark: [1, 2, 3, signals.length] },
       { title: "High-confidence", value: "0", delta: "-", caption: "needs corroboration", spark: [0, 0, 0, 0] },
-      { title: "Communities monitored", value: String(communities.length), delta: "-", caption: "from config", spark: [communities.length] },
-      { title: "Saved evidence", value: savedEvidence, delta: "+live", caption: "normalized packets", spark: [evidencePackets.length] }
+      { title: "Communities monitored", value: String(communities.length), delta: "-", caption: "from config", spark: [0, communities.length] },
+      { title: "Saved evidence", value: savedEvidence, delta: "+live", caption: "normalized packets", spark: [0, evidencePackets.length] }
     ],
     timeline: {
       posts: signals.map((signal) => signal.mentions),
@@ -170,42 +170,16 @@ function buildFixture(evidencePackets) {
       ["Comparison", 12, "#bd842f"]
     ],
     sourceNodes: [
-      {
-        id: "reddit",
-        name: "Reddit",
-        state: "enabled",
-        layers: ["conversation"],
-        lift: 0,
-        adds: "Live Reddit search evidence from configured subreddits.",
-        cannot: "Cannot prove buying intent, adoption, budget, or causality."
-      },
-      {
-        id: "google-search",
-        name: "Google Search",
-        state: "available",
-        layers: ["intent"],
-        lift: 11,
-        adds: "Active discovery and comparison intent.",
-        cannot: "Cannot prove purchase or retention."
-      },
-      {
-        id: "github",
-        name: "GitHub",
-        state: "available",
-        layers: ["behavior"],
-        lift: 9,
-        adds: "Implementation artifacts and developer adoption.",
-        cannot: "Cannot prove buyer budget."
-      },
-      {
-        id: "primary",
-        name: "Primary Sources",
-        state: "available",
-        layers: ["truth"],
-        lift: 10,
-        adds: "Official confirmation, docs, claims, and filings.",
-        cannot: "Often validates later than social discovery."
-      }
+      { id: "reddit", name: "Reddit", state: "enabled", layers: ["conversation"], lift: 0, adds: "Live Reddit search evidence from configured subreddits.", cannot: "Cannot prove buying intent, adoption, budget, or causality." },
+      { id: "google-search", name: "Google Search", state: "available", layers: ["intent"], lift: 11, adds: "Active discovery and comparison intent.", cannot: "Cannot prove purchase or retention." },
+      { id: "google-trends", name: "Google Trends", state: "gated", layers: ["intent"], lift: 8, adds: "Broad search-demand direction.", cannot: "Weak for very early small signals." },
+      { id: "hacker-news", name: "Hacker News", state: "available", layers: ["conversation"], lift: 7, adds: "Builder debate and technical skepticism.", cannot: "Narrow audience, not broad demand." },
+      { id: "github", name: "GitHub", state: "available", layers: ["behavior"], lift: 9, adds: "Implementation artifacts and developer adoption.", cannot: "Cannot prove buyer budget." },
+      { id: "linkedin", name: "LinkedIn", state: "gated", layers: ["conversation", "economic"], lift: 8, adds: "Professional normalization and hiring signals.", cannot: "Access constraints limit full public coverage." },
+      { id: "g2-jobs", name: "G2 / Jobs", state: "gated", layers: ["economic"], lift: 10, adds: "Buyer reviews, categories, and hiring commitment.", cannot: "Usually later than early pain signals." },
+      { id: "polymarket", name: "Polymarket", state: "available", layers: ["expectation"], lift: 6, adds: "Money-backed probability movement.", cannot: "Not useful for every product-category question." },
+      { id: "stocks", name: "Stock Prices", state: "available", layers: ["capital"], lift: 6, adds: "Capital-market response and divergence.", cannot: "Cannot prove causality by itself." },
+      { id: "primary", name: "Primary Sources", state: "available", layers: ["truth"], lift: 10, adds: "Official confirmation, docs, claims, and filings.", cannot: "Often validates later than social discovery." }
     ],
     otherBubbles: [],
     evidencePackets,
@@ -235,7 +209,35 @@ if (!evidencePackets.length) {
   process.exit();
 }
 
-const fixture = buildFixture(evidencePackets);
+// Deduplicate by source_item_id: merge topics, keep highest-engagement version
+const deduped = [];
+const seen = new Map();
+for (const packet of evidencePackets) {
+  const existing = seen.get(packet.source_item_id);
+  if (existing) {
+    for (const topic of packet.topics) {
+      if (!existing.topics.includes(topic)) existing.topics.push(topic);
+    }
+    const existingScore = (existing.metrics.score || 0) + (existing.metrics.comments || 0);
+    const newScore = (packet.metrics.score || 0) + (packet.metrics.comments || 0);
+    if (newScore > existingScore) {
+      existing.id = packet.id;
+      existing.url = packet.url;
+      existing.title = packet.title;
+      existing.body = packet.body;
+      existing.metrics = packet.metrics;
+      existing.raw_ref = packet.raw_ref;
+    }
+  } else {
+    const clone = { ...packet, topics: [...packet.topics] };
+    seen.set(packet.source_item_id, clone);
+    deduped.push(clone);
+  }
+}
+const dupeCount = evidencePackets.length - deduped.length;
+if (dupeCount) console.error(`deduped ${dupeCount} duplicate source items (${evidencePackets.length} → ${deduped.length})`);
+
+const fixture = buildFixture(deduped);
 const js = `window.signalRadarFixtures = window.signalRadarFixtures || [];\nwindow.signalRadarFixtures.push(${JSON.stringify(fixture, null, 2)});\n`;
 
 await mkdir(path.dirname(outputPath), { recursive: true });

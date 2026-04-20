@@ -26,10 +26,10 @@
     <a class="nav-item<%= page === 'evidence' ? ' active' : '' %>" href="/evidence?context=<%= activeContext.id %>">
       <span class="nav-icon">&#9636;</span><span>Evidence Library</span><span class="nav-count"><%= stats.evidence %></span>
     </a>
-    <a class="nav-item" href="/?context=<%= activeContext.id %>">
+    <a class="nav-item<%= page === 'watchlist' ? ' active' : '' %>" href="/watchlist?context=<%= activeContext.id %>">
       <span class="nav-icon">&#8801;</span><span>Watchlist</span><span class="nav-count"><%= stats.saved %></span>
     </a>
-    <a class="nav-item" href="/?context=<%= activeContext.id %>">
+    <a class="nav-item<%= page === 'communities' ? ' active' : '' %>" href="/communities?context=<%= activeContext.id %>">
       <span class="nav-icon">#</span><span>Communities</span><span class="nav-count"><%= stats.communities %></span>
     </a>
     <div class="nav-label" style="padding-top:26px;">Account</div>

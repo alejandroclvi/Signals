@@ -491,9 +491,10 @@ function renderDetail() {
     actionsContainer.innerHTML =
       '<button class="button' + (signal.saved ? " active" : "") + '" type="button" id="btnSave">' + (signal.saved ? "\u2611 Saved" : "\u2610 Save") + '</button>' +
       '<button class="button' + (signal.dismissed ? " active" : "") + '" type="button" id="btnDismiss">' + (signal.dismissed ? "\u2612 Dismissed" : "\u2612 Dismiss") + '</button>' +
-      '<button class="button" type="button">\u26a1 Alert</button>';
+      '<button class="button' + (signal.alerted ? " active" : "") + '" type="button" id="btnAlert">' + (signal.alerted ? "\u26a1 Alerted" : "\u26a1 Alert") + '</button>';
     document.getElementById("btnSave").addEventListener("click", function() { saveSignal(signal.id); });
     document.getElementById("btnDismiss").addEventListener("click", function() { dismissSignal(signal.id); });
+    document.getElementById("btnAlert").addEventListener("click", function() { alertSignal(signal.id); });
   }
   document.getElementById("momentumText").textContent = signal.growth + " vs 14-day rolling baseline";
   document.getElementById("drivenBy").textContent = (signal.volume / 100).toFixed(1) + "x post volume \u00b7 " + signal.communities.length + " communities";
@@ -503,7 +504,7 @@ function renderDetail() {
   document.getElementById("evidenceList").innerHTML = signal.evidence.map(function(item) {
     var hasUrl = item.url && item.url !== "#";
     return '<article class="evidence">' +
-      '<div class="evidence-id">' + item.id + '</div>' +
+      '<div class="evidence-id" title="' + item.id + '">' + (item.sourceKind || 'post').slice(0, 4) + '</div>' +
       '<div>' +
         '<div class="quote">"' + item.quote + '"</div>' +
         '<div class="evidence-meta">' + item.source + ' \u00b7 ' + item.author + ' \u00b7 ' + item.age + ' \u00b7 \u25b2 ' + item.score + ' \u00b7 ' + item.replies + ' replies</div>' +
@@ -669,6 +670,18 @@ function dismissSignal(signalId) {
       renderDetail();
     })
     .catch(function() { showToast("Failed to dismiss", true); });
+}
+
+function alertSignal(signalId) {
+  fetch("/api/signals/" + encodeURIComponent(signalId) + "/alert", { method: "POST" })
+    .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+    .then(function(data) {
+      var s = signals.find(function(sig) { return sig.id === signalId; });
+      if (s) s.alerted = data.alerted;
+      showToast(data.alerted ? "Alert enabled" : "Alert removed");
+      renderDetail();
+    })
+    .catch(function() { showToast("Failed to set alert", true); });
 }
 
 // --- New context modal ---

@@ -36,6 +36,12 @@
               <option value="<%= c %>"><%= c %></option>
             <% } %>
           </select>
+          <select class="select" id="filterIntent" aria-label="Filter by intent">
+            <option value="">All intents</option>
+            <% for (const i of intents) { %>
+              <option value="<%= i %>"><%= i %></option>
+            <% } %>
+          </select>
         </div>
       </header>
 
@@ -67,7 +73,7 @@
             <tbody id="evidenceBody">
               <% for (const ep of evidence) { %>
                 <% let m; try { m = JSON.parse(ep.metrics || '{}'); } catch { m = {}; } %>
-                <tr class="evidence-row" data-source="<%= ep.source_id %>" data-community="<%= ep.community %>">
+                <tr class="evidence-row" data-source="<%= ep.source_id %>" data-community="<%= ep.community %>" data-intent="<%= ep.intent || '' %>">
                   <td><span class="mini-chip"><%= ep.source_id %></span></td>
                   <td class="evidence-community"><%= ep.community || '-' %></td>
                   <td class="evidence-content">
@@ -105,27 +111,43 @@
     var searchInput = document.getElementById("evidenceSearch");
     var filterSource = document.getElementById("filterSource");
     var filterCommunity = document.getElementById("filterCommunity");
+    var filterIntent = document.getElementById("filterIntent");
 
     function filterEvidence() {
       var term = (searchInput.value || "").trim().toLowerCase();
       var source = filterSource.value;
       var community = filterCommunity.value;
+      var intent = filterIntent.value;
       var rows = document.querySelectorAll(".evidence-row");
       var visible = 0;
       rows.forEach(function(row) {
         var matchText = !term || row.textContent.toLowerCase().includes(term);
         var matchSource = !source || row.dataset.source === source;
         var matchComm = !community || row.dataset.community === community;
-        var show = matchText && matchSource && matchComm;
+        var matchIntent = !intent || row.dataset.intent === intent;
+        var show = matchText && matchSource && matchComm && matchIntent;
         row.style.display = show ? "" : "none";
         if (show) visible++;
       });
       document.querySelector(".evidence-count").textContent = visible + " evidence packets";
     }
 
+    // Pre-select filter from URL params
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("community") && filterCommunity) {
+      filterCommunity.value = params.get("community");
+    }
+    if (params.get("intent") && filterIntent) {
+      filterIntent.value = params.get("intent");
+    }
+
     if (searchInput) searchInput.addEventListener("input", filterEvidence);
     if (filterSource) filterSource.addEventListener("change", filterEvidence);
     if (filterCommunity) filterCommunity.addEventListener("change", filterEvidence);
+    if (filterIntent) filterIntent.addEventListener("change", filterEvidence);
+
+    // Apply initial filter if URL params set
+    if (params.get("community") || params.get("intent")) filterEvidence();
 
     // Context switching
     var contextSelect = document.getElementById("contextSelect");

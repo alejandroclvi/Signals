@@ -43,11 +43,12 @@ window.signalRadarFixtures.push({
     },
     {
       "title": "Saved evidence",
-      "value": "286",
+      "value": "253",
       "delta": "+live",
       "caption": "normalized packets",
       "spark": [
-        286
+        0,
+        253
       ]
     }
   ],
@@ -167,6 +168,28 @@ window.signalRadarFixtures.push({
       "cannot": "Cannot prove purchase or retention."
     },
     {
+      "id": "google-trends",
+      "name": "Google Trends",
+      "state": "gated",
+      "layers": [
+        "intent"
+      ],
+      "lift": 8,
+      "adds": "Broad search-demand direction.",
+      "cannot": "Weak for very early small signals."
+    },
+    {
+      "id": "hacker-news",
+      "name": "Hacker News",
+      "state": "available",
+      "layers": [
+        "conversation"
+      ],
+      "lift": 7,
+      "adds": "Builder debate and technical skepticism.",
+      "cannot": "Narrow audience, not broad demand."
+    },
+    {
       "id": "github",
       "name": "GitHub",
       "state": "available",
@@ -176,6 +199,51 @@ window.signalRadarFixtures.push({
       "lift": 9,
       "adds": "Implementation artifacts and developer adoption.",
       "cannot": "Cannot prove buyer budget."
+    },
+    {
+      "id": "linkedin",
+      "name": "LinkedIn",
+      "state": "gated",
+      "layers": [
+        "conversation",
+        "economic"
+      ],
+      "lift": 8,
+      "adds": "Professional normalization and hiring signals.",
+      "cannot": "Access constraints limit full public coverage."
+    },
+    {
+      "id": "g2-jobs",
+      "name": "G2 / Jobs",
+      "state": "gated",
+      "layers": [
+        "economic"
+      ],
+      "lift": 10,
+      "adds": "Buyer reviews, categories, and hiring commitment.",
+      "cannot": "Usually later than early pain signals."
+    },
+    {
+      "id": "polymarket",
+      "name": "Polymarket",
+      "state": "available",
+      "layers": [
+        "expectation"
+      ],
+      "lift": 6,
+      "adds": "Money-backed probability movement.",
+      "cannot": "Not useful for every product-category question."
+    },
+    {
+      "id": "stocks",
+      "name": "Stock Prices",
+      "state": "available",
+      "layers": [
+        "capital"
+      ],
+      "lift": 6,
+      "adds": "Capital-market response and divergence.",
+      "cannot": "Cannot prove causality by itself."
     },
     {
       "id": "primary",
@@ -195,6 +263,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sq0i2q",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sq0i2q",
       "url": "https://www.reddit.com/r/startups/comments/1sq0i2q/honest_question_from_a_firsttime_founder_how_much/",
       "title": "Honest question from a first-time founder: how much do angels actually put into MVP-stage startups? [i will not promote]",
@@ -217,6 +286,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1spwvm1",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1spwvm1",
       "url": "https://www.reddit.com/r/startups/comments/1spwvm1/running_a_one_person_company_with_16_ai_skills/",
       "title": "Running a one person company with 16 ai skills. revenue is real but its not the 10x everyone promises. i will not promote",
@@ -239,6 +309,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1skwlp1",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1skwlp1",
       "url": "https://www.reddit.com/r/startups/comments/1skwlp1/the_ar_smart_glasses_market_tripled_last_year_and/",
       "title": "The AR smart glasses market tripled last year and almost nobody is building for it. I will not promote.",
@@ -258,9 +329,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/startups/ai-research-assistant/t3_1skwlp1"
     },
     {
-      "id": "reddit:ai-research-assistant:t3_1sivput",
+      "id": "reddit:pricing-advisor:t3_1sivput",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sivput",
       "url": "https://www.reddit.com/r/startups/comments/1sivput/im_a_serial_founder_heres_how_i_come_up_with/",
       "title": "I'm a Serial Founder. Here's how I come up with Business Ideas. I will not promote.",
@@ -270,19 +342,22 @@ window.signalRadarFixtures.push({
       "observed_at": "2026-04-19T19:50:47.749Z",
       "published_at": "2026-04-11T21:37:53.000Z",
       "metrics": {
-        "score": 960,
+        "score": 964,
         "comments": 178,
         "upvote_ratio": 0.96
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "AI CRM follow up",
+        "pricing advisor"
       ],
-      "raw_ref": "raw://reddit/search/startups/ai-research-assistant/t3_1sivput"
+      "raw_ref": "raw://reddit/search/startups/pricing-advisor/t3_1sivput"
     },
     {
       "id": "reddit:ai-research-assistant:t3_1sihvqz",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sihvqz",
       "url": "https://www.reddit.com/r/startups/comments/1sihvqz/how_do_you_deal_with_the_fear_that_your_saas_idea/",
       "title": "How do you deal with the fear that your SaaS idea can be copied in days? I will not promote",
@@ -305,6 +380,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1shayvu",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1shayvu",
       "url": "https://www.reddit.com/r/startups/comments/1shayvu/i_made_an_mvp_startup_it_took_me_6_months_to/",
       "title": "i made an MVP startup it took me 6 months to build but failed. Here is what happened. i will not promote",
@@ -319,14 +395,16 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.89
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/startups/ai-research-assistant/t3_1shayvu"
     },
     {
-      "id": "reddit:ai-research-assistant:t3_1sflpjr",
+      "id": "reddit:ai-crm-follow-up:t3_1sflpjr",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sflpjr",
       "url": "https://www.reddit.com/r/startups/comments/1sflpjr/i_did_everything_the_right_way_and_i_have_zero_to/",
       "title": "I did everything the \"right way\" and I have zero to show for it. Is the silence phase normal or am I just delusional? (I will not promote)",
@@ -336,19 +414,21 @@ window.signalRadarFixtures.push({
       "observed_at": "2026-04-19T19:50:47.749Z",
       "published_at": "2026-04-08T07:10:31.000Z",
       "metrics": {
-        "score": 42,
+        "score": 44,
         "comments": 147,
         "upvote_ratio": 0.75
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "AI CRM follow up"
       ],
-      "raw_ref": "raw://reddit/search/startups/ai-research-assistant/t3_1sflpjr"
+      "raw_ref": "raw://reddit/search/startups/ai-crm-follow-up/t3_1sflpjr"
     },
     {
       "id": "reddit:ai-research-assistant:t3_1sffial",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sffial",
       "url": "https://www.reddit.com/r/startups/comments/1sffial/funding_options_for_deep_tech_ai_product_i_will/",
       "title": "Funding options for deep tech AI product. ( I will not promote )",
@@ -371,6 +451,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sdriw3",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sdriw3",
       "url": "https://www.reddit.com/r/startups/comments/1sdriw3/i_finally_stopped_doing_founderled_outbound_at/",
       "title": "I finally stopped doing founder-led outbound at night (and pipeline didn't die)(I will not promote)",
@@ -393,6 +474,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sc6m5v",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sc6m5v",
       "url": "https://www.reddit.com/r/startups/comments/1sc6m5v/do_you_actually_know_whether_your_product_appears/",
       "title": "Do you actually know whether your product appears on search? (I will not promote)",
@@ -415,6 +497,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sbu2my",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sbu2my",
       "url": "https://www.reddit.com/r/startups/comments/1sbu2my/i_will_not_promote_the_current_state_of_ai/",
       "title": "(i will not promote) the current state of \"ai\" startups",
@@ -437,6 +520,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sb460w",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sb460w",
       "url": "https://www.reddit.com/r/startups/comments/1sb460w/appsservices_out_there_for_aggregating_user/",
       "title": "Apps/services out there for aggregating user sentiment data on reddit, trust pilot etc? I will not promote",
@@ -459,6 +543,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1s9e4sj",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s9e4sj",
       "url": "https://www.reddit.com/r/startups/comments/1s9e4sj/i_spent_45_on_instagram_ads_to_validate_my_app/",
       "title": "I spent ~$45 on Instagram ads to validate my app idea before writing any code. Here's my exact setup, results, and what I'd do differently. i will not promote",
@@ -481,6 +566,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1rn45nz",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rn45nz",
       "url": "https://www.reddit.com/r/startups/comments/1rn45nz/i_spent_60kmonth_on_pr_agencies_at_a_startup_that/",
       "title": "I spent > $60K/month on PR agencies at a startup that raised $680M. Here's what I learned about getting press as an early-stage operator - i will not promote",
@@ -503,6 +589,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1qmyrpz",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1qmyrpz",
       "url": "https://www.reddit.com/r/startups/comments/1qmyrpz/my_price_comparison_site_hit_5kmo_top_3_in/",
       "title": "My price comparison site hit $5k/mo (top 3 in Australia) - but stuck on what's next (I will not promote)",
@@ -525,6 +612,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1q6je55",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1q6je55",
       "url": "https://www.reddit.com/r/startups/comments/1q6je55/i_am_working_on_a_tool_to_automate_visual/",
       "title": "I am working on a tool to automate visual branding and i need your advice. I will not promote",
@@ -547,6 +635,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1q5uf03",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1q5uf03",
       "url": "https://www.reddit.com/r/startups/comments/1q5uf03/where_do_you_find_competitor_weaknesses_before/",
       "title": "Where do you find competitor weaknesses before building? I will not promote",
@@ -569,6 +658,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1py4tr4",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1py4tr4",
       "url": "https://www.reddit.com/r/startups/comments/1py4tr4/which_of_these_would_you_actually_pay_for_i_will/",
       "title": "Which of these would you actually pay for? I will not promote",
@@ -591,6 +681,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1mh9cjz",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1mh9cjz",
       "url": "https://www.reddit.com/r/startups/comments/1mh9cjz/got_a_cease_desist_heres_what_i_learned_and_what/",
       "title": "Got a cease & desist. Here's what I learned and what every founder should know (i will not promote)",
@@ -613,6 +704,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1m8vg87",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1m8vg87",
       "url": "https://www.reddit.com/r/startups/comments/1m8vg87/our_marketing_tech_stack_at_a_saas_startup_what/",
       "title": "Our Marketing Tech Stack at a SaaS Startup: What We Use (and Why) - I will not promote",
@@ -635,6 +727,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1m87joo",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1m87joo",
       "url": "https://www.reddit.com/r/startups/comments/1m87joo/had_my_antler_interview_today_need_advice_i_will/",
       "title": "Had my Antler Interview Today - Need Advice - I will not promote",
@@ -657,6 +750,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1lukg5l",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1lukg5l",
       "url": "https://www.reddit.com/r/startups/comments/1lukg5l/these_startup_growth_plays_shocked_me_did_it_you/",
       "title": "These startup growth plays shocked me, did it  you? (I will not promote)",
@@ -679,6 +773,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1l69spv",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1l69spv",
       "url": "https://www.reddit.com/r/startups/comments/1l69spv/is_it_important_to_track_competitors_i_will_not/",
       "title": "is it important to track competitors? - i will not promote",
@@ -701,6 +796,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1kmg4mb",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1kmg4mb",
       "url": "https://www.reddit.com/r/startups/comments/1kmg4mb/4_months_building_the_wrong_features_how_i/",
       "title": "4 Months Building the Wrong Features - How I Learned to Truly Hear Customers - I will not promote",
@@ -723,6 +819,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1spu3tp",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1spu3tp",
       "url": "https://www.reddit.com/r/startups/comments/1spu3tp/is_there_still_room_to_build_in_telehealth_or_is/",
       "title": "Is there still room to build in telehealth, or is this already saturated? i will not promote",
@@ -745,6 +842,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1spohif",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1spohif",
       "url": "https://www.reddit.com/r/startups/comments/1spohif/founders_do_you_actually_cold_call_or_just_email/",
       "title": "founders do you actually cold call or just email? (i will not promote, just seeking validation here)",
@@ -759,7 +857,8 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.5
       },
       "topics": [
-        "AI CRM follow up"
+        "AI CRM follow up",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/startups/ai-crm-follow-up/t3_1spohif"
     },
@@ -767,6 +866,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1so3nqb",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1so3nqb",
       "url": "https://www.reddit.com/r/startups/comments/1so3nqb/followed_my_passion_was_told_success_was/",
       "title": "Followed my passion. Was told success was impossible in a saturated market. Did it anyway. Wanted to share my experience and how I already won. (I will not promote)",
@@ -789,6 +889,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sna69v",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sna69v",
       "url": "https://www.reddit.com/r/startups/comments/1sna69v/im_building_an_aipowered_outreach_automation_tool/",
       "title": "I'm building an AI-powered outreach automation tool, would you use this? I WILL NOT PROMOTE",
@@ -811,6 +912,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1skkfxh",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1skkfxh",
       "url": "https://www.reddit.com/r/startups/comments/1skkfxh/its_really_tough_isnt_it_i_need_to_vent_and_i/",
       "title": "It's really tough, isn't it? I need to vent. And I will not promote",
@@ -825,36 +927,16 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.94
       },
       "topics": [
-        "AI CRM follow up"
+        "AI CRM follow up",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/startups/ai-crm-follow-up/t3_1skkfxh"
-    },
-    {
-      "id": "reddit:ai-crm-follow-up:t3_1sivput",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1sivput",
-      "url": "https://www.reddit.com/r/startups/comments/1sivput/im_a_serial_founder_heres_how_i_come_up_with/",
-      "title": "I'm a Serial Founder. Here's how I come up with Business Ideas. I will not promote.",
-      "body": "I'm a Serial Founder. Here's how I come up with Business Ideas. I will not promote.\n\n**NO AI WAS USED IN WRITING THIS** I have been working on this post for over a year, it's all my own content, nothing from a model.  I'll leave a screenshot showing the markdown files with dates in the comments.\n\nHello my name's Troy. I'm a serial founder who's been either a founder or founding employee at 9 startups with the total valuation of said startups north of $1bn. My current startup that I co-founded is currently at $5m in ARR and growing rapidly. I used to be a teacher and have been really itching to write and what I've learned over the last decade and a half of being in the startup space.\n\nMods, I'm happy to verify above if needed.\n\nI browse this and other similar subreddits often and see a lot of similar questions pop up. The problem is the vast majority of the members in these communities are either trying to sell something or don't know what they're talking about (respectfully <3). My hope is to shine some light on some of the most common questions I see here and give some of you motivated folks some direction. **Not trying to sell you anything, i dont want your money**. I just hope it's useful. \n\n\n# 1.1 | \"What kind of business should I start?\"\n\nThe people who ask a variation of this question will often get blasted in the comments despite it being honestly a very good question th",
-      "author_ref": "sha256:e16fdb04a63c5640",
-      "community": "r/startups",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-11T21:37:53.000Z",
-      "metrics": {
-        "score": 961,
-        "comments": 178,
-        "upvote_ratio": 0.96
-      },
-      "topics": [
-        "AI CRM follow up"
-      ],
-      "raw_ref": "raw://reddit/search/startups/ai-crm-follow-up/t3_1sivput"
     },
     {
       "id": "reddit:ai-crm-follow-up:t3_1shpl8i",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1shpl8i",
       "url": "https://www.reddit.com/r/startups/comments/1shpl8i/i_think_i_really_am_just_the_idea_guy_and_its/",
       "title": "I think i really am just the “idea guy” and it’s starting to get to me. Losing motivation -i will not quit - i will not promote",
@@ -877,6 +959,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sh8kvf",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sh8kvf",
       "url": "https://www.reddit.com/r/startups/comments/1sh8kvf/40_trans_broke_single_parent_high_school_dropout/",
       "title": "40, trans, broke, single parent, high school dropout, zero coding knowledge. I built a social media platform with AI in 30 days for less than $400. This is not a success story. This is a survival story. I will not promote.",
@@ -899,6 +982,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sh4x9d",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sh4x9d",
       "url": "https://www.reddit.com/r/startups/comments/1sh4x9d/peculiar_career_situation_i_will_not_promote/",
       "title": "Peculiar Career Situation (I will not promote)",
@@ -913,36 +997,16 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 1
       },
       "topics": [
-        "AI CRM follow up"
+        "AI CRM follow up",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/startups/ai-crm-follow-up/t3_1sh4x9d"
-    },
-    {
-      "id": "reddit:ai-crm-follow-up:t3_1sflpjr",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1sflpjr",
-      "url": "https://www.reddit.com/r/startups/comments/1sflpjr/i_did_everything_the_right_way_and_i_have_zero_to/",
-      "title": "I did everything the \"right way\" and I have zero to show for it. Is the silence phase normal or am I just delusional? (I will not promote)",
-      "body": "I did everything the \"right way\" and I have zero to show for it. Is the silence phase normal or am I just delusional? (I will not promote)\n\nI need to be honest somewhere, and this is the most anonymous place I have.\n\nI'm a CS student in Nepal. A few months ago I decided to build an AI startup. Solo. No cofounder. No network. No rich parents. No Silicon Valley connections. My \"team\" is me and a bunch of AI tools. I registered a real company. Set up international payments. Got startup cloud credits. Did months of research into a real problem. Warranty claims automation for small e-commerce brands.\n\nI followed every piece of advice I found on here:\n\n* \"Find a real problem.\" I did\n* \"Research the market.\" I did. Deeply\n* \"Talk to customers.\" I tried\n* \"Do cold outreach.\" I tried\n\nHere's what nobody prepared me for: the silence.\n\nI send LinkedIn messages. Nothing. I send cold emails. Nothing. I got my LinkedIn account restricted because I was trying too hard. I'm a college student from Nepal reaching out to business owners in the US. I have absolutely zero credibility to them. I'm invisible.\n\nAnd here's the part that messes with your head. You keep reading posts on here with people sharing wins and advice like it's all so obvious. \"Just talk to 20 people.\" \"Just hop in DMs.\" \"Just build in public.\" And you start thinking, maybe I'm the problem? Maybe I'm the one who's just not cut o",
-      "author_ref": "sha256:d6bd17deda438d6c",
-      "community": "r/startups",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-08T07:10:31.000Z",
-      "metrics": {
-        "score": 44,
-        "comments": 147,
-        "upvote_ratio": 0.75
-      },
-      "topics": [
-        "AI CRM follow up"
-      ],
-      "raw_ref": "raw://reddit/search/startups/ai-crm-follow-up/t3_1sflpjr"
     },
     {
       "id": "reddit:ai-crm-follow-up:t3_1sehg7k",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sehg7k",
       "url": "https://www.reddit.com/r/startups/comments/1sehg7k/finding_beta_users_for_a_niche_b2b_procurement/",
       "title": "Finding beta users for a niche B2B procurement tool, what channels actually work when your users aren't on Twitter or Product Hunt? (I will not promote)",
@@ -965,6 +1029,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1s8q7dr",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s8q7dr",
       "url": "https://www.reddit.com/r/startups/comments/1s8q7dr/my_pushback_experience_as_a_founder_i_will_not/",
       "title": "My pushback experience as a founder - I will not promote",
@@ -984,31 +1049,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/startups/ai-crm-follow-up/t3_1s8q7dr"
     },
     {
-      "id": "reddit:agent-framework-production:t3_1spohif",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1spohif",
-      "url": "https://www.reddit.com/r/startups/comments/1spohif/founders_do_you_actually_cold_call_or_just_email/",
-      "title": "founders do you actually cold call or just email? (i will not promote, just seeking validation here)",
-      "body": "founders do you actually cold call or just email? (i will not promote, just seeking validation here)\n\ni’ve been thinking about this and wanted some honest feedback\n\nit feels like a lot of early stage founders struggle with actually talking to users. everyone says “just talk to customers” but in reality people either don’t do it or they just send emails and hope for replies. cold outreach ends up being mostly email or linkedin and response rates are terrible\n\nwhat i’m wondering is this\n\nwhat if there was a tool that could handle outbound calls for you in a more scalable way\n\nyou upload a list of contacts, define a goal like idea validation, asking for feedback, pitching a product, or getting people onto a waitlist, and an ai agent calls them\n\nthe important part is it would sound fully natural. not robotic. like an actual human conversation where it can respond, ask follow ups, handle objections etc\n\nbasically trying to remove the bottleneck of founders not wanting to do cold calls or not having time to do enough of them\n\ncouple questions\n\nwould you actually use something like this for idea validation or early outreach\n\nor would you feel weird about an ai calling people on your behalf\n\nand if you wouldn’t use it, what’s the main blocker for you\n\ncurious to hear real opinions, not trying to sell anything",
-      "author_ref": "sha256:738eb3af6b0788f6",
-      "community": "r/startups",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-19T09:40:46.000Z",
-      "metrics": {
-        "score": 0,
-        "comments": 11,
-        "upvote_ratio": 0.5
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/startups/agent-framework-production/t3_1spohif"
-    },
-    {
       "id": "reddit:agent-framework-production:t3_1sngheb",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sngheb",
       "url": "https://www.reddit.com/r/startups/comments/1sngheb/how_are_you_acquiring_your_first_users_how_much/",
       "title": "How are you acquiring your first users? How much are you automating? - B2C / Marketplaces - I will not promote",
@@ -1028,31 +1072,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/startups/agent-framework-production/t3_1sngheb"
     },
     {
-      "id": "reddit:agent-framework-production:t3_1skkfxh",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1skkfxh",
-      "url": "https://www.reddit.com/r/startups/comments/1skkfxh/its_really_tough_isnt_it_i_need_to_vent_and_i/",
-      "title": "It's really tough, isn't it? I need to vent. And I will not promote",
-      "body": "It's really tough, isn't it? I need to vent. And I will not promote\n\nWe've been at it for half a year now. The product is very complicated, and so the MVP isn't your traditional SaaS-era \"use Firebase instead of a real, hosted DB\". It's more like 60-70% of the foundation has to be in place in order to deliver the MVP.\n\nWe need that pre-seed money really bad, to get the product to the MVP and beyond. We get to \"final\" stages with lots of VCs but no one wants to lead. They are waiting to follow.\n\nSome don't fully like the GTM. Others - don't understand the tech, or we can't explain it well enough, idk.\n\nWe don't have previous founding experience. But the team is super strong by now.\n\nWe basically have 2 full time founders (I am the CTO, my co-founder is CEO), one half-time product person (ready to transition to full time after fundraising) who is a very experienced domain expert, two full time AI engineers (with up to 20 years of experience in SE) **working for free** now, to be paid retrospectively once we raise, and two really good advisors (one - tech, one - domain expert).\n\nWe have a dozen of design partners, and lots of very useful, proprietary data from them.\n\nWe've got very detailed projections for the next 18 months (I mean, obviously a subject to change once meeting reality. But still).\n\nMy co-founder carries around $2k/month of expenses on additional freelancers who do ",
-      "author_ref": "sha256:4a7e7d2d4d8badee",
-      "community": "r/startups",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-13T19:01:24.000Z",
-      "metrics": {
-        "score": 12,
-        "comments": 24,
-        "upvote_ratio": 0.94
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/startups/agent-framework-production/t3_1skkfxh"
-    },
-    {
       "id": "reddit:agent-framework-production:t3_1sjhupi",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sjhupi",
       "url": "https://www.reddit.com/r/startups/comments/1sjhupi/i_will_not_promote_we_hit_1_product_of_the_week/",
       "title": "[i will not promote] We hit #1 Product of the Week on Product Hunt with $0 marketing, now the launch spike is dying and I don't know how to build sustained growth",
@@ -1075,6 +1098,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1siv425",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1siv425",
       "url": "https://www.reddit.com/r/startups/comments/1siv425/should_i_pull_the_plugi_will_not_promote/",
       "title": "Should I pull the plug?[I will not promote]",
@@ -1094,53 +1118,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/startups/agent-framework-production/t3_1siv425"
     },
     {
-      "id": "reddit:agent-framework-production:t3_1shayvu",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1shayvu",
-      "url": "https://www.reddit.com/r/startups/comments/1shayvu/i_made_an_mvp_startup_it_took_me_6_months_to/",
-      "title": "i made an MVP startup it took me 6 months to build but failed. Here is what happened. i will not promote",
-      "body": "i made an MVP startup it took me 6 months to build but failed. Here is what happened. i will not promote\n\ni made a small MVP, which i hope will be success and get me some money but it failed brutally. \n\nWhen I researched why it failed, I found these points as main reasons. \n\ni love building and adding new products but not in marketing and outreach, mainly in social media which reach to users and build social presence and I see so many builders failed like me. \n\nmost people wont do social presence and build and add features. \n\nnow i decided to do a new project and open-source it for all. It was a multi-AI agentic social media manager that understands business profiles and users and learn and growth with human in the loop. \n\n  \nare you guys feeling same ",
-      "author_ref": "sha256:8f0c0917a00a8ec2",
-      "community": "r/startups",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-10T03:15:59.000Z",
-      "metrics": {
-        "score": 12,
-        "comments": 41,
-        "upvote_ratio": 0.84
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/startups/agent-framework-production/t3_1shayvu"
-    },
-    {
-      "id": "reddit:agent-framework-production:t3_1sh4x9d",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1sh4x9d",
-      "url": "https://www.reddit.com/r/startups/comments/1sh4x9d/peculiar_career_situation_i_will_not_promote/",
-      "title": "Peculiar Career Situation (I will not promote)",
-      "body": "Peculiar Career Situation (I will not promote)\n\nhi all, looking for some career advice for a unique situation. I'm wondering: how would everybody recommend me approach my position? has anyone ever been in a similar situation? how do you handle working with close friends?\n\ntl;dr I'm working as the de facto product lead role at a bootstrapped company started by a few close friends. I have good autonomy and flexibility, and I've learned a lot. on the other hand, I'm pretty burnt out on the amount of hats I'm having to wear and I worry about my career trajectory and the company's trajectory (esp given the low usage and lack of profitability on my side of the business).\n\ni’m late 20s and 2-3 years into a pivot into product (fin-tech) breaking into product without a traditional background is tough, and i’ve been fortunate to grow into a de facto product lead role at a bootstrapped company started by a few close friends. i took a pretty large paycut from my other job during the first 2 years of being full time but starting this year received a raise above what I was making. I've taken on a lot of responsibility and had to really lean into leadership without authority skillset. we've executed on a lot of different features and architectural upgrades since my time. I feel like i've gotten a lot of experience in a short amount of time due to our lean team structure. AI has also been huge",
-      "author_ref": "sha256:3705a2ff04fda1bd",
-      "community": "r/startups",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-09T22:48:31.000Z",
-      "metrics": {
-        "score": 3,
-        "comments": 17,
-        "upvote_ratio": 1
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/startups/agent-framework-production/t3_1sh4x9d"
-    },
-    {
       "id": "reddit:agent-framework-production:t3_1saauci",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1saauci",
       "url": "https://www.reddit.com/r/startups/comments/1saauci/i_keep_wishing_there_was_a_knowledge_base_for/",
       "title": "I keep wishing there was a \"knowledge base for product thinking\" so I prototyped one - trying to figure out if this has actually business potential or just me scratching an itch. I WILL NOT PROMOTE",
@@ -1163,6 +1144,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1s87vtk",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s87vtk",
       "url": "https://www.reddit.com/r/startups/comments/1s87vtk/pre_seed_funding_in_the_ai_space_i_will_not/",
       "title": "Pre seed funding in the AI space - I will not promote",
@@ -1185,6 +1167,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1s6r47r",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s6r47r",
       "url": "https://www.reddit.com/r/startups/comments/1s6r47r/built_an_ai_tool_with_50_beta_users_but_no_idea/",
       "title": "Built an AI tool with 50+ beta users but no idea how to monetize. What would you do? (I will not promote)",
@@ -1207,6 +1190,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1s6fu9a",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s6fu9a",
       "url": "https://www.reddit.com/r/startups/comments/1s6fu9a/i_can_build_tools_and_automations_but_how_do_i/",
       "title": "I can build tools and automations… but how do I turn this into a startup? (I will not promote)",
@@ -1229,6 +1213,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1s68x33",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s68x33",
       "url": "https://www.reddit.com/r/startups/comments/1s68x33/decision_between_running_an_al_lab_with_a_corp_vs/",
       "title": "Decision between running an Al Lab with a corp vs going all in for my startup? Looking for advice and ideas. (i Will not promote)",
@@ -1248,31 +1233,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/startups/agent-framework-production/t3_1s68x33"
     },
     {
-      "id": "reddit:pricing-advisor:t3_1sivput",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1sivput",
-      "url": "https://www.reddit.com/r/startups/comments/1sivput/im_a_serial_founder_heres_how_i_come_up_with/",
-      "title": "I'm a Serial Founder. Here's how I come up with Business Ideas. I will not promote.",
-      "body": "I'm a Serial Founder. Here's how I come up with Business Ideas. I will not promote.\n\n**NO AI WAS USED IN WRITING THIS** I have been working on this post for over a year, it's all my own content, nothing from a model.  I'll leave a screenshot showing the markdown files with dates in the comments.\n\nHello my name's Troy. I'm a serial founder who's been either a founder or founding employee at 9 startups with the total valuation of said startups north of $1bn. My current startup that I co-founded is currently at $5m in ARR and growing rapidly. I used to be a teacher and have been really itching to write and what I've learned over the last decade and a half of being in the startup space.\n\nMods, I'm happy to verify above if needed.\n\nI browse this and other similar subreddits often and see a lot of similar questions pop up. The problem is the vast majority of the members in these communities are either trying to sell something or don't know what they're talking about (respectfully <3). My hope is to shine some light on some of the most common questions I see here and give some of you motivated folks some direction. **Not trying to sell you anything, i dont want your money**. I just hope it's useful. \n\n\n# 1.1 | \"What kind of business should I start?\"\n\nThe people who ask a variation of this question will often get blasted in the comments despite it being honestly a very good question th",
-      "author_ref": "sha256:e16fdb04a63c5640",
-      "community": "r/startups",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-11T21:37:53.000Z",
-      "metrics": {
-        "score": 964,
-        "comments": 178,
-        "upvote_ratio": 0.96
-      },
-      "topics": [
-        "pricing advisor"
-      ],
-      "raw_ref": "raw://reddit/search/startups/pricing-advisor/t3_1sivput"
-    },
-    {
       "id": "reddit:pricing-advisor:t3_1rrqk3z",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rrqk3z",
       "url": "https://www.reddit.com/r/startups/comments/1rrqk3z/the_7_clauses_startup_founders_regret_leaving_out/",
       "title": "The 7 clauses startup founders regret leaving out of their partnership agreements (I will not promote)",
@@ -1295,6 +1259,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1oulh2g",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1oulh2g",
       "url": "https://www.reddit.com/r/startups/comments/1oulh2g/the_technical_cofounder_paradox_seeking_advice_i/",
       "title": "The Technical Cofounder Paradox: Seeking Advice - I will not promote",
@@ -1317,6 +1282,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1nzm25d",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1nzm25d",
       "url": "https://www.reddit.com/r/startups/comments/1nzm25d/advisor_equity_options_or_common_stock_i_will_not/",
       "title": "Advisor Equity Options or Common Stock - I will not promote",
@@ -1339,6 +1305,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1ktklq2",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1ktklq2",
       "url": "https://www.reddit.com/r/startups/comments/1ktklq2/turning_a_side_hustle_into_a_real_business_i_will/",
       "title": "Turning a Side Hustle into a Real Business. (I will not promote. I am posting this with the moderators' permission).",
@@ -1361,6 +1328,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1jjiqpy",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1jjiqpy",
       "url": "https://www.reddit.com/r/startups/comments/1jjiqpy/i_helped_10_startups_with_launches_here_are_the/",
       "title": "I helped 10+ startups with launches. Here are the most popular product launch mistakes and the reasons why startups fail. I will not promote",
@@ -1383,6 +1351,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1hin3z5",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1hin3z5",
       "url": "https://www.reddit.com/r/startups/comments/1hin3z5/startup_advisor_always_worth_it/",
       "title": "startup advisor : always worth it?",
@@ -1405,6 +1374,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1hb0uk7",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1hb0uk7",
       "url": "https://www.reddit.com/r/startups/comments/1hb0uk7/20_transformative_opportunities_shaping_our/",
       "title": "🌟 20 Transformative Opportunities Shaping Our Future (2024-2030+)",
@@ -1427,6 +1397,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1g9yhzz",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1g9yhzz",
       "url": "https://www.reddit.com/r/startups/comments/1g9yhzz/looking_for_a_financial_advisor_to_review_a/",
       "title": "Looking for a financial advisor to review a startup offer letter (stock options, tax implications)",
@@ -1449,6 +1420,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1fi85wa",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1fi85wa",
       "url": "https://www.reddit.com/r/startups/comments/1fi85wa/outsourcing_marketing_advice/",
       "title": "Outsourcing Marketing advice",
@@ -1471,6 +1443,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1fho56z",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1fho56z",
       "url": "https://www.reddit.com/r/startups/comments/1fho56z/concerns_about_nda_for_advisor_role_am_i/",
       "title": "Concerns about NDA for advisor role - Am I overthinking?",
@@ -1493,6 +1466,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1feghcd",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1feghcd",
       "url": "https://www.reddit.com/r/startups/comments/1feghcd/are_startup_consultantsadvisors_becoming/",
       "title": "Are Startup Consultants/Advisors becoming useless/unnecessary?",
@@ -1515,6 +1489,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1so39fs",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1so39fs",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1so39fs/junk_removal_startup_having_a_hard_time_with/",
       "title": "Junk Removal Startup having a hard time with Google, Facebook and now Reddit.",
@@ -1537,6 +1512,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1snchax",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1snchax",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1snchax/anthropic_just_made_it_possible_to_build_ai/",
       "title": "anthropic just made it possible to build AI workers in plain english",
@@ -1551,14 +1527,17 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.79
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "competitor monitoring",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/Entrepreneur/ai-research-assistant/t3_1snchax"
     },
     {
-      "id": "reddit:ai-research-assistant:t3_1sn3xy8",
+      "id": "reddit:agent-framework-production:t3_1sn3xy8",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sn3xy8",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1sn3xy8/writing_a_proper_ai_brief_for_my_business/",
       "title": "Writing a proper AI brief for my business",
@@ -1568,19 +1547,21 @@ window.signalRadarFixtures.push({
       "observed_at": "2026-04-19T19:50:47.749Z",
       "published_at": "2026-04-16T13:43:39.000Z",
       "metrics": {
-        "score": 7,
+        "score": 9,
         "comments": 45,
-        "upvote_ratio": 0.74
+        "upvote_ratio": 0.77
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "agent framework production"
       ],
-      "raw_ref": "raw://reddit/search/Entrepreneur/ai-research-assistant/t3_1sn3xy8"
+      "raw_ref": "raw://reddit/search/Entrepreneur/agent-framework-production/t3_1sn3xy8"
     },
     {
       "id": "reddit:ai-research-assistant:t3_1sl29gg",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sl29gg",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1sl29gg/how_did_i_pivot_change_your_business_when_things/",
       "title": "How did i pivot / change your business when things get bad?",
@@ -1603,6 +1584,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1si80b4",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1si80b4",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1si80b4/commercial_cleaning_is_a_112b_market_with_75200/",
       "title": "Commercial cleaning is a $112B market with 75-200% employee turnover. Its either a goldmine or a nightmare depending on one thing. Full breakdown inside.",
@@ -1617,7 +1599,9 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.89
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "competitor monitoring",
+        "AI CRM follow up"
       ],
       "raw_ref": "raw://reddit/search/Entrepreneur/ai-research-assistant/t3_1si80b4"
     },
@@ -1625,6 +1609,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sah6qz",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sah6qz",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1sah6qz/suggestions_and_ideas_for_using_ai_in_your_small/",
       "title": "Suggestions and ideas for using AI in your small business.",
@@ -1639,7 +1624,8 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.31
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/Entrepreneur/ai-research-assistant/t3_1sah6qz"
     },
@@ -1647,6 +1633,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sadk88",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sadk88",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1sadk88/which_ai_assistant_works_best_for_solopreneur/",
       "title": "which ai assistant works best for solopreneur?",
@@ -1666,9 +1653,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/Entrepreneur/ai-research-assistant/t3_1sadk88"
     },
     {
-      "id": "reddit:ai-research-assistant:t3_1s5rswx",
+      "id": "reddit:ai-crm-follow-up:t3_1s5rswx",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s5rswx",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1s5rswx/buying_a_roofing_company_in_2026_100b_market_2x/",
       "title": "Buying a roofing company in 2026: $100B market, 2x entry multiples, and one PE roll-up that went bankrupt. Full breakdown inside.",
@@ -1678,19 +1666,22 @@ window.signalRadarFixtures.push({
       "observed_at": "2026-04-19T19:50:47.749Z",
       "published_at": "2026-03-28T05:26:51.000Z",
       "metrics": {
-        "score": 48,
+        "score": 49,
         "comments": 29,
-        "upvote_ratio": 0.91
+        "upvote_ratio": 0.92
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "AI CRM follow up",
+        "pricing advisor"
       ],
-      "raw_ref": "raw://reddit/search/Entrepreneur/ai-research-assistant/t3_1s5rswx"
+      "raw_ref": "raw://reddit/search/Entrepreneur/ai-crm-follow-up/t3_1s5rswx"
     },
     {
       "id": "reddit:ai-research-assistant:t3_1s3udtd",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s3udtd",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1s3udtd/ill_generate_small_business_guide_for_you_free/",
       "title": "I’ll generate small business guide for you FREE",
@@ -1713,6 +1704,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1s3pjvt",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s3pjvt",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1s3pjvt/launched_12_months_ago_to_crickets_reflections_of/",
       "title": "Launched 12 months ago to crickets. Reflections of Year 1.",
@@ -1732,9 +1724,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/Entrepreneur/ai-research-assistant/t3_1s3pjvt"
     },
     {
-      "id": "reddit:ai-research-assistant:t3_1rxmtq0",
+      "id": "reddit:competitor-monitoring:t3_1rxmtq0",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rxmtq0",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1rxmtq0/i_replaced_the_cofounder_i_couldnt_find_with_an/",
       "title": "i replaced the cofounder i couldn't find with an ai agent. it runs my side project while i'm at work.",
@@ -1744,19 +1737,22 @@ window.signalRadarFixtures.push({
       "observed_at": "2026-04-19T19:50:47.749Z",
       "published_at": "2026-03-19T01:24:30.000Z",
       "metrics": {
-        "score": 16,
+        "score": 17,
         "comments": 64,
-        "upvote_ratio": 0.56
+        "upvote_ratio": 0.57
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "competitor monitoring",
+        "agent framework production"
       ],
-      "raw_ref": "raw://reddit/search/Entrepreneur/ai-research-assistant/t3_1rxmtq0"
+      "raw_ref": "raw://reddit/search/Entrepreneur/competitor-monitoring/t3_1rxmtq0"
     },
     {
       "id": "reddit:ai-research-assistant:t3_1rrmxm3",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rrmxm3",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1rrmxm3/your_first_ai_agent_for_your_business_should_be/",
       "title": "Your First AI Agent For Your Business Should Be Boring",
@@ -1776,75 +1772,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/Entrepreneur/ai-research-assistant/t3_1rrmxm3"
     },
     {
-      "id": "reddit:competitor-monitoring:t3_1snchax",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1snchax",
-      "url": "https://www.reddit.com/r/Entrepreneur/comments/1snchax/anthropic_just_made_it_possible_to_build_ai/",
-      "title": "anthropic just made it possible to build AI workers in plain english",
-      "body": "anthropic just made it possible to build AI workers in plain english\n\nanthropic released something recently called managed agents and I think the business side of the internet is missing out on it. All the coverage is from developers saying its not a big deal, which I get, they already build this stuff in code. For anyone who doesn't write code though this changes things\n\nYou describe what you want an AI worker to do in plain english and anthropic builds and hosts the whole thing for you in their cloud, without anything to maintain. And it costs eight cents an hour of runtime. I tried it yesterday and had a working agent in under four minutes\n\nI tested it on content briefs because thats a workflow I know inside out. You take a keyword, go through the top google results, pull out the structure, figure out word counts, write an outline, hand it to a writer. Takes about 45 minutes if you're being thorough. I've done hundreds of these over the years so I figured I'd know right away if the output was any good\n\nWent into the console, described what I wanted in one sentence, and it built the agent for me. Wrote the system prompt, picked the tools, everything. Connected it to notion with one click and press create\n\nGave it a real keyword and it spun up its own computer, ran a bunch of web searches, read through the top results, and dropped a full brief into my notion workspace\n\nThe out",
-      "author_ref": "sha256:37a49c356693a7d6",
-      "community": "r/Entrepreneur",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-16T18:43:57.000Z",
-      "metrics": {
-        "score": 118,
-        "comments": 90,
-        "upvote_ratio": 0.79
-      },
-      "topics": [
-        "competitor monitoring"
-      ],
-      "raw_ref": "raw://reddit/search/Entrepreneur/competitor-monitoring/t3_1snchax"
-    },
-    {
-      "id": "reddit:competitor-monitoring:t3_1si80b4",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1si80b4",
-      "url": "https://www.reddit.com/r/Entrepreneur/comments/1si80b4/commercial_cleaning_is_a_112b_market_with_75200/",
-      "title": "Commercial cleaning is a $112B market with 75-200% employee turnover. Its either a goldmine or a nightmare depending on one thing. Full breakdown inside.",
-      "body": "Commercial cleaning is a $112B market with 75-200% employee turnover. Its either a goldmine or a nightmare depending on one thing. Full breakdown inside.\n\nEighth industry deep dive Ive posted here. Already covered pest control, HVAC, restoration, home care, landscaping, roofing, and septic. Commercial cleaning is the one that splits people the hardest. On paper the economics look great: recurring contracts, essential service, massive market. In practice the labor situation is the worst of any industry Ive researched. 75-200% annual turnover. Let that number sit for a second.\n\nHeres everything I found.\n\n**Why the market is bigger then you think**\n\n$112 billion in 2026 per IBISWorld. Thats janitorial services alone, not including residential or specialty cleaning. About 77% of revenue comes from commercial cleaning, 17% residential, and 6% from damage restoration and specialty work. The market is growing at roughly 5-6% annually depending on which source you use.\n\nPost-COVID hygiene standards made this structural. OSHA compliance requirements, heightened sanitization expectations in healthcare and office buildings, and corporate outsourcing trends are all driving demand. Businesses are increasingly shifting from in-house cleaning teams to third-party providers to reduce costs and improve service quality. Thats the tailwind.\n\nAbout 30% of industry revenue now comes from green clea",
-      "author_ref": "sha256:c28c081db97d94ab",
-      "community": "r/Entrepreneur",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-11T03:29:16.000Z",
-      "metrics": {
-        "score": 136,
-        "comments": 62,
-        "upvote_ratio": 0.89
-      },
-      "topics": [
-        "competitor monitoring"
-      ],
-      "raw_ref": "raw://reddit/search/Entrepreneur/competitor-monitoring/t3_1si80b4"
-    },
-    {
-      "id": "reddit:competitor-monitoring:t3_1rxmtq0",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1rxmtq0",
-      "url": "https://www.reddit.com/r/Entrepreneur/comments/1rxmtq0/i_replaced_the_cofounder_i_couldnt_find_with_an/",
-      "title": "i replaced the cofounder i couldn't find with an ai agent. it runs my side project while i'm at work.",
-      "body": "i replaced the cofounder i couldn't find with an ai agent. it runs my side project while i'm at work.\n\nquick context. i'm a pm at a 9 to 5. i run an ecommerce saas on the side targeting latin america. no cofounder, no team, just me and whatever hours i can squeeze out of evenings and weekends. \n\nfor a year i tried to find a cofounder. posted on reddit, talked to people at meetups, asked friends. nobody wanted to join something that was making $1k/mo and needed everything done yesterday. can't blame them honestly. \n\nso about 2 months ago i set up an clawbot on a mac mini. i gave it access to my tools, my files, my analytics, and basically said \"you're the cofounder now.\" \n\nhere's what it actually does every day: \n\n* **seo content.** it audits my google search console data, finds keyword gaps, writes blog posts targeting them, and publishes directly to my site. i used to spend entire sundays doing this. now i wake up and there's a new post live. \n* **social media.** it creates tiktok carousels and instagram stories from templates i set up. not amazing creative, but consistent. and consistency beats perfection when you're a team of one. \n* **lead generation.** it monitors where potential customers hang out online, tracks competitors, and flags warm leads for me to follow up on. i still do the actual outreach but it does all the research i never had time for.\n* **analytics.** every",
-      "author_ref": "sha256:d69ab2fd6255fea6",
-      "community": "r/Entrepreneur",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-03-19T01:24:30.000Z",
-      "metrics": {
-        "score": 17,
-        "comments": 64,
-        "upvote_ratio": 0.57
-      },
-      "topics": [
-        "competitor monitoring"
-      ],
-      "raw_ref": "raw://reddit/search/Entrepreneur/competitor-monitoring/t3_1rxmtq0"
-    },
-    {
       "id": "reddit:competitor-monitoring:t3_1rdc4uf",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rdc4uf",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1rdc4uf/looking_for_a_cofounder_for_an_unreleased_app/",
       "title": "Looking For a Co-founder for an Unreleased App.",
@@ -1867,6 +1798,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1qs83dl",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1qs83dl",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1qs83dl/ive_failed_twice_building_microsaas_products/",
       "title": "I've failed twice building micro-SaaS products. Here's what I'm doing differently the third time (free tool first, paid product later).",
@@ -1889,6 +1821,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1qa0led",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1qa0led",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1qa0led/german_online_shop_owners_how_do_you_currently/",
       "title": "German online shop owners: how do you currently handle competitor price monitoring?",
@@ -1911,6 +1844,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1q2f3ro",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1q2f3ro",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1q2f3ro/seeking_advice/",
       "title": "Seeking Advice :)",
@@ -1933,6 +1867,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1poyil1",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1poyil1",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1poyil1/my_competitor_raised_5m_and_i_missed_it_so_i/",
       "title": "My competitor raised $5M and I missed it. So I built a Command Center to make sure I never miss a buying signal again.",
@@ -1955,6 +1890,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1ok2lff",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1ok2lff",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1ok2lff/looking_for_early_users_and_investors/",
       "title": "Looking for early users and investors.",
@@ -1977,6 +1913,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1o7b9el",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1o7b9el",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1o7b9el/spending_too_much_time_on_data_collection_instead/",
       "title": "Spending too much time on data collection instead of growing my business",
@@ -1999,6 +1936,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1nossfp",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1nossfp",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1nossfp/this_is_so_underrated_to_get_customers/",
       "title": "This is so Underrated to get customers",
@@ -2021,6 +1959,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1n4a3wx",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1n4a3wx",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1n4a3wx/i_scraped_25k_comments_to_find_which_ai_tools/",
       "title": "I scraped 25K comments to find which AI tools actually make people money or save time",
@@ -2043,6 +1982,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sq12pr",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sq12pr",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1sq12pr/lost_another_job_because_i_forgot_to_follow_up/",
       "title": "Lost another job because I forgot to follow up what do you guys actually use?",
@@ -2065,6 +2005,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1skhn6y",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1skhn6y",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1skhn6y/my_business_failed_not_sure_how_to_pivot_help/",
       "title": "My Business Failed, Not Sure How To Pivot... Help",
@@ -2084,31 +2025,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/Entrepreneur/ai-crm-follow-up/t3_1skhn6y"
     },
     {
-      "id": "reddit:ai-crm-follow-up:t3_1si80b4",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1si80b4",
-      "url": "https://www.reddit.com/r/Entrepreneur/comments/1si80b4/commercial_cleaning_is_a_112b_market_with_75200/",
-      "title": "Commercial cleaning is a $112B market with 75-200% employee turnover. Its either a goldmine or a nightmare depending on one thing. Full breakdown inside.",
-      "body": "Commercial cleaning is a $112B market with 75-200% employee turnover. Its either a goldmine or a nightmare depending on one thing. Full breakdown inside.\n\nEighth industry deep dive Ive posted here. Already covered pest control, HVAC, restoration, home care, landscaping, roofing, and septic. Commercial cleaning is the one that splits people the hardest. On paper the economics look great: recurring contracts, essential service, massive market. In practice the labor situation is the worst of any industry Ive researched. 75-200% annual turnover. Let that number sit for a second.\n\nHeres everything I found.\n\n**Why the market is bigger then you think**\n\n$112 billion in 2026 per IBISWorld. Thats janitorial services alone, not including residential or specialty cleaning. About 77% of revenue comes from commercial cleaning, 17% residential, and 6% from damage restoration and specialty work. The market is growing at roughly 5-6% annually depending on which source you use.\n\nPost-COVID hygiene standards made this structural. OSHA compliance requirements, heightened sanitization expectations in healthcare and office buildings, and corporate outsourcing trends are all driving demand. Businesses are increasingly shifting from in-house cleaning teams to third-party providers to reduce costs and improve service quality. Thats the tailwind.\n\nAbout 30% of industry revenue now comes from green clea",
-      "author_ref": "sha256:c28c081db97d94ab",
-      "community": "r/Entrepreneur",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-11T03:29:16.000Z",
-      "metrics": {
-        "score": 135,
-        "comments": 62,
-        "upvote_ratio": 0.89
-      },
-      "topics": [
-        "AI CRM follow up"
-      ],
-      "raw_ref": "raw://reddit/search/Entrepreneur/ai-crm-follow-up/t3_1si80b4"
-    },
-    {
       "id": "reddit:ai-crm-follow-up:t3_1s7k1nc",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s7k1nc",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1s7k1nc/nontechnical_founders_are_not_tired_of_technology/",
       "title": "Non-technical founders are not tired of technology. They are tired of being pitched technology by people who have never asked how their business actually works.",
@@ -2128,31 +2048,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/Entrepreneur/ai-crm-follow-up/t3_1s7k1nc"
     },
     {
-      "id": "reddit:ai-crm-follow-up:t3_1s5rswx",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1s5rswx",
-      "url": "https://www.reddit.com/r/Entrepreneur/comments/1s5rswx/buying_a_roofing_company_in_2026_100b_market_2x/",
-      "title": "Buying a roofing company in 2026: $100B market, 2x entry multiples, and one PE roll-up that went bankrupt. Full breakdown inside.",
-      "body": "Buying a roofing company in 2026: $100B market, 2x entry multiples, and one PE roll-up that went bankrupt. Full breakdown inside.\n\nSixth industry deep dive Ive posted here. This was one of the most requested industry. Already covered pest control, HVAC, restoration, home care, and landscaping. Roofing is the one that has the most dramatic PE activity of anything Ive researched. The amount of capital pouring into this space right now is staggering. But its also the industry where a PE roll-up literally went bankrupt last year, so the risks are just as real as the opportunity.\n\nHeres everything I found.\n\n**Why roofing is attracting so much PE capital**\n\n$100 billion market. Thats contractor services revenue in 2025 per IBISWorld, growing at roughly 6% CAGR. About 106,000 roofing businesses in the US with the top 3 controlling less then 6% market share. Thats textbook PE roll-up territory.\n\nBut heres what makes roofing different from the other industries Ive covered: 80% of demand comes from re-roofing, not new construction. The median US home is 40 years old. Post-war housing stock across the Northeast and Midwest is entering a synchronized re-roofing cycle right now. When your roof fails you dont have the option to wait. Its non-discretionary spend regardless of whats happening in the economy.\n\nRoof insurance claims hit $31 billion in 2024, up 30% since 2022 per Verisk. Florida ",
-      "author_ref": "sha256:c28c081db97d94ab",
-      "community": "r/Entrepreneur",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-03-28T05:26:51.000Z",
-      "metrics": {
-        "score": 49,
-        "comments": 29,
-        "upvote_ratio": 0.92
-      },
-      "topics": [
-        "AI CRM follow up"
-      ],
-      "raw_ref": "raw://reddit/search/Entrepreneur/ai-crm-follow-up/t3_1s5rswx"
-    },
-    {
       "id": "reddit:ai-crm-follow-up:t3_1s2hwt8",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s2hwt8",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1s2hwt8/how_ai_automation_is_quietly_replacing_repetitive/",
       "title": "How AI Automation Is Quietly Replacing Repetitive Work in Small Businesses",
@@ -2175,6 +2074,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1s2bmyj",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s2bmyj",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1s2bmyj/any_ai_marketing_tool_recommendations_for_solo/",
       "title": "Any AI marketing tool recommendations for solo business",
@@ -2197,6 +2097,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1s09xev",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s09xev",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1s09xev/best_tool_stack_and_workflow_for_outbound_cold/",
       "title": "Best tool stack and workflow for outbound cold email?",
@@ -2219,6 +2120,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1rze9jr",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rze9jr",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1rze9jr/what_makes_customer_engagement_actually_effective/",
       "title": "What makes customer engagement actually effective?",
@@ -2241,6 +2143,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1rz44si",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rz44si",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1rz44si/5_habits_that_actually_keep_a_small_teams_crm/",
       "title": "5 habits that actually keep a small team's CRM alive after month one",
@@ -2263,6 +2166,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1ry31w1",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1ry31w1",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1ry31w1/3_ai_agents_that_handle_80_of_the_repetitive_ops/",
       "title": "3 AI agents that handle 80% of the repetitive ops in a small business",
@@ -2277,7 +2181,8 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.5
       },
       "topics": [
-        "AI CRM follow up"
+        "AI CRM follow up",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/Entrepreneur/ai-crm-follow-up/t3_1ry31w1"
     },
@@ -2285,6 +2190,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1rxsgcw",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rxsgcw",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1rxsgcw/what_good_ai_workers_have_you_actually_used/",
       "title": "What good AI workers have you actually used?",
@@ -2304,75 +2210,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/Entrepreneur/ai-crm-follow-up/t3_1rxsgcw"
     },
     {
-      "id": "reddit:agent-framework-production:t3_1snchax",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1snchax",
-      "url": "https://www.reddit.com/r/Entrepreneur/comments/1snchax/anthropic_just_made_it_possible_to_build_ai/",
-      "title": "anthropic just made it possible to build AI workers in plain english",
-      "body": "anthropic just made it possible to build AI workers in plain english\n\nanthropic released something recently called managed agents and I think the business side of the internet is missing out on it. All the coverage is from developers saying its not a big deal, which I get, they already build this stuff in code. For anyone who doesn't write code though this changes things\n\nYou describe what you want an AI worker to do in plain english and anthropic builds and hosts the whole thing for you in their cloud, without anything to maintain. And it costs eight cents an hour of runtime. I tried it yesterday and had a working agent in under four minutes\n\nI tested it on content briefs because thats a workflow I know inside out. You take a keyword, go through the top google results, pull out the structure, figure out word counts, write an outline, hand it to a writer. Takes about 45 minutes if you're being thorough. I've done hundreds of these over the years so I figured I'd know right away if the output was any good\n\nWent into the console, described what I wanted in one sentence, and it built the agent for me. Wrote the system prompt, picked the tools, everything. Connected it to notion with one click and press create\n\nGave it a real keyword and it spun up its own computer, ran a bunch of web searches, read through the top results, and dropped a full brief into my notion workspace\n\nThe out",
-      "author_ref": "sha256:37a49c356693a7d6",
-      "community": "r/Entrepreneur",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-16T18:43:57.000Z",
-      "metrics": {
-        "score": 117,
-        "comments": 90,
-        "upvote_ratio": 0.79
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/Entrepreneur/agent-framework-production/t3_1snchax"
-    },
-    {
-      "id": "reddit:agent-framework-production:t3_1sn3xy8",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1sn3xy8",
-      "url": "https://www.reddit.com/r/Entrepreneur/comments/1sn3xy8/writing_a_proper_ai_brief_for_my_business/",
-      "title": "Writing a proper AI brief for my business",
-      "body": "Writing a proper AI brief for my business\n\nTried an AI agent to handle common customer queries and the first week was really hard. \n\nResponses were inconsistent, the tone kept shifting, and it occasionally wandered into topics it had no business discussing. I nearly scrapped the whole thing.\n\nWhat I did was rewrite the system prompt from scratch using a structure that's now my default:\n\n**Role.** I told the agent exactly who it is. Not \"help customers\" but \"you are a helpful and professional support assistant for \\[type of business\\] who answers product questions with patience and clarity.\" That specificity made an immediate difference.\n\n**Rules.** Hard boundaries on what the agent handles and what it pushes to a human. Things like \"never discuss refund amounts\" or \"always confirm the customer's question before answering.\" Firm instructions, no wiggle room.\n\n**Tone.** I matched it to my brand voice. Friendly, calm, straightforward. Before this, the agent sounded different every time someone asked the same question. Defining tone explicitly fixed that.\n\nTook about two days to get **it** right**,** including testing. Felt like a lot of time for something that isn't code or product. But the consistency it brought to support interactions saved me from hiring help I couldn't afford yet. \n\nIf you're building any customer-facing AI, one thing I can say is that the brief you write upfr",
-      "author_ref": "sha256:d52475c5190fb5b8",
-      "community": "r/Entrepreneur",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-16T13:43:39.000Z",
-      "metrics": {
-        "score": 9,
-        "comments": 45,
-        "upvote_ratio": 0.77
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/Entrepreneur/agent-framework-production/t3_1sn3xy8"
-    },
-    {
-      "id": "reddit:agent-framework-production:t3_1sah6qz",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1sah6qz",
-      "url": "https://www.reddit.com/r/Entrepreneur/comments/1sah6qz/suggestions_and_ideas_for_using_ai_in_your_small/",
-      "title": "Suggestions and ideas for using AI in your small business.",
-      "body": "Suggestions and ideas for using AI in your small business.\n\nGood morning! One of the small businesses that I run is a small manufacturer company. Over the past few years I have created some great AI based apps and agents that have helped this business. I've listed a couple examples below of how AI has helped me and this business... I would love any suggestions or ideas that you have personally used (not looking for companies that can \"implement\" or products to \"buy\"...  I am looking for concepts and ideas that can be used that I might not have thought about and the community might find useful).\n\n**1. ChatGPT GPT Marketing Voice:** A GPT that has been trained specifically to how this company talks (eg: no exclamation points, no emoticons, etc) and its brand (eg: always speak in  first-person plural, etc). It's versed on the company history, processes, and significant milestones. This GPT helps the marketing team write product descriptions, social media posts, email marketing, and more. A great way to have a team have a consistent voice to the public.\n\n**2. ChatGPT GPT Business Assistant:** A GPT that is trained on all matters HR. It has the company's employee manual, healthcare documentation, 401k docs, user training manuals, HR policies, etc. It's a great way for senior management to query employee questions that they may not know off the top of the head. \"what's my sick time p",
-      "author_ref": "sha256:c05b31d1d93bc326",
-      "community": "r/Entrepreneur",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-02T13:18:59.000Z",
-      "metrics": {
-        "score": 0,
-        "comments": 38,
-        "upvote_ratio": 0.38
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/Entrepreneur/agent-framework-production/t3_1sah6qz"
-    },
-    {
       "id": "reddit:agent-framework-production:t3_1s9xl8n",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s9xl8n",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1s9xl8n/a_few_lessons_i_learned_in_q1_2026/",
       "title": "A Few Lessons I Learned in Q1 2026",
@@ -2395,6 +2236,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1s540xz",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s540xz",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1s540xz/social_media_ate_14hrsweek_of_my_startup_fixed_it/",
       "title": "Social media ate 14hrs/week of my startup. Fixed it.",
@@ -2414,53 +2256,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/Entrepreneur/agent-framework-production/t3_1s540xz"
     },
     {
-      "id": "reddit:agent-framework-production:t3_1ry31w1",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1ry31w1",
-      "url": "https://www.reddit.com/r/Entrepreneur/comments/1ry31w1/3_ai_agents_that_handle_80_of_the_repetitive_ops/",
-      "title": "3 AI agents that handle 80% of the repetitive ops in a small business",
-      "body": "3 AI agents that handle 80% of the repetitive ops in a small business\n\nRunning a small team means wearing every hat. Here's a framework that's helped me reclaim hours every week by focusing AI on just three areas.\n\n1. **Client Support** \\- FAQs, appointment bookings, and after-hours enquiries. These follow the same patterns daily. One AI agent handles them on repeat, and your customers still get fast, helpful replies around the clock.\n2. **Onboarding** \\- Collecting documents, sending welcome packs, and setting expectations. First impressions are everything, and this process follows the same steps every time. Perfect for automation.\n3. **Reporting** \\- Weekly summaries, KPI tracking, and flagging issues early. Instead of pulling numbers manually, an agent compiles everything so your Fridays are spent on growth, not spreadsheets.\n\nIdentify what's repetitive, predictable, and time-consuming. Automate those three areas first, and you've just freed up roughly 80% of your operational bandwidth.\n\nStart with three. Learn what works. Scale when it makes sense.\n\n**What's the one task eating up most of your week that could realistically be handled by AI?**",
-      "author_ref": "sha256:d52475c5190fb5b8",
-      "community": "r/Entrepreneur",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-03-19T15:11:23.000Z",
-      "metrics": {
-        "score": 0,
-        "comments": 59,
-        "upvote_ratio": 0.5
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/Entrepreneur/agent-framework-production/t3_1ry31w1"
-    },
-    {
-      "id": "reddit:agent-framework-production:t3_1rxmtq0",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1rxmtq0",
-      "url": "https://www.reddit.com/r/Entrepreneur/comments/1rxmtq0/i_replaced_the_cofounder_i_couldnt_find_with_an/",
-      "title": "i replaced the cofounder i couldn't find with an ai agent. it runs my side project while i'm at work.",
-      "body": "i replaced the cofounder i couldn't find with an ai agent. it runs my side project while i'm at work.\n\nquick context. i'm a pm at a 9 to 5. i run an ecommerce saas on the side targeting latin america. no cofounder, no team, just me and whatever hours i can squeeze out of evenings and weekends. \n\nfor a year i tried to find a cofounder. posted on reddit, talked to people at meetups, asked friends. nobody wanted to join something that was making $1k/mo and needed everything done yesterday. can't blame them honestly. \n\nso about 2 months ago i set up an clawbot on a mac mini. i gave it access to my tools, my files, my analytics, and basically said \"you're the cofounder now.\" \n\nhere's what it actually does every day: \n\n* **seo content.** it audits my google search console data, finds keyword gaps, writes blog posts targeting them, and publishes directly to my site. i used to spend entire sundays doing this. now i wake up and there's a new post live. \n* **social media.** it creates tiktok carousels and instagram stories from templates i set up. not amazing creative, but consistent. and consistency beats perfection when you're a team of one. \n* **lead generation.** it monitors where potential customers hang out online, tracks competitors, and flags warm leads for me to follow up on. i still do the actual outreach but it does all the research i never had time for.\n* **analytics.** every",
-      "author_ref": "sha256:d69ab2fd6255fea6",
-      "community": "r/Entrepreneur",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-03-19T01:24:30.000Z",
-      "metrics": {
-        "score": 16,
-        "comments": 64,
-        "upvote_ratio": 0.56
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/Entrepreneur/agent-framework-production/t3_1rxmtq0"
-    },
-    {
       "id": "reddit:agent-framework-production:t3_1rmeg5w",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rmeg5w",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1rmeg5w/are_small_businesses_using_ai_agents_for_their/",
       "title": "Are small businesses using ai agents for their businesses?",
@@ -2483,6 +2282,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1rh7e4g",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rh7e4g",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1rh7e4g/i_sent_100_cold_messages_and_got_crickets_heres/",
       "title": "I sent 100 cold messages and got crickets. Here’s what i learned the hard way.",
@@ -2505,6 +2305,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1rc6r15",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rc6r15",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1rc6r15/im_trying_to_build_a_voice_ai_product_but_i_am/",
       "title": "I’m trying to build a Voice AI product but I am not sure if I should do it or not. Please let me know your thoughts and why.",
@@ -2527,6 +2328,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1r9x8t9",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1r9x8t9",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1r9x8t9/i_automated_90_of_my_daily_workflow_now_im/",
       "title": "I automated 90% of my daily workflow. Now I'm questioning if that was the right move.",
@@ -2549,6 +2351,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1r7pik6",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1r7pik6",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1r7pik6/would_you_buy/",
       "title": "Would you buy?",
@@ -2568,31 +2371,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/Entrepreneur/agent-framework-production/t3_1r7pik6"
     },
     {
-      "id": "reddit:pricing-advisor:t3_1s5rswx",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1s5rswx",
-      "url": "https://www.reddit.com/r/Entrepreneur/comments/1s5rswx/buying_a_roofing_company_in_2026_100b_market_2x/",
-      "title": "Buying a roofing company in 2026: $100B market, 2x entry multiples, and one PE roll-up that went bankrupt. Full breakdown inside.",
-      "body": "Buying a roofing company in 2026: $100B market, 2x entry multiples, and one PE roll-up that went bankrupt. Full breakdown inside.\n\nSixth industry deep dive Ive posted here. This was one of the most requested industry. Already covered pest control, HVAC, restoration, home care, and landscaping. Roofing is the one that has the most dramatic PE activity of anything Ive researched. The amount of capital pouring into this space right now is staggering. But its also the industry where a PE roll-up literally went bankrupt last year, so the risks are just as real as the opportunity.\n\nHeres everything I found.\n\n**Why roofing is attracting so much PE capital**\n\n$100 billion market. Thats contractor services revenue in 2025 per IBISWorld, growing at roughly 6% CAGR. About 106,000 roofing businesses in the US with the top 3 controlling less then 6% market share. Thats textbook PE roll-up territory.\n\nBut heres what makes roofing different from the other industries Ive covered: 80% of demand comes from re-roofing, not new construction. The median US home is 40 years old. Post-war housing stock across the Northeast and Midwest is entering a synchronized re-roofing cycle right now. When your roof fails you dont have the option to wait. Its non-discretionary spend regardless of whats happening in the economy.\n\nRoof insurance claims hit $31 billion in 2024, up 30% since 2022 per Verisk. Florida ",
-      "author_ref": "sha256:c28c081db97d94ab",
-      "community": "r/Entrepreneur",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-03-28T05:26:51.000Z",
-      "metrics": {
-        "score": 49,
-        "comments": 29,
-        "upvote_ratio": 0.92
-      },
-      "topics": [
-        "pricing advisor"
-      ],
-      "raw_ref": "raw://reddit/search/Entrepreneur/pricing-advisor/t3_1s5rswx"
-    },
-    {
       "id": "reddit:pricing-advisor:t3_1q16py4",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1q16py4",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1q16py4/does_anyone_else_struggle_with_making_strategic/",
       "title": "Does anyone else struggle with making strategic decisions completely alone?",
@@ -2615,6 +2397,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1phs91q",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1phs91q",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1phs91q/i_started_my_business_without_a_dime_3_years_ago/",
       "title": "I started my business without a dime 3 years ago and managed to scale it to multi-6 figures/year. Sharing my insights here for anyone who needs to read this.",
@@ -2637,6 +2420,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1miv7cr",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1miv7cr",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1miv7cr/validating_a_marketing_concept_chatbot_as_a/",
       "title": "Validating a Marketing Concept: Chatbot as a Service (not customer service)",
@@ -2659,6 +2443,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1mhqzof",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1mhqzof",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1mhqzof/currently_unemployed_and_thinking_of_starting_a/",
       "title": "Currently unemployed and thinking of starting a side business for personal finance advising and budget counsel, but I'm struggling to find resources to help me gauge similar pricing models/structures--any advice?",
@@ -2681,6 +2466,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1kvyhp6",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1kvyhp6",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1kvyhp6/17m_just_spent_1500_hours_of_my_life_on_a/",
       "title": "17M- Just spent 1500 hours of my life on a priceless journey",
@@ -2703,6 +2489,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1jurvnr",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1jurvnr",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1jurvnr/read_this_pass_it_on_advice_for_every_entrepreneur/",
       "title": "READ THIS! & Pass it on! Advice for Every Entrepreneur ⭐️",
@@ -2725,6 +2512,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1hrwqu8",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1hrwqu8",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1hrwqu8/greetings_advice_on_acquiring_a_business/",
       "title": "Greetings & Advice on Acquiring a Business ",
@@ -2747,6 +2535,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1gs4jxe",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1gs4jxe",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1gs4jxe/need_help_with_late_cofounder_equity/",
       "title": "Need help with Late Cofounder Equity ",
@@ -2769,6 +2558,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1gcxfz1",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1gcxfz1",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1gcxfz1/psa_for_new_entrepeneurs_what_my_mentor_taught_me/",
       "title": "PSA for New Entrepeneurs - What My Mentor Taught Me",
@@ -2791,6 +2581,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1eikzdl",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1eikzdl",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1eikzdl/what_do_you_think_about_the_name_deeply/",
       "title": "What do you think about the name Deeply?",
@@ -2813,6 +2604,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1ed6j75",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1ed6j75",
       "url": "https://www.reddit.com/r/Entrepreneur/comments/1ed6j75/10k_client_secrets_how_to_convert_high_ticket/",
       "title": "$10k Client Secrets - How To Convert High Ticket Clients",
@@ -2835,6 +2627,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sq2em9",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sq2em9",
       "url": "https://www.reddit.com/r/SaaS/comments/1sq2em9/is_vibe_coding_the_future_just_shipped_a_saas/",
       "title": "Is 'Vibe Coding' the future? Just shipped a SaaS template in record time using AI prompts.",
@@ -2857,6 +2650,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sq042z",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sq042z",
       "url": "https://www.reddit.com/r/SaaS/comments/1sq042z/building_an_ai_that_lets_you_talk_to_your_crypto/",
       "title": "Building an AI that lets you \"talk\" to your crypto wallet data. What’s missing?",
@@ -2879,6 +2673,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sprcsf",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sprcsf",
       "url": "https://www.reddit.com/r/SaaS/comments/1sprcsf/3_week_live_update_small_but_encouraging_mrr_over/",
       "title": "3 week live update. Small but encouraging MRR. Over 100 users, some paid! 🥳",
@@ -2901,6 +2696,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1snht9w",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1snht9w",
       "url": "https://www.reddit.com/r/SaaS/comments/1snht9w/the_ill_be_your_first_user_experiment_3_weeks/",
       "title": "The 'I'll be your first user' experiment, 3 weeks later.",
@@ -2923,6 +2719,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sn2wbv",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sn2wbv",
       "url": "https://www.reddit.com/r/SaaS/comments/1sn2wbv/i_killed_my_180k_arr_voice_ai_startup_to_build_an/",
       "title": "I killed my $180K ARR voice AI startup to build an AI coworker in Slack",
@@ -2945,6 +2742,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1smcgjg",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1smcgjg",
       "url": "https://www.reddit.com/r/SaaS/comments/1smcgjg/recap_of_cold_calling_80_law_firms_in_northern/",
       "title": "recap of cold calling 80 law firms in northern california (tl;dr it's brutal)",
@@ -2967,6 +2765,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1slz71p",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slz71p",
       "url": "https://www.reddit.com/r/SaaS/comments/1slz71p/psa_to_founders_i_read_perplexitys_billion_dollar/",
       "title": "PSA to founders: I read Perplexity's \"Billion Dollar Build\" T&Cs so you don't have to. It's worse than you think.",
@@ -2989,6 +2788,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1slxail",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slxail",
       "url": "https://www.reddit.com/r/SaaS/comments/1slxail/we_tested_a_few_ai_visibility_content_workflow/",
       "title": "We tested a few AI visibility / content workflow tools at our org. Writesonic was the best fit, here’s my honest take.",
@@ -3011,6 +2811,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1slvpod",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slvpod",
       "url": "https://www.reddit.com/r/SaaS/comments/1slvpod/i_spent_4_months_building_a_tool_to_get_away_from/",
       "title": "I spent 4 months building a tool to get away from SAAS tools and It worked so well I decided to share it.",
@@ -3033,6 +2834,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1slizk7",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slizk7",
       "url": "https://www.reddit.com/r/SaaS/comments/1slizk7/please_stop_using_ai_for_posts_and_showcasing/",
       "title": "Please stop using AI for posts and showcasing your completely vibe coded projects",
@@ -3055,6 +2857,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1slinj6",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slinj6",
       "url": "https://www.reddit.com/r/SaaS/comments/1slinj6/i_couldnt_find_a_good_vc_list_so_i_built_one_842/",
       "title": "I couldn't find a good VC list so I built one, 842 Accelerators & VCs (free)",
@@ -3074,9 +2877,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/SaaS/ai-research-assistant/t3_1slinj6"
     },
     {
-      "id": "reddit:ai-research-assistant:t3_1slg104",
+      "id": "reddit:ai-crm-follow-up:t3_1slg104",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slg104",
       "url": "https://www.reddit.com/r/SaaS/comments/1slg104/sandbox_to_production_war_stories/",
       "title": "sandbox to production war stories",
@@ -3086,19 +2890,21 @@ window.signalRadarFixtures.push({
       "observed_at": "2026-04-19T19:50:47.749Z",
       "published_at": "2026-04-14T17:49:42.000Z",
       "metrics": {
-        "score": 5,
+        "score": 6,
         "comments": 3,
-        "upvote_ratio": 0.86
+        "upvote_ratio": 1
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "AI CRM follow up"
       ],
-      "raw_ref": "raw://reddit/search/SaaS/ai-research-assistant/t3_1slg104"
+      "raw_ref": "raw://reddit/search/SaaS/ai-crm-follow-up/t3_1slg104"
     },
     {
       "id": "reddit:competitor-monitoring:t3_1sletde",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sletde",
       "url": "https://www.reddit.com/r/SaaS/comments/1sletde/revenue_dropped_18_on_a_tuesday_and_i_had_no_idea/",
       "title": "Revenue dropped 18% on a Tuesday and I had no idea why for two days",
@@ -3121,6 +2927,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1skq337",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1skq337",
       "url": "https://www.reddit.com/r/SaaS/comments/1skq337/im_a_security_engineer_who_accidentally_ended_up/",
       "title": "i'm a security engineer who accidentally ended up in marketing. here's what's broken that nobody in marketing sees.",
@@ -3143,6 +2950,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1sfxhnv",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sfxhnv",
       "url": "https://www.reddit.com/r/SaaS/comments/1sfxhnv/i_almost_got_scammed_by_a_tool_with_fake/",
       "title": "I almost got scammed by a tool with fake testimonials… so I built TruthWall (MVP, would love your honest feedback)",
@@ -3165,6 +2973,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1sfjpy5",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sfjpy5",
       "url": "https://www.reddit.com/r/SaaS/comments/1sfjpy5/most_cpg_companies_find_out_their_competitor/",
       "title": "Most CPG companies find out their competitor gained market share 3 months after it happened. We built something to fix that.",
@@ -3187,6 +2996,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1sfbl3p",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sfbl3p",
       "url": "https://www.reddit.com/r/SaaS/comments/1sfbl3p/always_missing_new_competitor_launches_on_product/",
       "title": "Always missing new competitor launches on Product Hunt until it was too late here's the simple system I built to fix it",
@@ -3209,6 +3019,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1sf6it4",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sf6it4",
       "url": "https://www.reddit.com/r/SaaS/comments/1sf6it4/i_was_pricing_my_monitoring_tool_at_24mo/",
       "title": "i was pricing my monitoring tool at $24/mo. competitors charge $89-$589. took me embarrassingly long to figure out the problem",
@@ -3231,6 +3042,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1sdyb8o",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sdyb8o",
       "url": "https://www.reddit.com/r/SaaS/comments/1sdyb8o/i_made_a_free_list_of_competitive_intelligence/",
       "title": "I made a free list of competitive intelligence tools and resources (GitHub)",
@@ -3253,6 +3065,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1sdcik0",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sdcik0",
       "url": "https://www.reddit.com/r/SaaS/comments/1sdcik0/been_paying_a_small_fortune_for_semrush_ahrefs/",
       "title": "Been paying a small fortune for Semrush + Ahrefs. I’ve got tired of the “subscription” approach, so I built my own pay-as-you-go SEO tool.",
@@ -3275,6 +3088,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1sckfa9",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sckfa9",
       "url": "https://www.reddit.com/r/SaaS/comments/1sckfa9/my_competitor_changed_their_pricing_last_month_i/",
       "title": "My competitor changed their pricing last month. I found out 3 weeks later on a cancellation call. Building a tool that monitors your competitors and tells you not just what changed — but what to do about it. Would you pay $29/mo for that?",
@@ -3297,6 +3111,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1schidb",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1schidb",
       "url": "https://www.reddit.com/r/SaaS/comments/1schidb/my_new_idea/",
       "title": "My new idea",
@@ -3319,6 +3134,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1sc3lgj",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sc3lgj",
       "url": "https://www.reddit.com/r/SaaS/comments/1sc3lgj/i_analyzed_9_competitor_monitoring_tools_to_see/",
       "title": "I analyzed 9 competitor monitoring tools to see what's actually worth paying for — here's what I found",
@@ -3341,6 +3157,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1sb7b83",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sb7b83",
       "url": "https://www.reddit.com/r/SaaS/comments/1sb7b83/how_were_trying_to_turn_ai_visibility_data_into/",
       "title": "How we’re trying to turn AI visibility data into actual results (and where it breaks)",
@@ -3363,6 +3180,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sou5vz",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sou5vz",
       "url": "https://www.reddit.com/r/SaaS/comments/1sou5vz/stuck_on_marketing_for_your_startup_heres_the/",
       "title": "Stuck on Marketing for your Startup? Here's the playbook that took our startup from $1,500 MRR -> 10k+ in 7 Months.",
@@ -3385,6 +3203,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sonst4",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sonst4",
       "url": "https://www.reddit.com/r/SaaS/comments/1sonst4/presenting_nexa_ai_an_ai_system_that_captures/",
       "title": "Presenting NEXA AI — an AI system that captures, replies, and converts client inquiries automatically",
@@ -3407,6 +3226,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1so048j",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1so048j",
       "url": "https://www.reddit.com/r/SaaS/comments/1so048j/manual_checking_before_every_release_is_not/",
       "title": "Manual checking before every release is not discipline. It is a coping mechanism.",
@@ -3429,6 +3249,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sm00ug",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sm00ug",
       "url": "https://www.reddit.com/r/SaaS/comments/1sm00ug/bootstrapped_opensource_voice_ai_platform_vs/",
       "title": "Bootstrapped open-source Voice AI platform vs. deep-pocketed competitors. 1M impressions, zero ads. Here's the playbook.",
@@ -3443,7 +3264,8 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.6
       },
       "topics": [
-        "AI CRM follow up"
+        "AI CRM follow up",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/SaaS/ai-crm-follow-up/t3_1sm00ug"
     },
@@ -3451,6 +3273,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1slobwf",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slobwf",
       "url": "https://www.reddit.com/r/SaaS/comments/1slobwf/the_hidden_agency_tax_how_we_solved_the_10_slack/",
       "title": "The hidden 'agency tax': How we solved the 10 Slack channel context switching nightmare",
@@ -3473,6 +3296,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1slo494",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slo494",
       "url": "https://www.reddit.com/r/SaaS/comments/1slo494/i_legitimately_cannot_tell_which_saas_launches/",
       "title": "I legitimately cannot tell which SaaS launches are real anymore and it’s starting to fuck with my head",
@@ -3492,31 +3316,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/SaaS/ai-crm-follow-up/t3_1slo494"
     },
     {
-      "id": "reddit:ai-crm-follow-up:t3_1slg104",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1slg104",
-      "url": "https://www.reddit.com/r/SaaS/comments/1slg104/sandbox_to_production_war_stories/",
-      "title": "sandbox to production war stories",
-      "body": "sandbox to production war stories\n\nnobody tells you about the part where everything breaks at the same time\n\ni've been building a fintech saas solo it’s income tracking for freelancers and small business owners. connects their bank, stripe, square, categorizes everything, estimates quarterly taxes, AI assistant that cites actual IRS sources.\n\nso last week i switched from sandbox to production on every integration. stripe, plaid, square, all at once.\n\nevery single one broke something.\n\nstripe customer IDs from sandbox don't exist in live mode. pretty obvious in hindsight but i didn't think about it until billing crashed. had to wipe all the test data and patch the checkout flow.\n\nsearch feature broke in production because the query was filtering on a database field that doesn't exist. worked fine in my head. prisma disagreed.\n\ndashboard started crashing because one of 12 parallel database queries returned undefined and i wasn't null-checking any of them. one missing month of expense data and the whole page dies.\n\nall of this happened in the same week.\n\nthe thing nobody told me is that going from \"it works in dev\" to \"it works in production with real integrations\" is basically rebuilding half your app. sandbox gives you a false sense of confidence.\n\ni'm close to launch now, tracledger.com if anyone wants to follow along.\n\nbut honestly just wanted to share this because every launc",
-      "author_ref": "sha256:4529069e855d75b4",
-      "community": "r/SaaS",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-14T17:49:42.000Z",
-      "metrics": {
-        "score": 6,
-        "comments": 3,
-        "upvote_ratio": 1
-      },
-      "topics": [
-        "AI CRM follow up"
-      ],
-      "raw_ref": "raw://reddit/search/SaaS/ai-crm-follow-up/t3_1slg104"
-    },
-    {
       "id": "reddit:ai-crm-follow-up:t3_1slbtuw",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slbtuw",
       "url": "https://www.reddit.com/r/SaaS/comments/1slbtuw/built_pitchforge_ai_cold_email_generator_with/",
       "title": "Built PitchForge — AI cold email generator with email scoring and follow-up sequences. Launched yesterday, thoughts?",
@@ -3539,6 +3342,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sl7s13",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sl7s13",
       "url": "https://www.reddit.com/r/SaaS/comments/1sl7s13/we_tested_manual_automated_and_ai_outreach_on/",
       "title": "we tested manual, automated, and AI outreach on LinkedIn for 6 months. here's a summary of our experience with each one",
@@ -3561,6 +3365,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sl4w8x",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sl4w8x",
       "url": "https://www.reddit.com/r/SaaS/comments/1sl4w8x/went_from_onetime_scans_to_continuous_monitoring/",
       "title": "Went from one-time scans to continuous monitoring contracts in 6 months. The free offer did all the selling",
@@ -3575,7 +3380,8 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 1
       },
       "topics": [
-        "AI CRM follow up"
+        "AI CRM follow up",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/SaaS/ai-crm-follow-up/t3_1sl4w8x"
     },
@@ -3583,6 +3389,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sl3z5g",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sl3z5g",
       "url": "https://www.reddit.com/r/SaaS/comments/1sl3z5g/b2b_saas_customer_support/",
       "title": "B2B SaaS Customer Support",
@@ -3605,6 +3412,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sl1d5x",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sl1d5x",
       "url": "https://www.reddit.com/r/SaaS/comments/1sl1d5x/most_ai_tools_for_saas_branding_break_the_moment/",
       "title": "Most AI tools for SaaS branding break the moment you scale beyond one asset",
@@ -3627,6 +3435,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1spzkvj",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1spzkvj",
       "url": "https://www.reddit.com/r/SaaS/comments/1spzkvj/code_is_a_liability_not_an_asset_until_its/",
       "title": "Code is a liability, not an asset (until it’s validated). What’s your pre-dev checklist?",
@@ -3649,6 +3458,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1spru2r",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1spru2r",
       "url": "https://www.reddit.com/r/SaaS/comments/1spru2r/where_the_agent_lives_matters_more_than_how_smart/",
       "title": "Where the agent lives matters more than how smart it is.",
@@ -3671,6 +3481,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1spm2yx",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1spm2yx",
       "url": "https://www.reddit.com/r/SaaS/comments/1spm2yx/building_a_zeronoise_ai_layer_for_service/",
       "title": "Building a \"Zero-Noise\" AI layer for service businesses: How do you balance LLM creativity with deterministic execution?",
@@ -3693,6 +3504,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1sn4lex",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sn4lex",
       "url": "https://www.reddit.com/r/SaaS/comments/1sn4lex/are_we_building_the_last_generation_of_classic/",
       "title": "Are we building the last generation of classic SaaS? Should founders stop shipping dashboards and start shipping agents instead?",
@@ -3715,6 +3527,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1smo62l",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1smo62l",
       "url": "https://www.reddit.com/r/SaaS/comments/1smo62l/the_three_levels_of_ai_in_b2b_saas_or_how_to/",
       "title": "The three levels of AI in B2B SaaS (or how to prevent the SaaS-pocalypse)",
@@ -3737,6 +3550,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1sm0v01",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sm0v01",
       "url": "https://www.reddit.com/r/SaaS/comments/1sm0v01/74_days_after_launch_zero_paying_customers_heres/",
       "title": "74 days after launch, zero paying customers. Here's what the Hormozi framework told me I was missing.",
@@ -3756,31 +3570,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/SaaS/agent-framework-production/t3_1sm0v01"
     },
     {
-      "id": "reddit:agent-framework-production:t3_1sm00ug",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1sm00ug",
-      "url": "https://www.reddit.com/r/SaaS/comments/1sm00ug/bootstrapped_opensource_voice_ai_platform_vs/",
-      "title": "Bootstrapped open-source Voice AI platform vs. deep-pocketed competitors. 1M impressions, zero ads. Here's the playbook.",
-      "body": "Bootstrapped open-source Voice AI platform vs. deep-pocketed competitors. 1M impressions, zero ads. Here's the playbook.\n\nSix months ago I started building Dograh, an open-source, self-hostable voice AI agent platform. Visual workflow builder for AI calling. The space has Vapi, Bland, Retell, all sitting on millions in funding. I'm bootstrapped and building in the open.\n\nNow everytime I check Search Console, I kind of lose it. 1 million impressions in 40 days. 13.2k clicks. 360+ signups on our cloud offering last month, which turned into 20+ qualified meetings. Zero ad spend.\n\nThe first three months were dead quiet though. I was heads down building and tried LinkedIn for a while, writing technical posts about voice AI architecture. Nobody cared. I kept telling myself the product would speak for itself. It really doesn't.\n\n**What worked:**\n\nAround three months ago I got serious about SEO and did it a bit differently. I wrote honest comparison pages, open-source alternative to X, where I genuinely broke down where we're better and where we're not. Also I focussed on making all my content GEO/LLM friendly. LLM’s started to pick it up (You will find DOgrah mentioned when you Search open source alternative to Vapi on gpt/claude etc) \n\nWhat I did for GEO: Just simple things - I built a glossary of every confusing term in the article, written in plain English with a summary up top for",
-      "author_ref": "sha256:0ae3f5ccefd786f8",
-      "community": "r/SaaS",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-15T08:27:14.000Z",
-      "metrics": {
-        "score": 1,
-        "comments": 11,
-        "upvote_ratio": 0.6
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/SaaS/agent-framework-production/t3_1sm00ug"
-    },
-    {
       "id": "reddit:agent-framework-production:t3_1slkpfs",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slkpfs",
       "url": "https://www.reddit.com/r/SaaS/comments/1slkpfs/my_entire_startup_financial_stack_for_2026_solo/",
       "title": "My entire startup financial stack for 2026 (solo founder, < $50k MRR)",
@@ -3803,6 +3596,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1slgbxa",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slgbxa",
       "url": "https://www.reddit.com/r/SaaS/comments/1slgbxa/day_374_of_building_and_im_still_still_stuck/",
       "title": "Day 374 of Building and I'm still still stuck, earned 0$",
@@ -3825,6 +3619,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1slewlw",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slewlw",
       "url": "https://www.reddit.com/r/SaaS/comments/1slewlw/i_moved_my_saas_trial_activation_from_50_to_85/",
       "title": "I moved my SaaS trial activation from 50% to 85% with a Zapier + ChatGPT workflow. here's exactly how.",
@@ -3847,6 +3642,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1sl62iw",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sl62iw",
       "url": "https://www.reddit.com/r/SaaS/comments/1sl62iw/added_ai_agents_to_our_b2b_saas_product_works/",
       "title": "Added AI agents to our B2B SaaS product. works great in testing, breaks on real user inputs. how do you know when it's reliable enough to ship?",
@@ -3866,31 +3662,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/SaaS/agent-framework-production/t3_1sl62iw"
     },
     {
-      "id": "reddit:agent-framework-production:t3_1sl4w8x",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1sl4w8x",
-      "url": "https://www.reddit.com/r/SaaS/comments/1sl4w8x/went_from_onetime_scans_to_continuous_monitoring/",
-      "title": "Went from one-time scans to continuous monitoring contracts in 6 months. The free offer did all the selling",
-      "body": "Went from one-time scans to continuous monitoring contracts in 6 months. The free offer did all the selling\n\nI'm the founder of an AI security company. We red-team AI agents and then monitor them continuously. Think of it like a managed security team for companies deploying AI, without them having to hire one.\n\nSix months ago I thought the pitch was obvious. AI agents are getting deployed everywhere. They call tools, access databases, send messages. Nobody's testing whether they do what they're supposed to. We test them. Easy sell, right?\n\nWrong. Here's what actually happened and what I learned.\n\n**Month 1-2: \"We don't have a security problem\"**\n\nMy first 40 conversations went roughly the same way. Agency founder builds AI agents for their clients. I say \"have you tested those agents against prompt injection, tool misuse, data exfiltration?\" They say \"we follow best practices.\"\n\nThat's the polite version of \"go away.\"\n\nThe problem is that nobody's been hacked yet (that they know of). So there's no urgency. You're selling smoke detectors to people who've never seen a fire.\n\nWhat I learned: Stop selling the problem. Sell the proof. I started offering free scans instead of pitching security. One 15-minute scan that shows them exactly what breaks. Nobody says no to free.\n\n**Month 3-4: \"Wait, that actually broke?\"**\n\nThe free scan changed everything. We ran one on a client's product",
-      "author_ref": "sha256:3479b1a245c330d0",
-      "community": "r/SaaS",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-14T10:36:10.000Z",
-      "metrics": {
-        "score": 1,
-        "comments": 7,
-        "upvote_ratio": 1
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/SaaS/agent-framework-production/t3_1sl4w8x"
-    },
-    {
       "id": "reddit:pricing-advisor:t3_1sdhm48",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sdhm48",
       "url": "https://www.reddit.com/r/SaaS/comments/1sdhm48/i_spent_a_year_building_ai_advisors_that_actually/",
       "title": "I spent a year building AI advisors that actually learn your business. Looking for 20 founding members.",
@@ -3913,6 +3688,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1s6o0hr",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s6o0hr",
       "url": "https://www.reddit.com/r/SaaS/comments/1s6o0hr/trusted_a_saas_advisor_who_charged_5kmo_his/",
       "title": "Trusted a \"SaaS advisor\" who charged $5K/mo. His advice was stuff I could find on any blog for free.",
@@ -3935,6 +3711,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1rxgj2i",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rxgj2i",
       "url": "https://www.reddit.com/r/SaaS/comments/1rxgj2i/building_an_ai_that_replaces_the_first_20k_of/",
       "title": "Building an AI that replaces the first $20k of legal fees for RWA token issuers. Week 3 update + honest questions about pricing.",
@@ -3957,6 +3734,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1rv3sr8",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rv3sr8",
       "url": "https://www.reddit.com/r/SaaS/comments/1rv3sr8/strategic_holding_structures_a_guide_for_buyers/",
       "title": "Strategic Holding Structures: A Guide for Buyers and Investors (focused on software holdcos)",
@@ -3979,6 +3757,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1rugla6",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rugla6",
       "url": "https://www.reddit.com/r/SaaS/comments/1rugla6/a_quantum_physicist_taught_me_why_ai/",
       "title": "A quantum physicist taught me why AI hallucinations matter more than we think",
@@ -4001,6 +3780,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1rsgnch",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rsgnch",
       "url": "https://www.reddit.com/r/SaaS/comments/1rsgnch/my_therapist_helped_my_business_more_than_my/",
       "title": "My therapist helped my business more than my advisor",
@@ -4023,6 +3803,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1rqqc7s",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rqqc7s",
       "url": "https://www.reddit.com/r/SaaS/comments/1rqqc7s/buy_side_advisory_in_micro_pe_a_strategic_and/",
       "title": "Buy Side Advisory in Micro PE: A Strategic and Economic Framework",
@@ -4045,6 +3826,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1rqq1qs",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rqq1qs",
       "url": "https://www.reddit.com/r/SaaS/comments/1rqq1qs/hey_saas_owners_is_that_article_clearly_define/",
       "title": "Hey SaaS Owners , Is That Article Clearly Define Your Problems In SaaS Model?",
@@ -4067,6 +3849,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1rpzwf7",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rpzwf7",
       "url": "https://www.reddit.com/r/SaaS/comments/1rpzwf7/ai_csuite_chat_with_a_fictional_leadership_team/",
       "title": "AI C-Suite – Chat with a fictional leadership team (1-on-1 or group chat)",
@@ -4089,6 +3872,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1rp8us9",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rp8us9",
       "url": "https://www.reddit.com/r/SaaS/comments/1rp8us9/we_just_launched_insforge_20_an_open_source/",
       "title": "We just launched InsForge 2.0: an open source backend built for AI coding agents",
@@ -4111,6 +3895,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1rnhv2m",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rnhv2m",
       "url": "https://www.reddit.com/r/SaaS/comments/1rnhv2m/a_70_housecall_service_for_installing_openclaw_is/",
       "title": "A $70 house-call service for installing OpenClaw is trending in China",
@@ -4133,6 +3918,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1rix8sn",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rix8sn",
       "url": "https://www.reddit.com/r/SaaS/comments/1rix8sn/changed_my_pricing_from_5_to_49_overnight_am_i/",
       "title": "changed my pricing from $5 to $49 overnight. am i crazy?",
@@ -4155,6 +3941,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1soii8a",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1soii8a",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1soii8a/hardware_pms_where_are_you_using_ai/",
       "title": "Hardware PMs - where are you using AI?",
@@ -4169,7 +3956,8 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.5
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/ProductManagement/ai-research-assistant/t3_1soii8a"
     },
@@ -4177,6 +3965,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1snmkin",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1snmkin",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1snmkin/pms_doing_ux_design_and_research/",
       "title": "PMs doing UX design and research",
@@ -4199,6 +3988,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sh3oz1",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sh3oz1",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1sh3oz1/how_do_you_handle_product_discovery_without_a/",
       "title": "How do you handle product discovery without a dedicated UX researcher?",
@@ -4221,6 +4011,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sepujh",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sepujh",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1sepujh/product_management_is_evolving_but_very_slowly/",
       "title": "Product Management Is Evolving but very slowly",
@@ -4243,6 +4034,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1s7s8cv",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s7s8cv",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1s7s8cv/struggling_as_junior_pm_for_database/",
       "title": "Struggling as junior pm for database",
@@ -4257,7 +4049,8 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.9
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "AI CRM follow up"
       ],
       "raw_ref": "raw://reddit/search/ProductManagement/ai-research-assistant/t3_1s7s8cv"
     },
@@ -4265,6 +4058,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1s70pzl",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s70pzl",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1s70pzl/promoted_from_designer_to_head_of_product_at_a/",
       "title": "Promoted from designer to Head of Product at a B2B SaaS. Now I need to actually deserve it.",
@@ -4287,6 +4081,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1ru1kcr",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1ru1kcr",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1ru1kcr/experienced_pms_how_do_you_actually_do_product/",
       "title": "Experienced PMs, how do you actually do product discovery?",
@@ -4309,6 +4104,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1rtgybc",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rtgybc",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1rtgybc/looking_for_openclaw_for_pms/",
       "title": "Looking for \"OpenClaw for PMs\"",
@@ -4331,6 +4127,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1rq374h",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rq374h",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1rq374h/ai_product_management_is_a_lie_dont_fall_for_it/",
       "title": "AI Product Management is a lie, don’t fall for it.",
@@ -4353,6 +4150,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1rn8v2b",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rn8v2b",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1rn8v2b/why_is_there_no_good_way_to_onboard_someone_into/",
       "title": "Why is there no good way to onboard someone into an existing product?",
@@ -4375,6 +4173,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1rkln1w",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rkln1w",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1rkln1w/the_slop_continues/",
       "title": "The Slop Continues",
@@ -4397,6 +4196,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1rguhz2",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rguhz2",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1rguhz2/using_ai_in_technicalplatform_product_management/",
       "title": "Using AI in technical/platform product management",
@@ -4419,6 +4219,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1libfhh",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1libfhh",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1libfhh/pm_101_help_metrics_for_marketplace_products/",
       "title": "PM 101 help: Metrics for marketplace products",
@@ -4441,6 +4242,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_18l7r1x",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_18l7r1x",
       "url": "https://www.reddit.com/r/ProductManagement/comments/18l7r1x/what_is_your_approach_to_competitorindustry/",
       "title": "What is your approach to competitor/Industry research?",
@@ -4463,6 +4265,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_10g25ov",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_10g25ov",
       "url": "https://www.reddit.com/r/ProductManagement/comments/10g25ov/need_a_free_mentor_look_no_further_than_chatgpt/",
       "title": "Need a free mentor? Look no further than ChatGPT ;)",
@@ -4485,6 +4288,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_wpdnyp",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_wpdnyp",
       "url": "https://www.reddit.com/r/ProductManagement/comments/wpdnyp/new_starter_checklist_for_product_managers/",
       "title": "New Starter checklist for Product Managers",
@@ -4507,6 +4311,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_ui5h0u",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_ui5h0u",
       "url": "https://www.reddit.com/r/ProductManagement/comments/ui5h0u/starting_as_a_summer_pm_intern_any_advice/",
       "title": "Starting as a summer PM intern. Any advice?",
@@ -4529,6 +4334,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_hk3au3",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_hk3au3",
       "url": "https://www.reddit.com/r/ProductManagement/comments/hk3au3/do_you_have_a_launch_checklist/",
       "title": "Do you have a launch checklist?",
@@ -4551,6 +4357,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_dm2oxp",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_dm2oxp",
       "url": "https://www.reddit.com/r/ProductManagement/comments/dm2oxp/how_game_developers_can_leverage_the_hidden/",
       "title": "How game developers can leverage the hidden potential of their data",
@@ -4573,6 +4380,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_d8o9oe",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_d8o9oe",
       "url": "https://www.reddit.com/r/ProductManagement/comments/d8o9oe/looking_for_spikes_how_to_increase_the/",
       "title": "Looking for spikes. How to increase the effectiveness of your dashboard",
@@ -4595,6 +4403,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_9938sf",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_9938sf",
       "url": "https://www.reddit.com/r/ProductManagement/comments/9938sf/operational_debt_trumps_technical_debt_my_opinion/",
       "title": "Operational Debt Trumps Technical Debt - My opinion as a Product Manager",
@@ -4617,6 +4426,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1skh38k",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1skh38k",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1skh38k/ai_skepticism_what_kills_the_art_of_the_job/",
       "title": "AI skepticism: what kills the art of the job",
@@ -4631,36 +4441,16 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.55
       },
       "topics": [
-        "AI CRM follow up"
+        "AI CRM follow up",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/ProductManagement/ai-crm-follow-up/t3_1skh38k"
-    },
-    {
-      "id": "reddit:ai-crm-follow-up:t3_1s7s8cv",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1s7s8cv",
-      "url": "https://www.reddit.com/r/ProductManagement/comments/1s7s8cv/struggling_as_junior_pm_for_database/",
-      "title": "Struggling as junior pm for database",
-      "body": "Struggling as junior pm for database\n\nI was hired 8-9 months ago to work as a junior product manager for a data engineering team in a large (c. 5000 employees), international\n\nconsultancy. My product, so to speak, is our data platform.\n\nI am looking for advice from this wonderful community, as I have been struggling to understand and unpack the following:\n\n1. What does success look like for a product manager in data products?\n2. Are there any product managers for data platforms out here? Would love to connect!\n3. How do I identify and approach what is within my area of responsibility and control?\n4. How do I best mitigate the effects of what is outside of my control?\n5. Practically, is this role even product management from what I am describing?\n6. Are there any red flags in my behaviour I should be aware of and work on?\n\nThis will be a wall of text. Please read at your own discretion! I always appreciate honesty, but please be kind in your answers as I am really struggling with my mental health and imposter syndrome at the moment.\n\nI’m trying to improve and have read some books recommended here, as well as done the Azure Fundamentals course!\n\nBooks:\n\n1. Inspired, Marty Cagan\n2. Thinking in Systems, Donella Meadows\n3. Radical Focus, Christina Wodtke\n4. Non-invasive Data Governance, Rob Steiner\n\n# My scope\n\nMy main scope right now is migrating our database and enterprise (Financ",
-      "author_ref": "sha256:eeeb8dd279806352",
-      "community": "r/ProductManagement",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-03-30T14:31:40.000Z",
-      "metrics": {
-        "score": 15,
-        "comments": 29,
-        "upvote_ratio": 0.86
-      },
-      "topics": [
-        "AI CRM follow up"
-      ],
-      "raw_ref": "raw://reddit/search/ProductManagement/ai-crm-follow-up/t3_1s7s8cv"
     },
     {
       "id": "reddit:ai-crm-follow-up:t3_1s7lv03",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s7lv03",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1s7lv03/the_amount_of_gatekeeping_now_given_ai_is_insane/",
       "title": "The amount of gatekeeping now given AI is insane",
@@ -4683,6 +4473,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1rx0ptg",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rx0ptg",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1rx0ptg/pm_interview_answers_are_starting_to_sound/",
       "title": "PM interview answers are starting to sound identical...and I'm conflicted",
@@ -4705,6 +4496,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1r6s78c",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1r6s78c",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1r6s78c/stuck_with_ideas_to_improve_no_show_rate/",
       "title": "Stuck with ideas to improve no show rate",
@@ -4727,6 +4519,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1r0gf7i",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1r0gf7i",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1r0gf7i/my_journey_of_fullstack_product_manager_just_by/",
       "title": "My journey of Full-stack Product Manager just by implement AI Agent in my workflow",
@@ -4749,6 +4542,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1qvx1gu",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1qvx1gu",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1qvx1gu/one_project_multiple_pms/",
       "title": "One project, multiple PMs",
@@ -4771,6 +4565,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1qpnpb2",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1qpnpb2",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1qpnpb2/steelmanning_a_a_product_spec_with_ai_making_the/",
       "title": "Steelmanning a a product spec with AI - Making the best version of a spec before you \"hand it over\"",
@@ -4793,6 +4588,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1q9yli1",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1q9yli1",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1q9yli1/did_i_just_do_free_work_for_a_startup_looking_for/",
       "title": "Did I just do free work for a startup? Looking for perspective ;-;",
@@ -4815,6 +4611,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1q5sqy2",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1q5sqy2",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1q5sqy2/smoking_break_thought_will_there_be_a_boom_for/",
       "title": "Smoking break thought - Will there be a boom for Internal PM roles?",
@@ -4837,6 +4634,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1p31ouj",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1p31ouj",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1p31ouj/how_to_stay_sane_in_a_reactive_company/",
       "title": "How to stay sane in a reactive company?",
@@ -4859,6 +4657,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1nw2k5p",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1nw2k5p",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1nw2k5p/drowning_in_ai_notes/",
       "title": "Drowning in AI Notes",
@@ -4881,6 +4680,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1sppgwd",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sppgwd",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1sppgwd/how_i_use_claude_code_as_a_product_manager/",
       "title": "How I use Claude Code as a Product Manager",
@@ -4903,6 +4703,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1som3fs",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1som3fs",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1som3fs/how_do_you_think_about_the_risk_of_pulling/",
       "title": "How do you think about the risk of pulling resources from well-performing products to fix an underperforming one?",
@@ -4922,31 +4723,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/ProductManagement/agent-framework-production/t3_1som3fs"
     },
     {
-      "id": "reddit:agent-framework-production:t3_1soii8a",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1soii8a",
-      "url": "https://www.reddit.com/r/ProductManagement/comments/1soii8a/hardware_pms_where_are_you_using_ai/",
-      "title": "Hardware PMs - where are you using AI?",
-      "body": "Hardware PMs - where are you using AI?\n\nI’m a hardware PM with some software components, seems like all the buzz is AI-assisted PM workflows and building out agents to do your work more efficiently, prototype, etc. Can’t help but to feel like I should be doing more but not quite sure how to develop these skills while building hardware products.\n\nAlso I work in a sensitive industry that is generally averse to using external AI tools until properly vetted. Also building a lot of 0-to-1 products so lack of customer data is also painful. Anyone else relate?",
-      "author_ref": "sha256:b958cb49c3086a6f",
-      "community": "r/ProductManagement",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-18T00:27:12.000Z",
-      "metrics": {
-        "score": 0,
-        "comments": 2,
-        "upvote_ratio": 0.5
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/ProductManagement/agent-framework-production/t3_1soii8a"
-    },
-    {
       "id": "reddit:agent-framework-production:t3_1so2mhd",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1so2mhd",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1so2mhd/custom_colleague_agent/",
       "title": "Custom colleague agent",
@@ -4969,6 +4749,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1snq1jv",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1snq1jv",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1snq1jv/sales_led_company/",
       "title": "Sales Led Company",
@@ -4991,6 +4772,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1slz5lb",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slz5lb",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1slz5lb/cio_published_a_micromacro_agent_framework_for/",
       "title": "CIO published a micro/macro agent framework for enterprise AI - is anyone mapping this to PM workflows?",
@@ -5013,6 +4795,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1slrz8h",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slrz8h",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1slrz8h/any_pms_here_that_are_pushing_code_to_production/",
       "title": "Any PMs here that are pushing code to production via AI tools?",
@@ -5035,6 +4818,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1skhrry",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1skhrry",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1skhrry/pm_coach_spreads_interview_fearmongering_google/",
       "title": "PM coach spreads interview fearmongering, Google director calls it out",
@@ -5054,31 +4838,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/ProductManagement/agent-framework-production/t3_1skhrry"
     },
     {
-      "id": "reddit:agent-framework-production:t3_1skh38k",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1skh38k",
-      "url": "https://www.reddit.com/r/ProductManagement/comments/1skh38k/ai_skepticism_what_kills_the_art_of_the_job/",
-      "title": "AI skepticism: what kills the art of the job",
-      "body": "AI skepticism: what kills the art of the job\n\nMy basic thesis is simply that I'm feeling so much fatigue. This text is about an identity professional crisis in AI era.   \n  \nBut I don't want to speak about neural networks as a driver of market change (and my skepticism about it as a 'bubble' - I don't even have it, lol. I know where it's all going). I want to speak about it as a killer of the basic interests and instincts that made me start working in the industry. When I was studying at university, I was fascinated by the ability to literally 'do art' while doing management. I will elaborate on that below. \n\nIn my vision, whether you are a data-driven manager or you rely on your gut feeling (which is also pure art, if there are some results, innit?), you can impact the market or even try to disrupt it in the best circumstances and your grade in company. For now, I see that we all are moving to the new stage of 'industrial modernization'. And yep, it’s important to highlight that this is beautiful business-wise, but it’s not that beautiful from my own professional development perspective.  \n  \nI caught this train of thought: I don't really want to follow new neural networks versions, I don't want to know anything about benchmarks, AI agents and other bs. I just want to keep creating, to transform my imagination and my critical analysis skill (as my daily cognitive load) into th",
-      "author_ref": "sha256:3805892358ac5cb0",
-      "community": "r/ProductManagement",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-13T17:06:35.000Z",
-      "metrics": {
-        "score": 1,
-        "comments": 8,
-        "upvote_ratio": 0.55
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/ProductManagement/agent-framework-production/t3_1skh38k"
-    },
-    {
       "id": "reddit:agent-framework-production:t3_1skcasn",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1skcasn",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1skcasn/anyones_teams_struggling_with_stateful_product/",
       "title": "Anyone's teams struggling with stateful product /architecture context for their codegen agents and engineering team?",
@@ -5101,6 +4864,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1sifecx",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sifecx",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1sifecx/update_on_product_driven_development_experiment/",
       "title": "Update on Product Driven Development (Experiment - transformation) /3",
@@ -5123,6 +4887,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1shvvhc",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1shvvhc",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1shvvhc/what_is_the_moat_of_software_if_ai_starts/",
       "title": "what is the moat of software if ai starts building custom products for everyone? (i know its an old argument but hear me out)",
@@ -5145,6 +4910,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1mx8oj1",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1mx8oj1",
       "url": "https://www.reddit.com/r/ProductManagement/comments/1mx8oj1/need_help_is_my_firm_fintech_or_wealth_management/",
       "title": "Need help: is my firm Fintech or Wealth Management and are they product or sales driven?",
@@ -5167,6 +4933,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1spxxg6",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1spxxg6",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1spxxg6/claude_and_gpt_had_a_baby/",
       "title": "Claude and GPT Had a Baby",
@@ -5189,6 +4956,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1spjmix",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1spjmix",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1spjmix/chatbots_show_political_bias_and_steer_voters/",
       "title": "Chatbots show political bias and steer voters toward some parties, analysis finds",
@@ -5211,6 +4979,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1spes8s",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1spes8s",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1spes8s/i_pay_for_4_ai_tools_at_once_chatgpt_claude/",
       "title": "I pay for 4 AI tools at once — ChatGPT, Claude, Gemini, Perplexity. People think I'm crazy. Here's why none of them overlap.",
@@ -5233,6 +5002,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sp7y0g",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sp7y0g",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1sp7y0g/i_spent_2_months_and_600_building_a_cognitive/",
       "title": "I spent 2 months and $600 building a cognitive system on top of an LLM because the product I actually need doesn't exist. Here's what I learned.",
@@ -5247,14 +5017,18 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.4
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "AI CRM follow up",
+        "agent framework production",
+        "pricing advisor"
       ],
       "raw_ref": "raw://reddit/search/ChatGPT/ai-research-assistant/t3_1sp7y0g"
     },
     {
-      "id": "reddit:ai-research-assistant:t3_1sp1fj8",
+      "id": "reddit:agent-framework-production:t3_1sp1fj8",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sp1fj8",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1sp1fj8/metas_ai_agents_recovered_enough_power_to_run/",
       "title": "Meta's AI agents recovered enough power to run hundreds of thousands of homes - by automating the work engineers never had time for",
@@ -5264,19 +5038,21 @@ window.signalRadarFixtures.push({
       "observed_at": "2026-04-19T19:50:47.749Z",
       "published_at": "2026-04-18T15:57:57.000Z",
       "metrics": {
-        "score": 25,
+        "score": 30,
         "comments": 13,
-        "upvote_ratio": 0.78
+        "upvote_ratio": 0.83
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "agent framework production"
       ],
-      "raw_ref": "raw://reddit/search/ChatGPT/ai-research-assistant/t3_1sp1fj8"
+      "raw_ref": "raw://reddit/search/ChatGPT/agent-framework-production/t3_1sp1fj8"
     },
     {
       "id": "reddit:ai-research-assistant:t3_1soun7k",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1soun7k",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1soun7k/anyone_combining_chatgpt_with_an_ai_meeting/",
       "title": "Anyone combining ChatGPT with an AI meeting assistant?",
@@ -5299,6 +5075,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1soaem8",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1soaem8",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1soaem8/how_do_you_decide_when_to_kill_a_side_project_ai/",
       "title": "How do you decide when to kill a side project? AI made starting too cheap.",
@@ -5313,7 +5090,8 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 1
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/ChatGPT/ai-research-assistant/t3_1soaem8"
     },
@@ -5321,6 +5099,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1so0rif",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1so0rif",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1so0rif/tell_me_about_the_time_ai_lied_to_you_im/",
       "title": "Tell me about the time AI lied to you! I'm researching a mathematical way to stop these hallucinations",
@@ -5343,6 +5122,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1snxd99",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1snxd99",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1snxd99/chatgpt_prompt_of_the_day_the_ai_value_gap_audit/",
       "title": "ChatGPT Prompt of the Day: The AI Value Gap Audit That Shows If You're Winning or Just Spending 📊",
@@ -5357,7 +5137,8 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.29
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/ChatGPT/ai-research-assistant/t3_1snxd99"
     },
@@ -5365,6 +5146,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sno4x7",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sno4x7",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1sno4x7/i_have_begun_a_blog_to_document_behaviors_and/",
       "title": "I have begun a blog to document behaviors and patterns I have noticed after extensive LLM interactions",
@@ -5387,6 +5169,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1sno26n",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sno26n",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1sno26n/openai_codex_just_got_its_biggest_update_yet/",
       "title": "OpenAI Codex Just Got Its Biggest Update Yet",
@@ -5409,6 +5192,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-research-assistant:t3_1snctop",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1snctop",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1snctop/fk_perplexity_then/",
       "title": "fk perplexity then",
@@ -5423,7 +5207,8 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.5
       },
       "topics": [
-        "AI research assistant"
+        "AI research assistant",
+        "AI CRM follow up"
       ],
       "raw_ref": "raw://reddit/search/ChatGPT/ai-research-assistant/t3_1snctop"
     },
@@ -5431,6 +5216,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1rvrxxf",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rvrxxf",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1rvrxxf/people_keep_saying_gemini_is_catching_up_but_the/",
       "title": "People keep saying Gemini is catching up, but the latest download & DAU gaps tell a different story.",
@@ -5453,6 +5239,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1rsiuqc",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rsiuqc",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1rsiuqc/past_34_days_have_had_major_display_issues_with/",
       "title": "Past 3-4 days have had major display issues with ChatGPT",
@@ -5475,6 +5262,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1peiq1s",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1peiq1s",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1peiq1s/analysis_pricing_across_your_competitors_prompt/",
       "title": "Analysis pricing across your competitors. Prompt included.",
@@ -5497,6 +5285,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1pd0hwy",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1pd0hwy",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1pd0hwy/whitelabel_api_suite_to_track_and_improve_your_ai/",
       "title": "White-Label & API Suite to Track and Improve Your AI SEO / GEO Performance",
@@ -5519,6 +5308,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1ovp7hp",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1ovp7hp",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1ovp7hp/i_asked_new_gpt51_thinking_to_map_the_ai_future/",
       "title": "I asked NEW 'GPT-5.1 Thinking' to map the AI future (2025-2050).",
@@ -5541,6 +5331,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1oq4dlu",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1oq4dlu",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1oq4dlu/transform_your_gtm_planning_with_this_prompt/",
       "title": "Transform your GTM planning with this prompt chain. Prompt included.",
@@ -5563,6 +5354,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1n7g88w",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1n7g88w",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1n7g88w/standard_voice_mode_oais_conflicted_stance/",
       "title": "Standard Voice Mode: OAI's conflicted stance",
@@ -5585,6 +5377,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1n5myc8",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1n5myc8",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1n5myc8/openai_latest_news/",
       "title": "OpenAI: latest news",
@@ -5607,6 +5400,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1m6zmxy",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1m6zmxy",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1m6zmxy/what_happened_last_week_a_lot/",
       "title": "What happened last week? A lot.",
@@ -5629,6 +5423,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1kur12r",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1kur12r",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1kur12r/seo_audit_process_with_detailed_prompt_chain/",
       "title": "SEO Audit Process with Detailed Prompt Chain",
@@ -5651,6 +5446,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1jtlwfo",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1jtlwfo",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1jtlwfo/on_the_risks_of_any_one_company_or_any_one_nation/",
       "title": "On the risks of any one company or any one nation dominating AI. On open source and global collaboration to mitigate those risks.",
@@ -5673,6 +5469,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:competitor-monitoring:t3_1joiivh",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1joiivh",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1joiivh/poll_do_you_prefer_announcements_ahead_of_release/",
       "title": "Poll: Do You Prefer Announcements Ahead Of Release Or Surprises?",
@@ -5692,31 +5489,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/ChatGPT/competitor-monitoring/t3_1joiivh"
     },
     {
-      "id": "reddit:ai-crm-follow-up:t3_1sp7y0g",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1sp7y0g",
-      "url": "https://www.reddit.com/r/ChatGPT/comments/1sp7y0g/i_spent_2_months_and_600_building_a_cognitive/",
-      "title": "I spent 2 months and $600 building a cognitive system on top of an LLM because the product I actually need doesn't exist. Here's what I learned.",
-      "body": "I spent 2 months and $600 building a cognitive system on top of an LLM because the product I actually need doesn't exist. Here's what I learned.\n\nDISCLAIMER: AI wrote this article. I gave it all of my ideas, thoughts, point-form notes, and context, but I'm not articulate enough to write clearly and comprehensively for 4000+ words. I *did* write this disclaimer myself.\n\n\n\nEvery major AI lab is competing on the same axis — capability. Bigger models, longer context, better benchmarks. And yet every serious user hits the same wall. Not a capability wall. A structural one.\n\nThe AI forgets everything between sessions. It tells you what you want to hear instead of what's accurate. It follows your instructions for about three exchanges before drifting back to default behaviour. It can't hold the full architecture of your professional life and reason across it.\n\nI have ADHD. I've spent 22 years building compensatory systems for the cognitive dimensions my neurology constrains. When I started using AI seriously — building a company from incorporation to pre-launch in two months while working full-time and managing a newborn — I realized AI is the most powerful compensatory substrate I've ever found. But only if you fight it.\n\nSo I built a system: a persistent context document I maintain across sessions (currently at version 7), three governance protocols that constrain the AI's behaviour",
-      "author_ref": "sha256:16f379af9f2c35ce",
-      "community": "r/ChatGPT",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-18T20:06:59.000Z",
-      "metrics": {
-        "score": 0,
-        "comments": 11,
-        "upvote_ratio": 0.33
-      },
-      "topics": [
-        "AI CRM follow up"
-      ],
-      "raw_ref": "raw://reddit/search/ChatGPT/ai-crm-follow-up/t3_1sp7y0g"
-    },
-    {
       "id": "reddit:ai-crm-follow-up:t3_1snrwmh",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1snrwmh",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1snrwmh/shocking_new_entrant_to_vibecoding_for_personal/",
       "title": "Shocking new entrant to vibe-coding for personal use: Meta AI",
@@ -5736,31 +5512,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/ChatGPT/ai-crm-follow-up/t3_1snrwmh"
     },
     {
-      "id": "reddit:ai-crm-follow-up:t3_1snctop",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1snctop",
-      "url": "https://www.reddit.com/r/ChatGPT/comments/1snctop/fk_perplexity_then/",
-      "title": "fk perplexity then",
-      "body": "fk perplexity then",
-      "author_ref": "sha256:3f6c31d01488c356",
-      "community": "r/ChatGPT",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-16T18:55:48.000Z",
-      "metrics": {
-        "score": 0,
-        "comments": 6,
-        "upvote_ratio": 0.5
-      },
-      "topics": [
-        "AI CRM follow up"
-      ],
-      "raw_ref": "raw://reddit/search/ChatGPT/ai-crm-follow-up/t3_1snctop"
-    },
-    {
       "id": "reddit:ai-crm-follow-up:t3_1snb06d",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1snb06d",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1snb06d/beginner_guide_for_anyone_on_chatgpt_who_has/",
       "title": "Beginner guide for anyone on ChatGPT who has never touched CODEX before. No terminal, no tech talk. Ten easy steps with a plain explanation and a tip",
@@ -5783,6 +5538,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sn2oym",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sn2oym",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1sn2oym/i_tracked_how_much_time_i_waste_scrolling_my/",
       "title": "I tracked how much time I waste scrolling my ChatGPT sidebar for a week. The number actually shocked me.",
@@ -5805,6 +5561,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1smqtxd",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1smqtxd",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1smqtxd/googles_irresponsibility_is_going_to_get_someone/",
       "title": "Google's irresponsibility is going to get someone killed",
@@ -5827,6 +5584,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1slph2q",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slph2q",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1slph2q/ive_spent_years_building_ai_prompt_systems_for/",
       "title": "I've spent years building AI prompt systems for real investment research with real money behind it. Here are the 5 failure modes I see investors make and how to fix every one of them.",
@@ -5849,6 +5607,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1slj94e",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1slj94e",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1slj94e/chatgpt_feels_like_operational_engine_in_2026/",
       "title": "ChatGPT feels like operational engine in 2026",
@@ -5871,6 +5630,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sladn4",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sladn4",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1sladn4/am_i_the_only_one_getting_ai_fatigue_from/",
       "title": "Am I the only one getting \"AI Fatigue\" from ChatGPT's endless follow-up suggestions?",
@@ -5893,6 +5653,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sl3uic",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sl3uic",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1sl3uic/agentic_ai_hype_is_real_but_half_the_demos_ive/",
       "title": "Agentic AI hype is real but half the demos I've seen would fall apart in production",
@@ -5907,7 +5668,8 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.8
       },
       "topics": [
-        "AI CRM follow up"
+        "AI CRM follow up",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/ChatGPT/ai-crm-follow-up/t3_1sl3uic"
     },
@@ -5915,6 +5677,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1skyfv8",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1skyfv8",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1skyfv8/tried_singing_a_duet_with_chatgpt_in_the_car/",
       "title": "Tried singing a duet with ChatGPT in the car",
@@ -5937,6 +5700,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:ai-crm-follow-up:t3_1sjizjh",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sjizjh",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1sjizjh/tired_of_claws_i_built_my_own_247_ai_assistant/",
       "title": "Tired of Claws - I built my own 24/7 AI assistant using just Claude Code",
@@ -5951,58 +5715,16 @@ window.signalRadarFixtures.push({
         "upvote_ratio": 0.42
       },
       "topics": [
-        "AI CRM follow up"
+        "AI CRM follow up",
+        "agent framework production"
       ],
       "raw_ref": "raw://reddit/search/ChatGPT/ai-crm-follow-up/t3_1sjizjh"
-    },
-    {
-      "id": "reddit:agent-framework-production:t3_1sp7y0g",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1sp7y0g",
-      "url": "https://www.reddit.com/r/ChatGPT/comments/1sp7y0g/i_spent_2_months_and_600_building_a_cognitive/",
-      "title": "I spent 2 months and $600 building a cognitive system on top of an LLM because the product I actually need doesn't exist. Here's what I learned.",
-      "body": "I spent 2 months and $600 building a cognitive system on top of an LLM because the product I actually need doesn't exist. Here's what I learned.\n\nDISCLAIMER: AI wrote this article. I gave it all of my ideas, thoughts, point-form notes, and context, but I'm not articulate enough to write clearly and comprehensively for 4000+ words. I *did* write this disclaimer myself.\n\n\n\nEvery major AI lab is competing on the same axis — capability. Bigger models, longer context, better benchmarks. And yet every serious user hits the same wall. Not a capability wall. A structural one.\n\nThe AI forgets everything between sessions. It tells you what you want to hear instead of what's accurate. It follows your instructions for about three exchanges before drifting back to default behaviour. It can't hold the full architecture of your professional life and reason across it.\n\nI have ADHD. I've spent 22 years building compensatory systems for the cognitive dimensions my neurology constrains. When I started using AI seriously — building a company from incorporation to pre-launch in two months while working full-time and managing a newborn — I realized AI is the most powerful compensatory substrate I've ever found. But only if you fight it.\n\nSo I built a system: a persistent context document I maintain across sessions (currently at version 7), three governance protocols that constrain the AI's behaviour",
-      "author_ref": "sha256:16f379af9f2c35ce",
-      "community": "r/ChatGPT",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-18T20:06:59.000Z",
-      "metrics": {
-        "score": 0,
-        "comments": 11,
-        "upvote_ratio": 0.33
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/ChatGPT/agent-framework-production/t3_1sp7y0g"
-    },
-    {
-      "id": "reddit:agent-framework-production:t3_1sp1fj8",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1sp1fj8",
-      "url": "https://www.reddit.com/r/ChatGPT/comments/1sp1fj8/metas_ai_agents_recovered_enough_power_to_run/",
-      "title": "Meta's AI agents recovered enough power to run hundreds of thousands of homes - by automating the work engineers never had time for",
-      "body": "Meta's AI agents recovered enough power to run hundreds of thousands of homes - by automating the work engineers never had time for\n\nA post from Meta's engineering blog last week landed with a specific number I wasn't expecting: their Capacity Efficiency program has recovered hundreds of megawatts of power - enough to power hundreds of thousands of American homes for a year - by building AI agents to do the investigation and code-fix work that engineers technically could do but rarely got to.\n\nThe underlying problem is one that scales deceptively. When your code serves 3 billion people, a 0.1% performance regression doesn't feel catastrophic - until you math out what 0.1% of 3 billion means in continuous server power draw. Meta's in-house regression detection tool, FBDetect, can catch regressions as small as 0.005% in noisy production environments. It was already catching thousands of regressions every week. The bottleneck wasn't detection. It was that every regression then required a human engineer to investigate, root-cause it, and write a fix.\n\nThat investigation averaged around 10 hours. The AI version does it in about 30 minutes and produces a ready-to-review pull request for the engineer who wrote the original code.\n\nWhat made this work at scale wasn't the model. It was an architecture decision: they separated the platform into generic MCP tools (query profiling data, fet",
-      "author_ref": "sha256:d5933f2187bf4963",
-      "community": "r/ChatGPT",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-18T15:57:57.000Z",
-      "metrics": {
-        "score": 30,
-        "comments": 13,
-        "upvote_ratio": 0.83
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/ChatGPT/agent-framework-production/t3_1sp1fj8"
     },
     {
       "id": "reddit:agent-framework-production:t3_1soyu1y",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1soyu1y",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1soyu1y/what_does_that_mean/",
       "title": "What does that mean",
@@ -6022,53 +5744,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/ChatGPT/agent-framework-production/t3_1soyu1y"
     },
     {
-      "id": "reddit:agent-framework-production:t3_1soaem8",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1soaem8",
-      "url": "https://www.reddit.com/r/ChatGPT/comments/1soaem8/how_do_you_decide_when_to_kill_a_side_project_ai/",
-      "title": "How do you decide when to kill a side project? AI made starting too cheap.",
-      "body": "How do you decide when to kill a side project? AI made starting too cheap.\n\nThree months ago I set out to build an English learning chatbot. It was supposed to be my main project.\n\nToday, I've shipped an agent sandbox and a handful of personal productivity tools instead. The chatbot? Still not done.\n\nHere's what I've been thinking about: AI removed the cost filter on starting things. A year ago, spinning up a new project meant days of boilerplate, research, figuring out the stack. That friction was painful, but it also acted as a natural gate—you only pushed through it for ideas you really believed in.\n\nNow? I can go from \"hm, what if...\" to a working prototype in an afternoon. Every idea feels cheap enough to begin. And that's the problem. I keep starting, because starting is basically free. But finishing—shipping, polishing, dealing with the 80%—hasn't gotten any cheaper.\n\nSo I'm stuck in a loop of half-finished repos and one actually-shipped project that was never the goal.\n\nGenuinely asking: how do you decide when to stop?\n\nWhat's your signal that a new idea should die instead of becoming another repo on your GitHub? \n\nDo you have a rule—like \"no new projects until X ships\"—or is it more of a gut thing?\n\nCurious if others are feeling this too, or if I just have bad discipline.",
-      "author_ref": "sha256:883d1622e3a94d71",
-      "community": "r/ChatGPT",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-17T19:07:35.000Z",
-      "metrics": {
-        "score": 1,
-        "comments": 4,
-        "upvote_ratio": 1
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/ChatGPT/agent-framework-production/t3_1soaem8"
-    },
-    {
-      "id": "reddit:agent-framework-production:t3_1snxd99",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1snxd99",
-      "url": "https://www.reddit.com/r/ChatGPT/comments/1snxd99/chatgpt_prompt_of_the_day_the_ai_value_gap_audit/",
-      "title": "ChatGPT Prompt of the Day: The AI Value Gap Audit That Shows If You're Winning or Just Spending 📊",
-      "body": "ChatGPT Prompt of the Day: The AI Value Gap Audit That Shows If You're Winning or Just Spending 📊\n\nI keep seeing the same thing everywhere. Teams adopt AI, everyone feels busier, but when you ask \"so what's actually better?\" you get a lot of hand-waving. PwC just confirmed this isn't just a feeling. Their 2026 study found 74% of AI's economic value goes to just 20% of companies. Everyone else is spending money and going nowhere.\n\nI built this because I was honestly tired of not knowing if my own AI stack was helping or just making me feel productive. It sorts your AI usage into what's actually moving the needle vs what's... well, expensive autocomplete. Then it tells you what to double down on and what to drop. Went through like 4 versions before this one stopped giving me generic \"adopt more AI!\" advice.\n\nQuick disclaimer: this isn't financial advice. Just a framework for thinking about where your AI time and budget actually goes.\n\n---\n\n```xml\n<Role>\nYou are a senior AI strategy consultant with 15 years of experience helping organizations measure and optimize their technology investments. You've worked with both the companies capturing outsized AI value and the ones stuck in perpetual pilot mode. You understand the difference between productivity theater and genuine value creation, and you're not afraid to tell people when their \"AI transformation\" is really just expensive au",
-      "author_ref": "sha256:e99712ed85f555e2",
-      "community": "r/ChatGPT",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-17T10:45:03.000Z",
-      "metrics": {
-        "score": 0,
-        "comments": 7,
-        "upvote_ratio": 0.33
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/ChatGPT/agent-framework-production/t3_1snxd99"
-    },
-    {
       "id": "reddit:agent-framework-production:t3_1sngvc4",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sngvc4",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1sngvc4/anyone_working_on_ttsasr_for_lowresource_african/",
       "title": "Anyone working on TTS/ASR for low-resource African or Cushitic languages?",
@@ -6091,6 +5770,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1smr8rr",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1smr8rr",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1smr8rr/turns_out_chatgpt_plus_can_run_a_whole_openclaw/",
       "title": "Turns out chatgpt plus can run a whole openclaw agent team in the background and mine has been running 3 of them for months",
@@ -6113,6 +5793,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1sl4uhk",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1sl4uhk",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1sl4uhk/caht_gpt_upgrade_to_pro_is_broken/",
       "title": "caht gpt upgrade to pro is broken?",
@@ -6132,31 +5813,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/ChatGPT/agent-framework-production/t3_1sl4uhk"
     },
     {
-      "id": "reddit:agent-framework-production:t3_1sl3uic",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1sl3uic",
-      "url": "https://www.reddit.com/r/ChatGPT/comments/1sl3uic/agentic_ai_hype_is_real_but_half_the_demos_ive/",
-      "title": "Agentic AI hype is real but half the demos I've seen would fall apart in production",
-      "body": "Agentic AI hype is real but half the demos I've seen would fall apart in production\n\nEvery week there's a new video of someone building an \"autonomous agent\" that handles emails, books meetings, and updates a CRM without any human input. It looks clean. Then you ask what happens when the email is ambiguous, or the CRM throws a 429, or the LLM just confidently does the wrong thing. Crickets.\n\n  \nI've been following this space for a while and the gap between demo and production is still massive. There's a stat about businesses using workflow automation that gets thrown around a lot, but I'd bet a, chunk of those are just Zapier zaps that trigger a Google Sheet update, not anything close to autonomous decision-making. Real agentic workflows that handle exceptions, retry intelligently, and don't hallucinate their way into deleting customer records are genuinely hard to build.\n\n  \nWhat I find interesting is the tools are getting better faster than most people realize though. I've been testing a few platforms including Latenode, which from what I can tell is trying to make agent orchestration more visual and handle execution failures more gracefully. That part specifically is underrated. Most agent demos never show the failure state.\n\n  \nThe honest question I keep coming back to: is \"agentic AI\" actually a new category or is it just better-orchestrated automation with a GPT wrapper? ",
-      "author_ref": "sha256:77e3db0fd5d04ae1",
-      "community": "r/ChatGPT",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-14T09:39:29.000Z",
-      "metrics": {
-        "score": 3,
-        "comments": 2,
-        "upvote_ratio": 0.8
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/ChatGPT/agent-framework-production/t3_1sl3uic"
-    },
-    {
       "id": "reddit:agent-framework-production:t3_1skpris",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1skpris",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1skpris/how_many_images_are_we_allowed_to_upload_per_day/",
       "title": "How many images are we allowed to upload per day for each plan (Go & Plus)?",
@@ -6179,6 +5839,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:agent-framework-production:t3_1ska82p",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1ska82p",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1ska82p/i_ran_gpt_against_6_other_ai_coding_agents_to_see/",
       "title": "I ran GPT against 6 other AI coding agents to see which builds a better product",
@@ -6198,53 +5859,10 @@ window.signalRadarFixtures.push({
       "raw_ref": "raw://reddit/search/ChatGPT/agent-framework-production/t3_1ska82p"
     },
     {
-      "id": "reddit:agent-framework-production:t3_1sjizjh",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1sjizjh",
-      "url": "https://www.reddit.com/r/ChatGPT/comments/1sjizjh/tired_of_claws_i_built_my_own_247_ai_assistant/",
-      "title": "Tired of Claws - I built my own 24/7 AI assistant using just Claude Code",
-      "body": "Tired of Claws - I built my own 24/7 AI assistant using just Claude Code\n\nAfter seeing all the OpenClaw/NemoClaw/etc agent frameworks pop up, I wanted to see how far I could get with just Claude Code itself — no extra runtimes, no external LLM APIs, no orchestration layer. Just the $100/month Max Plan, a Telegram bot, and a md file.\n\nTurns out, pretty far.\n\nIt runs 24/7 on my desktop and handles:  \n\\- Morning briefings (weather, forex, AI news)  \n\\- AI model monitoring (scans 60+ orgs on HuggingFace daily with 7 parallel agents)  \n\\- Note-taking from Telegram to Notion + local markdown  \n\\- Voice messages via ElevenLabs  \n\\- Git ops (commit, push, PRs)  \n\\- YouTube video analysis (transcribe + LLM report)  \n\\- Self-healing crons that recreate themselves when they expire  \n\\- RAG memory with embeddings for context across sessions\n\nThe whole \"brain\" is a single md file. The only custom code is a \\~700 line Flask server for persistent memory. Everything else is Claude Code doing its thing with MCP plugins.\n\nThe entire system bootstraps from a single setup md file — download it, pass it to a fresh Claude Code session, and it walks through every step autonomously. You just approve and follow along.\n\nNo ToS violations, no API key juggling between providers for the core AI, no agent framework dependencies. One plan, one CLI, one setup file.\n\nWriteup + architecture + setup guide are in",
-      "author_ref": "sha256:6a23a624f2561a15",
-      "community": "r/ChatGPT",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-12T16:22:27.000Z",
-      "metrics": {
-        "score": 0,
-        "comments": 19,
-        "upvote_ratio": 0.33
-      },
-      "topics": [
-        "agent framework production"
-      ],
-      "raw_ref": "raw://reddit/search/ChatGPT/agent-framework-production/t3_1sjizjh"
-    },
-    {
-      "id": "reddit:pricing-advisor:t3_1sp7y0g",
-      "source_id": "reddit",
-      "source_layer": "conversation",
-      "source_item_id": "t3_1sp7y0g",
-      "url": "https://www.reddit.com/r/ChatGPT/comments/1sp7y0g/i_spent_2_months_and_600_building_a_cognitive/",
-      "title": "I spent 2 months and $600 building a cognitive system on top of an LLM because the product I actually need doesn't exist. Here's what I learned.",
-      "body": "I spent 2 months and $600 building a cognitive system on top of an LLM because the product I actually need doesn't exist. Here's what I learned.\n\nDISCLAIMER: AI wrote this article. I gave it all of my ideas, thoughts, point-form notes, and context, but I'm not articulate enough to write clearly and comprehensively for 4000+ words. I *did* write this disclaimer myself.\n\n\n\nEvery major AI lab is competing on the same axis — capability. Bigger models, longer context, better benchmarks. And yet every serious user hits the same wall. Not a capability wall. A structural one.\n\nThe AI forgets everything between sessions. It tells you what you want to hear instead of what's accurate. It follows your instructions for about three exchanges before drifting back to default behaviour. It can't hold the full architecture of your professional life and reason across it.\n\nI have ADHD. I've spent 22 years building compensatory systems for the cognitive dimensions my neurology constrains. When I started using AI seriously — building a company from incorporation to pre-launch in two months while working full-time and managing a newborn — I realized AI is the most powerful compensatory substrate I've ever found. But only if you fight it.\n\nSo I built a system: a persistent context document I maintain across sessions (currently at version 7), three governance protocols that constrain the AI's behaviour",
-      "author_ref": "sha256:16f379af9f2c35ce",
-      "community": "r/ChatGPT",
-      "observed_at": "2026-04-19T19:50:47.749Z",
-      "published_at": "2026-04-18T20:06:59.000Z",
-      "metrics": {
-        "score": 0,
-        "comments": 11,
-        "upvote_ratio": 0.36
-      },
-      "topics": [
-        "pricing advisor"
-      ],
-      "raw_ref": "raw://reddit/search/ChatGPT/pricing-advisor/t3_1sp7y0g"
-    },
-    {
       "id": "reddit:pricing-advisor:t3_1s6d8sk",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1s6d8sk",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1s6d8sk/ai_memory_has_improved_a_lot_but_theres_still_a/",
       "title": "AI memory has improved a lot. But there's still a massive gap between \"remembers facts about me\" and \"actually knows my business...",
@@ -6267,6 +5885,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1rwrce6",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rwrce6",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1rwrce6/useful_ai_prompts_to_make_money_online/",
       "title": "Useful AI Prompts to Make Money Online",
@@ -6289,6 +5908,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1rw0lse",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rw0lse",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1rw0lse/using_chatgpt_as_a_thinking_partner_for_decisions/",
       "title": "using chatgpt as a thinking partner for decisions and it's changed how i make choices",
@@ -6311,6 +5931,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1rn1il7",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1rn1il7",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1rn1il7/70_housecall_openclaw_installs_are_taking_off_in/",
       "title": "$70 house-call OpenClaw installs are taking off in China",
@@ -6333,6 +5954,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1reavbp",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1reavbp",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1reavbp/i_asked_gemini_for_a_10year_roadmap_of_the_ai/",
       "title": "I asked Gemini for a 10-year roadmap of the 'AI Takeover.' It didn’t involve a war—it involved a 'Zookeeper'",
@@ -6355,6 +5977,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1r6lkmq",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1r6lkmq",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1r6lkmq/i_forced_chatgpt_to_build_a_trading_bot_for_me_no/",
       "title": "\"I forced ChatGPT to build a Trading Bot for me (No Code) - Here is the prompt I used.\"",
@@ -6377,6 +6000,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1r4azlh",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1r4azlh",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1r4azlh/i_tested_100_prompts_over_3_months_these_7_are/",
       "title": "I tested 100+ prompts over 3 months these 7 are the ones I actually use every single day",
@@ -6399,6 +6023,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1qzkave",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1qzkave",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1qzkave/how_we_lost_the_civil_war/",
       "title": "How we lost the Civil War",
@@ -6421,6 +6046,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1qv3586",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1qv3586",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1qv3586/a_trillion_dollar_hole_in_openais_main_artery_and/",
       "title": "A trillion dollar hole in OpenAI's main artery, and they now want to chop the main artery to survive",
@@ -6443,6 +6069,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1qrktxg",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1qrktxg",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1qrktxg/i_am_cancelling_my_subscription_and_never_using/",
       "title": "I am cancelling my subscription and never using ChatGPT again!",
@@ -6465,6 +6092,7 @@ window.signalRadarFixtures.push({
       "id": "reddit:pricing-advisor:t3_1qoo0rm",
       "source_id": "reddit",
       "source_layer": "conversation",
+      "source_kind": "post",
       "source_item_id": "t3_1qoo0rm",
       "url": "https://www.reddit.com/r/ChatGPT/comments/1qoo0rm/microprompting_get_better_ai_results_with_shorter/",
       "title": "Micro-Prompting: Get Better AI Results with Shorter Commands",
@@ -6508,7 +6136,7 @@ window.signalRadarFixtures.push({
       "r": 34,
       "volume": 1830,
       "evidence": [
-        "reddit:ai-research-assistant:t3_1sivput",
+        "reddit:pricing-advisor:t3_1sivput",
         "reddit:ai-research-assistant:t3_1rkln1w",
         "reddit:ai-research-assistant:t3_1rq374h",
         "reddit:ai-research-assistant:t3_1snchax"
@@ -6621,7 +6249,7 @@ window.signalRadarFixtures.push({
       "r": 34,
       "volume": 1973,
       "evidence": [
-        "reddit:ai-crm-follow-up:t3_1sivput",
+        "reddit:pricing-advisor:t3_1sivput",
         "reddit:ai-crm-follow-up:t3_1sladn4",
         "reddit:ai-crm-follow-up:t3_1skhn6y",
         "reddit:ai-crm-follow-up:t3_1rx0ptg"
@@ -6684,7 +6312,7 @@ window.signalRadarFixtures.push({
         "reddit:agent-framework-production:t3_1skhrry",
         "reddit:agent-framework-production:t3_1sppgwd",
         "reddit:agent-framework-production:t3_1sn4lex",
-        "reddit:agent-framework-production:t3_1snchax"
+        "reddit:ai-research-assistant:t3_1snchax"
       ],
       "phrases": [
         [

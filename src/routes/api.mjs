@@ -99,6 +99,16 @@ router.post("/api/signals/:id/dismiss", (req, res) => {
   res.json({ id: req.params.id, dismissed: newValue });
 });
 
+router.post("/api/signals/:id/alert", (req, res) => {
+  const db = getDb();
+  const signal = db.prepare("SELECT id, alerted FROM signals WHERE id = ?").get(req.params.id);
+  if (!signal) return res.status(404).json({ error: "Signal not found" });
+
+  const newValue = signal.alerted ? 0 : 1;
+  db.prepare("UPDATE signals SET alerted = ?, updated_at = datetime('now') WHERE id = ?").run(newValue, req.params.id);
+  res.json({ id: req.params.id, alerted: newValue });
+});
+
 router.post("/api/contexts", (req, res) => {
   const db = getDb();
   const { label, description, subreddits, queries, high_intent } = req.body;
@@ -305,6 +315,77 @@ export function buildRadarData(contextId, fixtureId) {
     "SELECT id, label, note FROM evidence_layers ORDER BY sort_order"
   ).all();
 
+  // Compute live dashboard data when no fixture metadata exists
+  let liveTimeline = { posts: [], comments: [], authors: [] };
+  let liveHeatmap = [];
+  let liveMetrics = [];
+  let liveIntent = [];
+
+  if (!fixtureMeta) {
+    // Timeline: group evidence by date, count posts/comments/authors per day
+    const timelineRows = db.prepare(
+      `SELECT date(published_at) as d,
+              SUM(CASE WHEN source_item_id LIKE 't3_%' OR source_item_id NOT LIKE 't1_%' THEN 1 ELSE 0 END) as posts,
+              SUM(CASE WHEN source_item_id LIKE 't1_%' THEN 1 ELSE 0 END) as comments,
+              COUNT(DISTINCT author_ref) as authors
+       FROM evidence_packets
+       WHERE context_id = ? AND published_at IS NOT NULL
+       GROUP BY d ORDER BY d`
+    ).all(contextId);
+    if (timelineRows.length) {
+      liveTimeline = {
+        posts: timelineRows.map(r => r.posts),
+        comments: timelineRows.map(r => r.comments),
+        authors: timelineRows.map(r => r.authors),
+      };
+    }
+
+    // Heatmap: top 5 communities × top 4 signals
+    const topComms = db.prepare(
+      `SELECT community, COUNT(*) as c FROM evidence_packets
+       WHERE context_id = ? AND community IS NOT NULL AND community != ''
+       GROUP BY community ORDER BY c DESC LIMIT 5`
+    ).all(contextId);
+    const topSignalIds = signals.slice(0, 4).map(s => s.id);
+    liveHeatmap = topComms.map(row => {
+      const counts = topSignalIds.map(sid => {
+        return db.prepare(
+          `SELECT COUNT(*) as c FROM evidence_packets ep
+           JOIN signal_evidence se ON se.evidence_id = ep.id
+           WHERE se.signal_id = ? AND ep.community = ?`
+        ).get(sid, row.community).c;
+      });
+      return [row.community, counts];
+    });
+
+    // Metrics: computed from evidence and signals
+    const evidenceCount = db.prepare("SELECT COUNT(*) as c FROM evidence_packets WHERE context_id = ?").get(contextId).c;
+    const savedCount = db.prepare("SELECT COUNT(*) as c FROM signals WHERE context_id = ? AND saved = 1").get(contextId).c;
+    const communityCount = db.prepare("SELECT COUNT(DISTINCT community) as c FROM evidence_packets WHERE context_id = ?").get(contextId).c;
+
+    // Spark arrays from timeline_snapshots history
+    const snapshots = db.prepare(
+      "SELECT posts, comments, authors FROM timeline_snapshots WHERE context_id = ? ORDER BY snapshot_date DESC LIMIT 7"
+    ).all(contextId).reverse();
+    const evidenceSpark = snapshots.length >= 2 ? snapshots.map(s => s.posts + s.comments) : [0, evidenceCount];
+
+    liveMetrics = [
+      { title: "Emerging signals", value: String(signals.length), delta: "+live", caption: "detected this period", spark: [0, signals.length] },
+      { title: "High-confidence", value: String(signals.filter(s => s.confidence === "High").length), delta: "-", caption: "evidence >= 3 sources", spark: [0, signals.filter(s => s.confidence === "High").length] },
+      { title: "Communities monitored", value: String(communityCount), delta: "-", caption: "in active context", spark: [0, communityCount] },
+      { title: "Saved evidence", value: String(evidenceCount), delta: "+live", caption: "packets ingested", spark: evidenceSpark },
+    ];
+
+    // Intent: group evidence by intent classification
+    const intentRows = db.prepare(
+      `SELECT intent, COUNT(*) as c FROM evidence_packets
+       WHERE context_id = ? AND intent IS NOT NULL AND intent != ''
+       GROUP BY intent ORDER BY c DESC`
+    ).all(contextId);
+    const intentColors = { pain: "#de5c56", question: "#2d6fbb", comparison: "#bd842f", promotion: "#875fb4", insight: "#3e9558" };
+    liveIntent = intentRows.map(r => [r.intent, r.c, intentColors[r.intent] || "#9aa3ad"]);
+  }
+
   return {
     contextId,
     crumbs: fixtureMeta ? fixtureMeta.crumbs : "Radar / " + context.label,
@@ -314,10 +395,10 @@ export function buildRadarData(contextId, fixtureId) {
     activeFixtureId: fixtureMeta ? fixtureMeta.id : "default",
     signals,
     otherBubbles: fixtureMeta ? safeJson(fixtureMeta.other_bubbles, []) : [],
-    metrics: fixtureMeta ? safeJson(fixtureMeta.metrics, []) : [],
-    timeline: fixtureMeta ? safeJson(fixtureMeta.timeline, {}) : { posts: [], comments: [], authors: [] },
-    heatmap: fixtureMeta ? safeJson(fixtureMeta.heatmap, []) : [],
-    intent: fixtureMeta ? safeJson(fixtureMeta.intent, []) : [],
+    metrics: fixtureMeta ? safeJson(fixtureMeta.metrics, []) : liveMetrics,
+    timeline: fixtureMeta ? safeJson(fixtureMeta.timeline, {}) : liveTimeline,
+    heatmap: fixtureMeta ? safeJson(fixtureMeta.heatmap, []) : liveHeatmap,
+    intent: fixtureMeta ? safeJson(fixtureMeta.intent, []) : liveIntent,
     evidenceLayers,
     sourceNodes,
     fixtures: allFixtures,
@@ -367,6 +448,9 @@ function formatSignal(row) {
       sub: row.suggested_sub || "",
     },
     next: row.next_source || "",
+    saved: row.saved || 0,
+    dismissed: row.dismissed || 0,
+    alerted: row.alerted || 0,
     evidence: evidence.map(formatEvidencePacket),
     phrases: phrases.map(p => [p.phrase, p.count]),
     spread: spread.map(s => [s.community, s.percentage]),

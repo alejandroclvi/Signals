@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Communities - Signals</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app">
+    <%- include('partials/sidebar', { contexts: contexts, activeContext: activeContext, page: page, stats: stats }) %>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="crumbs">Communities / <%= activeContext.label %></div>
+          <div class="title-row">
+            <h1>Communities</h1>
+          </div>
+        </div>
+      </header>
+
+      <div class="evidence-library-header">
+        <span class="evidence-count"><%= communities.length %> communities</span>
+      </div>
+
+      <div class="evidence-library">
+        <% if (!communities.length) { %>
+          <div class="empty-state">
+            <div class="empty-icon">#</div>
+            <div class="empty-title">No communities yet</div>
+            <div class="empty-sub">Communities will appear here once evidence is ingested.</div>
+          </div>
+        <% } else { %>
+          <table class="evidence-table">
+            <thead>
+              <tr>
+                <th>Community</th>
+                <th>Evidence</th>
+                <th>Signals</th>
+                <th>First seen</th>
+                <th>Last seen</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% for (const c of communities) { %>
+                <tr class="evidence-row">
+                  <td><strong><%= c.community %></strong></td>
+                  <td class="evidence-score"><%= c.evidence_count %></td>
+                  <td class="evidence-score"><%= c.signal_count %></td>
+                  <td class="evidence-date"><%= c.first_seen ? new Date(c.first_seen).toLocaleDateString() : '-' %></td>
+                  <td class="evidence-date"><%= c.last_seen ? new Date(c.last_seen).toLocaleDateString() : '-' %></td>
+                  <td>
+                    <a href="/evidence?context=<%= activeContext.id %>&community=<%= encodeURIComponent(c.community) %>" class="evidence-source-link">evidence &#8250;</a>
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    var contextSelect = document.getElementById("contextSelect");
+    if (contextSelect) {
+      contextSelect.addEventListener("change", function(e) {
+        window.location.href = "/communities?context=" + encodeURIComponent(e.target.value);
+      });
+    }
+    var btnNew = document.getElementById("btnNewContext");
+    if (btnNew) btnNew.addEventListener("click", function() {
+      if (typeof openNewContextModal === "function") openNewContextModal();
+    });
+  </script>
+</body>
+</html>

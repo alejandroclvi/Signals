@@ -71,6 +71,10 @@ router.get("/evidence", (req, res) => {
     "SELECT DISTINCT community FROM evidence_packets WHERE context_id = ? AND community IS NOT NULL AND community != '' ORDER BY community"
   ).all(activeContext.id).map(r => r.community);
 
+  const intents = db.prepare(
+    "SELECT DISTINCT intent FROM evidence_packets WHERE context_id = ? AND intent IS NOT NULL AND intent != '' ORDER BY intent"
+  ).all(activeContext.id).map(r => r.intent);
+
   res.render("evidence", {
     contexts,
     activeContext,
@@ -78,6 +82,71 @@ router.get("/evidence", (req, res) => {
     stats,
     evidence,
     sources,
+    communities,
+    intents,
+  });
+});
+
+router.get("/watchlist", (req, res) => {
+  const db = getDb();
+  const resolved = resolveContext(db, req);
+  if (!resolved) return res.send(emptyPage);
+
+  const { contexts, activeContext } = resolved;
+  const stats = getStats(db, activeContext.id);
+
+  const saved = db.prepare(
+    `SELECT s.*, GROUP_CONCAT(se.evidence_id) as evidence_ids
+     FROM signals s
+     LEFT JOIN signal_evidence se ON se.signal_id = s.id
+     WHERE s.context_id = ? AND s.saved = 1 AND s.dismissed = 0
+     GROUP BY s.id
+     ORDER BY s.rank`
+  ).all(activeContext.id);
+
+  const dismissed = db.prepare(
+    `SELECT s.id, s.title, s.status, s.tags, s.communities, s.confidence
+     FROM signals s
+     WHERE s.context_id = ? AND s.dismissed = 1
+     ORDER BY s.updated_at DESC`
+  ).all(activeContext.id);
+
+  res.render("watchlist", {
+    contexts,
+    activeContext,
+    page: "watchlist",
+    stats,
+    saved,
+    dismissed,
+  });
+});
+
+router.get("/communities", (req, res) => {
+  const db = getDb();
+  const resolved = resolveContext(db, req);
+  if (!resolved) return res.send(emptyPage);
+
+  const { contexts, activeContext } = resolved;
+  const stats = getStats(db, activeContext.id);
+
+  const communities = db.prepare(
+    `SELECT community,
+            COUNT(*) as evidence_count,
+            COUNT(DISTINCT se.signal_id) as signal_count,
+            MIN(ep.published_at) as first_seen,
+            MAX(ep.published_at) as last_seen
+     FROM evidence_packets ep
+     LEFT JOIN signal_evidence se ON se.evidence_id = ep.id
+     WHERE ep.context_id = ? AND ep.community IS NOT NULL AND ep.community != ''
+     GROUP BY ep.community
+     ORDER BY evidence_count DESC`
+  ).all(activeContext.id);
+
+  res.render("communities", {
+    contexts,
+    activeContext,
+    page: "communities",
+    stats,
     communities,
   });
 });

@@ -1,5 +1,5 @@
-window.signalRadarFixtures = [
-  {
+window.signalRadarFixtures = window.signalRadarFixtures || [];
+window.signalRadarFixtures.push({
     id: "founder-ai-tools",
     label: "Founder AI tools replay",
     context: "AI tools for founders",
@@ -120,6 +120,7 @@ window.signalRadarFixtures = [
         id: "reddit:founder-research-agent:201",
         source_id: "reddit",
         source_layer: "conversation",
+        source_kind: "post",
         source_item_id: "201",
         url: "#",
         title: "Market research workflow is eating a full day",
@@ -136,6 +137,7 @@ window.signalRadarFixtures = [
         id: "reddit:founder-research-agent:202",
         source_id: "reddit",
         source_layer: "conversation",
+        source_kind: "post",
         source_item_id: "202",
         url: "#",
         title: "AI research assistant with citations",
@@ -152,6 +154,7 @@ window.signalRadarFixtures = [
         id: "reddit:founder-research-agent:203",
         source_id: "reddit",
         source_layer: "conversation",
+        source_kind: "post",
         source_item_id: "203",
         url: "#",
         title: "Knowing what changed matters more than summaries",
@@ -168,6 +171,7 @@ window.signalRadarFixtures = [
         id: "reddit:ai-crm-followup:211",
         source_id: "reddit",
         source_layer: "conversation",
+        source_kind: "post",
         source_item_id: "211",
         url: "#",
         title: "CRM reminders lack context",
@@ -184,6 +188,7 @@ window.signalRadarFixtures = [
         id: "reddit:ai-crm-followup:212",
         source_id: "reddit",
         source_layer: "conversation",
+        source_kind: "post",
         source_item_id: "212",
         url: "#",
         title: "Lead follow-up should read the thread",
@@ -200,6 +205,7 @@ window.signalRadarFixtures = [
         id: "reddit:ai-pricing-advisor:221",
         source_id: "reddit",
         source_layer: "conversation",
+        source_kind: "post",
         source_item_id: "221",
         url: "#",
         title: "Need pricing guidance, not another dashboard",
@@ -216,6 +222,7 @@ window.signalRadarFixtures = [
         id: "reddit:ai-pricing-advisor:222",
         source_id: "reddit",
         source_layer: "conversation",
+        source_kind: "post",
         source_item_id: "222",
         url: "#",
         title: "Packaging research is contradictory",
@@ -232,6 +239,7 @@ window.signalRadarFixtures = [
         id: "reddit:open-source-agent-stack:231",
         source_id: "reddit",
         source_layer: "conversation",
+        source_kind: "post",
         source_item_id: "231",
         url: "#",
         title: "Which agent framework is production ready?",
@@ -248,6 +256,7 @@ window.signalRadarFixtures = [
         id: "reddit:open-source-agent-stack:232",
         source_id: "reddit",
         source_layer: "conversation",
+        source_kind: "post",
         source_item_id: "232",
         url: "#",
         title: "Agents need to survive retries and messy inputs",
@@ -360,4 +369,4 @@ window.signalRadarFixtures = [
       }
     ]
   }
-];
+);
