@@ -859,7 +859,64 @@ function renderDetail() {
   document.getElementById("suggestSub").textContent = signal.suggested.sub + " " + signal.next;
 }
 
+function renderContextBrief() {
+  var el = document.getElementById("contextBrief");
+  if (!el) return;
+  var brief = initialData.contextBrief;
+  if (!brief || !brief.thesis) { el.style.display = "none"; return; }
+
+  var passes = brief.researchPasses;
+  var passHtml = "";
+  if (passes) {
+    var passOrder = ["pass1", "pass2", "pass3"];
+    passHtml = '<div class="brief-passes">' + passOrder.map(function(key) {
+      var p = passes[key];
+      if (!p) return "";
+      return '<div class="brief-pass">' +
+        '<div class="brief-pass-label">' + p.label + '</div>' +
+        '<div class="brief-pass-desc">' + p.description + '</div>' +
+        '<div class="brief-pass-queries">' + p.queries.map(function(q) {
+          return '<span class="brief-query">"' + q + '"</span>';
+        }).join("") + '</div>' +
+      '</div>';
+    }).join("") + '</div>';
+  }
+
+  el.innerHTML =
+    '<div class="brief-toggle" id="briefToggle">' +
+      '<span class="brief-toggle-label">Research Brief</span>' +
+      '<span class="brief-toggle-icon" id="briefIcon">\u25B6</span>' +
+    '</div>' +
+    '<div class="brief-body" id="briefBody" style="display:none">' +
+      '<div class="brief-section">' +
+        '<div class="brief-heading">Thesis</div>' +
+        '<p class="brief-text">' + brief.thesis + '</p>' +
+      '</div>' +
+      (brief.avatar ? '<div class="brief-section">' +
+        '<div class="brief-heading">Avatar</div>' +
+        '<p class="brief-text">' + brief.avatar + '</p>' +
+      '</div>' : '') +
+      (passHtml ? '<div class="brief-section">' +
+        '<div class="brief-heading">Research Passes</div>' +
+        passHtml +
+      '</div>' : '') +
+    '</div>';
+
+  document.getElementById("briefToggle").addEventListener("click", function() {
+    var body = document.getElementById("briefBody");
+    var icon = document.getElementById("briefIcon");
+    if (body.style.display === "none") {
+      body.style.display = "block";
+      icon.textContent = "\u25BC";
+    } else {
+      body.style.display = "none";
+      icon.textContent = "\u25B6";
+    }
+  });
+}
+
 function renderAll() {
+  renderContextBrief();
   renderMetrics();
   renderBubbleChart();
   renderSignalList();

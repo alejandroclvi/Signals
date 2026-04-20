@@ -7,6 +7,9 @@ CREATE TABLE IF NOT EXISTS contexts (
   subreddits    TEXT,  -- JSON array
   queries       TEXT,  -- JSON array
   high_intent   TEXT,  -- JSON array
+  thesis        TEXT,  -- Why are we looking? What do we expect to find?
+  avatar        TEXT,  -- Who is the person experiencing this pain?
+  research_passes TEXT, -- JSON {pass1: [...], pass2: [...], pass3: [...]}
   created_at    TEXT DEFAULT (datetime('now')),
   updated_at    TEXT DEFAULT (datetime('now'))
 );

@@ -60,6 +60,11 @@ db.exec(`CREATE TABLE IF NOT EXISTS pipeline_runs (
 safeAlter("ALTER TABLE evidence_packets ADD COLUMN quality_score REAL");
 safeAlter("ALTER TABLE evidence_packets ADD COLUMN pipeline_run_id TEXT");
 
+// Context research methodology fields
+safeAlter("ALTER TABLE contexts ADD COLUMN thesis TEXT");
+safeAlter("ALTER TABLE contexts ADD COLUMN avatar TEXT");
+safeAlter("ALTER TABLE contexts ADD COLUMN research_passes TEXT");
+
 // Seed evidence layers (static reference data)
 const upsertLayer = db.prepare(
   "INSERT OR REPLACE INTO evidence_layers (id, label, note, sort_order) VALUES (?, ?, ?, ?)"

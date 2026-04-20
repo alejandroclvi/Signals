@@ -432,6 +432,13 @@ export function buildRadarData(contextId, fixtureId) {
   return {
     contextId,
     pipelineHealth,
+    contextBrief: {
+      label: context.label,
+      description: context.description || null,
+      thesis: context.thesis || null,
+      avatar: context.avatar || null,
+      researchPasses: safeJson(context.research_passes, null),
+    },
     crumbs: fixtureMeta ? fixtureMeta.crumbs : "Radar / " + context.label,
     period: fixtureMeta ? fixtureMeta.period : "last 30d",
     topicCount: fixtureMeta ? fixtureMeta.topic_count : signals.length,
