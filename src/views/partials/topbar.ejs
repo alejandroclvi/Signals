@@ -19,7 +19,7 @@
       <% } %>
     </select>
     <button class="button" type="button">&#9635; Last 30 days</button>
-    <% const hasReddit = (activeContext.subreddits && JSON.parse(activeContext.subreddits || '[]').length > 0); %>
+    <% let hasReddit = false; try { hasReddit = JSON.parse(activeContext.subreddits || '[]').length > 0; } catch(e) {} %>
     <% if (hasReddit) { %>
     <button class="button" type="button"><span class="source-dot"></span> Reddit</button>
     <button class="button" type="button" id="btnRefresh" title="Pull live Reddit data">&#8635; Refresh</button>

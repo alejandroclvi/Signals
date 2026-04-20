@@ -415,9 +415,32 @@ function renderControlPlane() {
   });
 }
 
+function isMarketSignal(signal) {
+  return signal.communities.some(function(c) {
+    return c === "Polymarket" || c === "NASDAQ" || c === "NYSE";
+  });
+}
+
 function scoreComponents(signal) {
   var activeLayerCount = evidenceLayers.filter(function(layer) { return activeNodeNamesForLayer(layer.id).length; }).length;
   var phraseWeight = signal.phrases.reduce(function(sum, phrase) { return sum + phrase[1]; }, 0);
+
+  if (isMarketSignal(signal)) {
+    // Market signal scoring — different dimensions than Reddit pain
+    var layerCount = signal.communities.length;
+    var hasExpectation = signal.communities.includes("Polymarket");
+    var hasCapital = signal.communities.includes("NASDAQ") || signal.communities.includes("NYSE");
+    return [
+      ["Evidence breadth", Math.min(100, signal.mentions * 20)],
+      ["Conviction strength", Math.min(100, hasExpectation ? 78 : 32)],
+      ["Market confirmation", Math.min(100, (hasExpectation && hasCapital) ? 85 : hasCapital ? 45 : 20)],
+      ["Phrase density", Math.min(100, Math.round(phraseWeight / 1.7))],
+      ["Cross-layer coverage", Math.min(100, layerCount * 40)],
+      ["Freshness", Math.max(42, 96 - signal.rank * 8)],
+      ["Missing evidence penalty", Math.max(8, 78 - activeLayerCount * 10)]
+    ];
+  }
+
   return [
     ["Repetition", Math.min(100, Math.round(signal.mentions * 4.3))],
     ["Pain intensity", Math.min(100, signal.tags.includes("frustration") ? 82 : signal.tags.includes("demand") ? 74 : 62)],

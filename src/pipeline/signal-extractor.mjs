@@ -193,37 +193,53 @@ function recommendNextSource(tags) {
   const recs = [
     {
       tags: ["demand", "frustration"],
+      weight: 10,
       source: "Google Search",
       layer: "intent",
       reason: "validate whether this conversation is turning into active search and comparison behavior",
     },
     {
       tags: ["adoption", "comparison"],
+      weight: 10,
       source: "GitHub",
       layer: "behavior",
       reason: "check for implementation artifacts, repos, and developer adoption signals",
     },
     {
       tags: ["economic"],
+      weight: 10,
       source: "Job boards & procurement signals",
       layer: "economic commitment",
       reason: "look for hiring patterns, budget mentions, and procurement activity that confirm economic intent",
     },
     {
       tags: ["narrative"],
+      weight: 10,
       source: "Primary sources (official docs, filings)",
       layer: "primary truth",
       reason: "verify whether the narrative is backed by official statements, filings, or vendor announcements",
     },
   ];
 
+  // Score each recommendation by how many of its tags match the signal
+  let best = null;
+  let bestScore = 0;
+
   for (const rec of recs) {
-    if (rec.tags.some(t => tags.includes(t))) {
-      return "Enable " + rec.source + " to " + rec.reason + ". Reddit provides conversation evidence but cannot prove " + rec.layer + ".";
+    const matchCount = rec.tags.filter(t => tags.includes(t)).length;
+    if (matchCount > 0) {
+      const score = matchCount * rec.weight;
+      if (score > bestScore) {
+        bestScore = score;
+        best = rec;
+      }
     }
   }
 
-  // Fallback: Google Search is the most broadly useful next source
+  if (best) {
+    return "Enable " + best.source + " to " + best.reason + ". Reddit provides conversation evidence but cannot prove " + best.layer + ".";
+  }
+
   return "Enable Google Search to validate whether this conversation signal is driving active discovery intent. Reddit alone provides conversation but not intent or behavior evidence.";
 }
 
