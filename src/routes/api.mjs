@@ -376,6 +376,8 @@ function formatEvidencePacket(row) {
     id: row.id,
     quote: row.body || row.title || "",
     source: row.community || row.source_id || "source",
+    source_id: row.source_id || "",
+    source_layer: row.source_layer || "",
     author: row.author_ref || "anonymous",
     age: relativeAge(row.published_at),
     score: metrics.score || 0,
