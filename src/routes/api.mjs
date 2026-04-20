@@ -43,6 +43,15 @@ router.get("/api/signals/:id", (req, res) => {
   const spread = db.prepare("SELECT community, percentage FROM signal_spread WHERE signal_id = ?").all(req.params.id);
   const related = db.prepare("SELECT label, tag, score FROM signal_related WHERE signal_id = ?").all(req.params.id);
 
+  // Evidence layer coverage
+  const allLayers = db.prepare("SELECT id, label FROM evidence_layers ORDER BY sort_order").all();
+  const coveredLayerIds = new Set(evidence.map(e => e.source_layer).filter(Boolean));
+  const layerCoverage = allLayers.map(l => ({
+    id: l.id,
+    label: l.label,
+    covered: coveredLayerIds.has(l.id),
+  }));
+
   res.json({
     ...signal,
     tags: safeJson(signal.tags, []),
@@ -51,6 +60,7 @@ router.get("/api/signals/:id", (req, res) => {
     phrases: phrases.map(p => [p.phrase, p.count]),
     spread: spread.map(s => [s.community, s.percentage]),
     related: related.map(r => [r.label, r.tag, r.score]),
+    layerCoverage,
   });
 });
 

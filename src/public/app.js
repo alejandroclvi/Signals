@@ -494,6 +494,18 @@ function renderDetail() {
     '</div>';
   }).join("");
 
+  // Evidence layer coverage
+  var layerCoverageEl = document.getElementById("layerCoverage");
+  if (layerCoverageEl) {
+    var activeLayers = evidenceLayers.filter(function(layer) { return activeNodeNamesForLayer(layer.id).length; });
+    layerCoverageEl.innerHTML = evidenceLayers.map(function(layer) {
+      var covered = activeLayers.some(function(l) { return l.id === layer.id; });
+      return '<span class="layer-chip ' + (covered ? "covered" : "missing") + '">' +
+        (covered ? "\u2713 " : "\u2013 ") + layer.label +
+      '</span>';
+    }).join("");
+  }
+
   document.getElementById("suggestTitle").textContent = signal.suggested.title;
   document.getElementById("suggestSub").textContent = signal.suggested.sub + " " + signal.next;
 }
@@ -664,6 +676,23 @@ if (btnRefresh) {
 var btnNewContext = document.getElementById("btnNewContext");
 if (btnNewContext) {
   btnNewContext.addEventListener("click", function() { openNewContextModal(); });
+}
+
+// Wire delete context button
+var btnDeleteContext = document.getElementById("btnDeleteContext");
+if (btnDeleteContext) {
+  btnDeleteContext.addEventListener("click", function() {
+    var contextId = initialData.contextId;
+    if (!contextId) return;
+    if (!confirm("Delete this context and all its signals, evidence, and source nodes?")) return;
+    fetch("/api/contexts/" + encodeURIComponent(contextId), { method: "DELETE" })
+      .then(function(r) { if (!r.ok) throw new Error("Delete failed"); return r.json(); })
+      .then(function() {
+        showToast("Context deleted");
+        setTimeout(function() { window.location.href = "/"; }, 600);
+      })
+      .catch(function(err) { showToast(err.message || "Failed to delete context", true); });
+  });
 }
 
 setupFixtureSelector();

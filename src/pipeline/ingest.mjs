@@ -6,11 +6,13 @@
  */
 
 import { getDb } from "../db/connection.mjs";
-import { fetchReddit } from "./fetchers/reddit.mjs";
-import { normalizeRedditPosts } from "./normalizer.mjs";
+import { fetchReddit, fetchPostComments } from "./fetchers/reddit.mjs";
+import { normalizeRedditPosts, normalizeRedditComments } from "./normalizer.mjs";
 import { extractSignals } from "./signal-extractor.mjs";
 import { scoreSignal, confidenceFromScore } from "./scorer.mjs";
 import crypto from "node:crypto";
+
+const DELAY_MS = 1200;
 
 /**
  * Run a Reddit ingestion for a given context.
@@ -66,6 +68,41 @@ export async function ingestReddit(options) {
   // 2. Normalize
   if (onProgress) onProgress({ stage: "normalize", message: "Normalizing " + rawPosts.length + " posts..." });
   const evidencePackets = normalizeRedditPosts(rawPosts, contextId);
+
+  // 2b. Fetch comments for high-engagement posts
+  const COMMENT_THRESHOLD = 5;
+  const COMMENT_LIMIT = 8;
+  const highEngagement = rawPosts.filter(p => (p.num_comments || 0) >= COMMENT_THRESHOLD);
+
+  if (highEngagement.length > 0) {
+    if (onProgress) onProgress({ stage: "comments", message: "Fetching comments for " + highEngagement.length + " high-engagement posts..." });
+
+    const seenHashes = new Set(evidencePackets.map(ep => ep.content_hash));
+
+    for (const post of highEngagement) {
+      if (!post.permalink) continue;
+      const comments = await fetchPostComments(post.permalink, {
+        limit: COMMENT_LIMIT,
+        onProgress: (info) => {
+          if (info.error) errors.push(info.error);
+        },
+      });
+
+      if (comments.length > 0) {
+        // Tag comments with the query topic from their parent post
+        for (const c of comments) {
+          c._topic = post._subreddit_query || "";
+          c.link_title = post.title || "";
+        }
+        const commentPackets = normalizeRedditComments(comments, contextId, seenHashes);
+        evidencePackets.push(...commentPackets);
+      }
+
+      await new Promise(r => setTimeout(r, DELAY_MS));
+    }
+
+    if (onProgress) onProgress({ stage: "comments", message: "Total evidence after comments: " + evidencePackets.length });
+  }
 
   // 3. Write evidence to SQLite
   if (onProgress) onProgress({ stage: "store", message: "Storing " + evidencePackets.length + " evidence packets..." });

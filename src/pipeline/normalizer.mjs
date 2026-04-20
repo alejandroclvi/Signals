@@ -64,6 +64,65 @@ export function normalizeRedditPost(post, contextId) {
 }
 
 /**
+ * Normalize a raw Reddit comment into an evidence packet.
+ */
+export function normalizeRedditComment(comment, contextId) {
+  const sourceItemId = comment.name || "t1_" + comment.id;
+  const observedAt = new Date().toISOString();
+  const publishedAt = comment.created_utc
+    ? new Date(comment.created_utc * 1000).toISOString()
+    : observedAt;
+
+  const body = (comment.body || "").slice(0, 1400);
+  const postPermalink = comment._post_permalink || "";
+  const commentPermalink = comment.permalink
+    ? "https://www.reddit.com" + comment.permalink
+    : postPermalink ? "https://www.reddit.com" + postPermalink : "#";
+
+  const parentTopic = comment._topic || "comment";
+  const queryId = stableId(parentTopic);
+
+  return {
+    id: "reddit:" + queryId + ":comment:" + sourceItemId,
+    context_id: contextId,
+    source_id: "reddit",
+    source_layer: "conversation",
+    source_item_id: sourceItemId,
+    url: commentPermalink,
+    title: "Comment on " + (comment.link_title || "post"),
+    body: body,
+    author_ref: hashAuthor(comment.author),
+    community: comment.subreddit_name_prefixed || "r/" + (comment.subreddit || "unknown"),
+    observed_at: observedAt,
+    published_at: publishedAt,
+    metrics: JSON.stringify({
+      score: comment.score ?? 0,
+      comments: 0,
+      upvote_ratio: null,
+    }),
+    topics: JSON.stringify([parentTopic]),
+    raw_ref: "raw://reddit/comment/" + queryId + "/" + sourceItemId,
+    content_hash: contentHash(body),
+  };
+}
+
+/**
+ * Normalize an array of raw Reddit comments into evidence packets.
+ * Deduplicates by content_hash (merges with existing seen set).
+ */
+export function normalizeRedditComments(comments, contextId, seen) {
+  const packets = [];
+  for (const comment of comments) {
+    const packet = normalizeRedditComment(comment, contextId);
+    if (!seen.has(packet.content_hash)) {
+      seen.add(packet.content_hash);
+      packets.push(packet);
+    }
+  }
+  return packets;
+}
+
+/**
  * Normalize an array of raw Reddit posts into evidence packets.
  * Deduplicates by content_hash.
  */

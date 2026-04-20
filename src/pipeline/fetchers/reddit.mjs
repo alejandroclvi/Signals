@@ -69,3 +69,47 @@ export async function fetchReddit({ subreddits, queries, limitPerQuery, sort, on
 
   return results;
 }
+
+/**
+ * Fetch top-level comments for a Reddit post.
+ * Uses the post's permalink to get the comment listing.
+ *
+ * Returns an array of raw Reddit comment objects (top-level only).
+ */
+export async function fetchPostComments(permalink, { limit = 10, onProgress } = {}) {
+  // permalink looks like "/r/sub/comments/id/title/"
+  const url = new URL(`https://www.reddit.com${permalink}.json`);
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("depth", "1");
+  url.searchParams.set("raw_json", "1");
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "SignalsLocalPoC/0.1 by local-developer",
+      },
+    });
+
+    if (!response.ok) {
+      if (onProgress) onProgress({ permalink, count: 0, error: `Comment fetch failed ${response.status}` });
+      return [];
+    }
+
+    const json = await response.json();
+    // Reddit returns [post_listing, comment_listing]
+    const commentListing = json[1];
+    if (!commentListing?.data?.children) return [];
+
+    return commentListing.data.children
+      .filter(c => c.kind === "t1" && c.data.body)
+      .slice(0, limit)
+      .map(c => ({
+        ...c.data,
+        _post_permalink: permalink,
+      }));
+  } catch (err) {
+    if (onProgress) onProgress({ permalink, count: 0, error: err.message });
+    return [];
+  }
+}

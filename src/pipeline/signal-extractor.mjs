@@ -105,7 +105,7 @@ export function extractSignals(evidencePackets, contextId) {
         authors.length + " unique authors.",
       suggested_title: "Suggested action",
       suggested_sub: "Inspect evidence and enable additional sources for corroboration.",
-      next_source: "Enable Google Search to validate whether conversation has turned into active discovery intent.",
+      next_source: recommendNextSource(classifyTags(packets)),
       bubble_x: x,
       bubble_y: y,
       bubble_r: r,
@@ -171,6 +171,57 @@ function classifyTags(packets) {
 
   if (!tags.length) tags.push("demand");
   return tags.slice(0, 3);
+}
+
+/**
+ * Recommend the best next source to enable based on signal tags.
+ *
+ * Reddit covers the "conversation" evidence layer. Each tag type
+ * benefits most from a specific missing layer:
+ *
+ *   frustration/demand → intent (Google Search)
+ *   adoption/comparison → behavior (GitHub)
+ *   economic → economic commitment (job boards, procurement)
+ *   narrative → primary truth (official sources, filings)
+ *
+ * Returns a human-readable recommendation string.
+ */
+function recommendNextSource(tags) {
+  const recs = [
+    {
+      tags: ["demand", "frustration"],
+      source: "Google Search",
+      layer: "intent",
+      reason: "validate whether this conversation is turning into active search and comparison behavior",
+    },
+    {
+      tags: ["adoption", "comparison"],
+      source: "GitHub",
+      layer: "behavior",
+      reason: "check for implementation artifacts, repos, and developer adoption signals",
+    },
+    {
+      tags: ["economic"],
+      source: "Job boards & procurement signals",
+      layer: "economic commitment",
+      reason: "look for hiring patterns, budget mentions, and procurement activity that confirm economic intent",
+    },
+    {
+      tags: ["narrative"],
+      source: "Primary sources (official docs, filings)",
+      layer: "primary truth",
+      reason: "verify whether the narrative is backed by official statements, filings, or vendor announcements",
+    },
+  ];
+
+  for (const rec of recs) {
+    if (rec.tags.some(t => tags.includes(t))) {
+      return "Enable " + rec.source + " to " + rec.reason + ". Reddit provides conversation evidence but cannot prove " + rec.layer + ".";
+    }
+  }
+
+  // Fallback: Google Search is the most broadly useful next source
+  return "Enable Google Search to validate whether this conversation signal is driving active discovery intent. Reddit alone provides conversation but not intent or behavior evidence.";
 }
 
 function buildSummary(topic, packets, communities) {

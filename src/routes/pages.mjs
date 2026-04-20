@@ -21,10 +21,12 @@ function resolveContext(db, req) {
   return { contexts, activeContext };
 }
 
+const emptyPage = `<!doctype html><html><head><meta charset="utf-8"><title>Signals</title><link rel="stylesheet" href="/style.css"></head><body style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)"><div style="text-align:center;max-width:420px"><div style="font-size:48px;margin-bottom:16px">S</div><h2 style="margin:0 0 8px">No contexts found</h2><p style="color:var(--faint);margin:0 0 20px">Run <code style="background:#f1f3f5;padding:2px 6px;border-radius:4px">pnpm run seed</code> to load fixture data, then reload this page.</p></div></body></html>`;
+
 router.get("/", (req, res) => {
   const db = getDb();
   const resolved = resolveContext(db, req);
-  if (!resolved) return res.send("No contexts found. Run: npm run seed");
+  if (!resolved) return res.send(emptyPage);
 
   const { contexts, activeContext } = resolved;
   const fixtures = db.prepare("SELECT id, label FROM fixture_meta ORDER BY label").all();
@@ -46,7 +48,7 @@ router.get("/", (req, res) => {
 router.get("/evidence", (req, res) => {
   const db = getDb();
   const resolved = resolveContext(db, req);
-  if (!resolved) return res.send("No contexts found. Run: npm run seed");
+  if (!resolved) return res.send(emptyPage);
 
   const { contexts, activeContext } = resolved;
   const stats = getStats(db, activeContext.id);

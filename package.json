@@ -5,8 +5,12 @@
   "description": "Early-warning system for detecting internet momentum",
   "scripts": {
     "start": "node src/server.mjs",
+    "dev": "node --watch src/server.mjs",
     "migrate": "node src/db/migrate.mjs",
-    "seed": "node scripts/seed-fixtures.mjs"
+    "seed": "node scripts/seed-fixtures.mjs",
+    "seed:market": "node scripts/seed-market-fixtures.mjs",
+    "seed:all": "node scripts/seed-fixtures.mjs && node scripts/seed-market-fixtures.mjs",
+    "ingest": "node scripts/ingest-cli.mjs"
   },
   "keywords": [],
   "author": "",
