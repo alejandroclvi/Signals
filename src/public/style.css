@@ -1703,6 +1703,74 @@ h1 {
 
 /* --- Layer coverage chips --- */
 
+/* --- Intent filters + composition --- */
+
+.intent-filters {
+  display: flex;
+  gap: 4px;
+  padding: 0 16px 10px;
+  flex-wrap: wrap;
+}
+
+.intent-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--faint);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.intent-btn.active {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+}
+
+.intent-btn:hover:not(.active) {
+  border-color: var(--faint);
+}
+
+.intent-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.intent-composition {
+  margin-bottom: 14px;
+}
+
+.intent-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.intent-bar-seg {
+  min-width: 3px;
+}
+
+.intent-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.intent-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .context-delete {
   color: var(--faint);
   font-size: 16px;

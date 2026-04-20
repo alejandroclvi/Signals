@@ -192,15 +192,15 @@ const insertSignal = db.prepare(
   `INSERT OR REPLACE INTO signals
    (id, context_id, rank, status, title, growth, tags, summary, communities,
     mentions, comments, confidence, volume, why, suggested_title, suggested_sub,
-    next_source, bubble_x, bubble_y, bubble_r)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    next_source, dominant_intent, intent_mix, bubble_x, bubble_y, bubble_r)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 );
 
 const insertEvidence = db.prepare(
   `INSERT OR REPLACE INTO evidence_packets
    (id, context_id, source_id, source_layer, source_item_id, url, title, body,
-    author_ref, community, observed_at, published_at, metrics, topics, raw_ref)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    author_ref, community, observed_at, published_at, metrics, topics, raw_ref, intent)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 );
 
 const insertSignalEvidence = db.prepare(
@@ -265,11 +265,14 @@ const seed = db.transaction(() => {
 
   // Signals + evidence
   for (const s of marketSignals) {
+    // Market signals are all "insight" intent (informational data, not pain)
+    const intentMix = { insight: s.evidence.length };
     insertSignal.run(
       s.id, "market-signals", s.rank, s.status, s.title, s.growth,
       JSON.stringify(s.tags), s.summary, JSON.stringify(s.communities),
       s.mentions, s.comments, s.confidence, s.volume, s.why,
       s.suggested_title, s.suggested_sub, s.next,
+      "insight", JSON.stringify(intentMix),
       s.x, s.y, s.r
     );
 
@@ -285,7 +288,8 @@ const seed = db.transaction(() => {
         null, null,
         JSON.stringify({ score: e.score || 0, comments: e.replies || 0 }),
         JSON.stringify([s.title]),
-        "replay://market/" + s.id + "/" + e.id
+        "replay://market/" + s.id + "/" + e.id,
+        "insight"
       );
       insertSignalEvidence.run(s.id, eid);
     }

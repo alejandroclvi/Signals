@@ -16,6 +16,12 @@ const db = getDb();
 const schema = fs.readFileSync(schemaPath, "utf-8");
 db.exec(schema);
 
+// Safe column additions for existing databases
+const safeAlter = (sql) => { try { db.exec(sql); } catch {} };
+safeAlter("ALTER TABLE evidence_packets ADD COLUMN intent TEXT");
+safeAlter("ALTER TABLE signals ADD COLUMN dominant_intent TEXT");
+safeAlter("ALTER TABLE signals ADD COLUMN intent_mix TEXT");
+
 // Seed evidence layers (static reference data)
 const upsertLayer = db.prepare(
   "INSERT OR REPLACE INTO evidence_layers (id, label, note, sort_order) VALUES (?, ?, ?, ?)"

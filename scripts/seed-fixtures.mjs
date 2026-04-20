@@ -3,6 +3,7 @@
  * Run: npm run seed
  */
 import { getDb } from "../src/db/connection.mjs";
+import { classifyIntent } from "../src/pipeline/normalizer.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -235,15 +236,15 @@ const insertSignal = db.prepare(
   `INSERT OR REPLACE INTO signals
    (id, context_id, rank, status, title, growth, tags, summary, communities,
     mentions, comments, confidence, volume, why, suggested_title, suggested_sub,
-    next_source, bubble_x, bubble_y, bubble_r)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    next_source, dominant_intent, intent_mix, bubble_x, bubble_y, bubble_r)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 );
 
 const insertEvidence = db.prepare(
   `INSERT OR REPLACE INTO evidence_packets
    (id, context_id, source_id, source_layer, source_item_id, url, title, body,
-    author_ref, community, observed_at, published_at, metrics, topics, raw_ref)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    author_ref, community, observed_at, published_at, metrics, topics, raw_ref, intent)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 );
 
 const insertSignalEvidence = db.prepare(
@@ -275,6 +276,21 @@ const insertFixtureMeta = db.prepare(
 
 function seedSignals(contextId, signalDefs) {
   for (const s of signalDefs) {
+    // Compute intent from evidence if not provided
+    const intentCounts = {};
+    if (s.evidence) {
+      for (const e of s.evidence) {
+        if (typeof e !== "string" && !e.packet_id) {
+          const intent = e.intent || classifyIntent("", e.quote || "");
+          intentCounts[intent] = (intentCounts[intent] || 0) + 1;
+        }
+      }
+    }
+    const dominantIntent = s.dominant_intent || (
+      Object.entries(intentCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "question"
+    );
+    const intentMix = s.intent_mix || (Object.keys(intentCounts).length ? intentCounts : { [dominantIntent]: s.mentions || 1 });
+
     insertSignal.run(
       s.id, contextId, s.rank, s.status, s.title, s.growth,
       JSON.stringify(s.tags), s.summary, JSON.stringify(s.communities),
@@ -282,6 +298,8 @@ function seedSignals(contextId, signalDefs) {
       s.suggested_title || (s.suggested && s.suggested.title) || "Suggested action",
       s.suggested_sub || (s.suggested && s.suggested.sub) || "",
       s.next || s.next_source || "",
+      dominantIntent,
+      JSON.stringify(intentMix),
       s.x || s.bubble_x || 0,
       s.y || s.bubble_y || 0,
       s.r || s.bubble_r || 0
@@ -291,19 +309,18 @@ function seedSignals(contextId, signalDefs) {
     if (s.evidence) {
       for (const e of s.evidence) {
         if (typeof e === "string") {
-          // Packet ID reference — link only, packet inserted separately
           insertSignalEvidence.run(s.id, e);
         } else if (e.packet_id) {
           insertSignalEvidence.run(s.id, e.packet_id);
         } else {
-          // Inline evidence (law firms style) — create a synthetic evidence packet
           const eid = "inline:" + contextId + ":" + s.id + ":" + e.id;
+          const intent = e.intent || classifyIntent("", e.quote || "");
           insertEvidence.run(
-            eid, contextId, "reddit", "conversation", e.id, e.url || "#",
+            eid, contextId, e.source_id || "reddit", e.source_layer || "conversation", e.id, e.url || "#",
             "", e.quote, e.author, e.source,
             null, null,
             JSON.stringify({ score: e.score || 0, comments: e.replies || 0 }),
-            JSON.stringify([]), null
+            JSON.stringify([]), null, intent
           );
           insertSignalEvidence.run(s.id, eid);
         }
@@ -387,12 +404,13 @@ const seed = db.transaction(() => {
     // Insert evidence packets first
     if (founderFixtureRaw.evidencePackets) {
       for (const ep of founderFixtureRaw.evidencePackets) {
+        const epIntent = ep.intent || classifyIntent(ep.title || "", ep.body || "");
         insertEvidence.run(
           ep.id, "founders", ep.source_id, ep.source_layer, ep.source_item_id,
           ep.url || "#", ep.title || "", ep.body || "", ep.author_ref || "",
           ep.community || "", ep.observed_at || null, ep.published_at || null,
           JSON.stringify(ep.metrics || {}), JSON.stringify(ep.topics || []),
-          ep.raw_ref || null
+          ep.raw_ref || null, epIntent
         );
       }
     }

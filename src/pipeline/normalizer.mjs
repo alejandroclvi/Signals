@@ -23,6 +23,29 @@ function contentHash(text) {
 }
 
 /**
+ * Classify the intent of a piece of evidence.
+ * Returns: pain, promotion, insight, question, or comparison.
+ */
+export function classifyIntent(title, body) {
+  const text = ((title || "") + " " + (body || "")).toLowerCase();
+
+  // Order matters — check most specific patterns first
+  const patterns = [
+    ["promotion", /\b(i built|i created|check out|just launched|just released|my tool|my app|we just shipped|announcing|our team|free trial|launching today)\b|\[oc\]|show hn/],
+    ["comparison", /\b(vs\.?|versus)\b| compared to | switched from | alternative to | better than | instead of | moved from .* to /],
+    ["pain", /\b(frustrat|annoying|hate|terrible|worst|broken|expensive|cheaper|struggling|overpriced|waste of time|doesn'?t work|can'?t figure|looking for alternative|sick of|fed up|giving up on|too heavy|too complex|too slow|blocker|drowning|pain|nightmare|headache|limitation)\b/],
+    ["insight", /\b(here'?s how|my experience|my workflow|i'?ve been using|tutorial|guide|deep dive|breakdown|lessons learned|what i learned|after \d+ (year|month))\b/],
+    ["question", /\b(has anyone|what do you use|recommend|best tool for|how do you|what'?s the best|anyone know|suggest|advice|thoughts on|is there a|looking for a|need help|any tool)\b|\?$/],
+  ];
+
+  for (const [intent, regex] of patterns) {
+    if (regex.test(text)) return intent;
+  }
+
+  return "question";
+}
+
+/**
  * Normalize a raw Reddit post into an evidence packet.
  */
 export function normalizeRedditPost(post, contextId) {
@@ -60,6 +83,7 @@ export function normalizeRedditPost(post, contextId) {
     topics: JSON.stringify([query]),
     raw_ref: "raw://reddit/search/" + queryId + "/" + sourceItemId,
     content_hash: contentHash(body),
+    intent: classifyIntent(post.title, post.selftext),
   };
 }
 
@@ -103,6 +127,7 @@ export function normalizeRedditComment(comment, contextId) {
     topics: JSON.stringify([parentTopic]),
     raw_ref: "raw://reddit/comment/" + queryId + "/" + sourceItemId,
     content_hash: contentHash(body),
+    intent: classifyIntent(comment.link_title, comment.body),
   };
 }
 

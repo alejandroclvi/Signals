@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS evidence_packets (
   metrics         TEXT,  -- JSON {score, comments, upvote_ratio}
   topics          TEXT,  -- JSON array
   raw_ref         TEXT,
-  content_hash    TEXT
+  content_hash    TEXT,
+  intent          TEXT   -- pain, promotion, insight, question, comparison
 );
 
 CREATE TABLE IF NOT EXISTS signals (
@@ -48,6 +49,8 @@ CREATE TABLE IF NOT EXISTS signals (
   suggested_title TEXT,
   suggested_sub   TEXT,
   next_source     TEXT,
+  dominant_intent TEXT,  -- pain, promotion, insight, question, comparison
+  intent_mix      TEXT,  -- JSON {pain: N, promotion: N, ...}
   bubble_x        REAL,
   bubble_y        REAL,
   bubble_r        REAL,

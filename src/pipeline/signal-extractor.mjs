@@ -84,6 +84,15 @@ export function extractSignals(evidencePackets, contextId) {
     // Classify signal tags once
     const tags = classifyTags(packets);
 
+    // Intent composition — count evidence by intent type
+    const intentCounts = {};
+    for (const p of packets) {
+      const intent = p.intent || "question";
+      intentCounts[intent] = (intentCounts[intent] || 0) + 1;
+    }
+    const dominantIntent = Object.entries(intentCounts)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || "question";
+
     // Bubble position — higher rank = upper-right quadrant
     const x = Math.min(780, 400 + Math.round(packets.length * 18 + communities.length * 30));
     const y = Math.max(60, 400 - Math.round(packets.length * 22 + totalComments * 0.3));
@@ -109,6 +118,8 @@ export function extractSignals(evidencePackets, contextId) {
       suggested_title: "Suggested action",
       suggested_sub: "Inspect evidence and enable additional sources for corroboration.",
       next_source: recommendNextSource(tags),
+      dominant_intent: dominantIntent,
+      intent_mix: JSON.stringify(intentCounts),
       bubble_x: x,
       bubble_y: y,
       bubble_r: r,

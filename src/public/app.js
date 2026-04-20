@@ -20,6 +20,15 @@ let evidenceLayers = initialData.evidenceLayers || [];
 let sourceNodes = initialData.sourceNodes || [];
 let enabledNodes = new Set(sourceNodes.filter((node) => node.state === "enabled").map((node) => node.id));
 let selectedId = initialData.selectedId || (signals[0] && signals[0].id) || "";
+let activeIntentFilter = "all";
+
+var intentColors = {
+  pain: "#de5c56",
+  question: "#2d6fbb",
+  insight: "#3e9558",
+  comparison: "#bd842f",
+  promotion: "#9aa3ad"
+};
 
 // Fixture switching
 const fixtureList = initialData.fixtures || [];
@@ -178,11 +187,17 @@ function renderBubbleChart() {
 
 function renderSignalList() {
   var list = document.getElementById("signalList");
-  list.innerHTML = signals.map(function(signal) {
+  var filtered = activeIntentFilter === "all"
+    ? signals
+    : signals.filter(function(s) { return s.dominant_intent === activeIntentFilter; });
+
+  list.innerHTML = filtered.map(function(signal) {
+    var intentLabel = signal.dominant_intent || "question";
+    var intentColor = intentColors[intentLabel] || "#9aa3ad";
     return '<article class="signal-item ' + (signal.id === selectedId ? "selected" : "") + '" data-signal="' + signal.id + '">' +
       '<div class="signal-top">' +
         '<span><span class="rank">#' + String(signal.rank).padStart(2, "0") + '</span> <span class="signal-state">' + signal.status + '</span></span>' +
-        '<span class="signal-growth">' + signal.growth + '</span>' +
+        '<span class="intent-badge" style="color:' + intentColor + '">' + intentLabel + '</span>' +
       '</div>' +
       '<div class="signal-title">' + signal.title + '</div>' +
       '<div class="tags">' + signal.tags.map(tagHtml).join("") + '</div>' +
@@ -200,6 +215,17 @@ function renderSignalList() {
       renderAll();
     });
   });
+
+  // Update intent filter counts
+  var filterEl = document.getElementById("intentFilters");
+  if (filterEl) {
+    filterEl.querySelectorAll(".intent-btn").forEach(function(btn) {
+      var intentValue = btn.dataset.intent;
+      var count = intentValue === "all" ? signals.length : signals.filter(function(s) { return s.dominant_intent === intentValue; }).length;
+      btn.textContent = (intentValue === "all" ? "All" : intentValue.charAt(0).toUpperCase() + intentValue.slice(1)) + (count ? " " + count : "");
+      btn.className = "intent-btn" + (intentValue === activeIntentFilter ? " active" : "");
+    });
+  }
 }
 
 function renderLineChart() {
@@ -488,6 +514,28 @@ function renderDetail() {
     '</article>';
   }).join("");
 
+  // Intent composition bar
+  var intentEl = document.getElementById("intentComposition");
+  if (intentEl) {
+    var mix = signal.intent_mix || {};
+    var totalEvidence = Object.values(mix).reduce(function(s, v) { return s + v; }, 0) || 1;
+    var barParts = Object.entries(mix)
+      .sort(function(a, b) { return b[1] - a[1]; })
+      .map(function(entry) {
+        var pct = Math.round(entry[1] / totalEvidence * 100);
+        var color = intentColors[entry[0]] || "#9aa3ad";
+        return '<div class="intent-bar-seg" style="width:' + pct + '%;background:' + color + '" title="' + entry[0] + ': ' + pct + '%"></div>';
+      }).join("");
+    var labels = Object.entries(mix)
+      .sort(function(a, b) { return b[1] - a[1]; })
+      .map(function(entry) {
+        var pct = Math.round(entry[1] / totalEvidence * 100);
+        var color = intentColors[entry[0]] || "#9aa3ad";
+        return '<span class="intent-label"><i class="dot" style="background:' + color + '"></i>' + entry[0] + ' ' + pct + '%</span>';
+      }).join("");
+    intentEl.innerHTML = '<div class="intent-bar">' + barParts + '</div><div class="intent-labels">' + labels + '</div>';
+  }
+
   document.getElementById("phraseGrid").innerHTML = signal.phrases.map(function(entry) {
     return '<span class="phrase">' + entry[0] + ' <b>' + entry[1] + '</b></span>';
   }).join("");
@@ -729,6 +777,18 @@ if (btnDeleteContext) {
         setTimeout(function() { window.location.href = "/"; }, 600);
       })
       .catch(function(err) { showToast(err.message || "Failed to delete context", true); });
+  });
+}
+
+// Intent filter tabs
+var intentFiltersEl = document.getElementById("intentFilters");
+if (intentFiltersEl) {
+  intentFiltersEl.addEventListener("click", function(e) {
+    var btn = e.target.closest(".intent-btn");
+    if (!btn) return;
+    activeIntentFilter = btn.dataset.intent;
+    renderSignalList();
+    renderBubbleChart();
   });
 }
 

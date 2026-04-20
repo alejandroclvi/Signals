@@ -117,8 +117,8 @@ export async function ingestReddit(options) {
   const insertEvidence = db.prepare(
     `INSERT OR REPLACE INTO evidence_packets
      (id, context_id, source_id, source_layer, source_item_id, url, title, body,
-      author_ref, community, observed_at, published_at, metrics, topics, raw_ref, content_hash)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      author_ref, community, observed_at, published_at, metrics, topics, raw_ref, content_hash, intent)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
 
   const writeEvidence = db.transaction(() => {
@@ -126,7 +126,8 @@ export async function ingestReddit(options) {
       insertEvidence.run(
         ep.id, ep.context_id, ep.source_id, ep.source_layer, ep.source_item_id,
         ep.url, ep.title, ep.body, ep.author_ref, ep.community,
-        ep.observed_at, ep.published_at, ep.metrics, ep.topics, ep.raw_ref, ep.content_hash
+        ep.observed_at, ep.published_at, ep.metrics, ep.topics, ep.raw_ref, ep.content_hash,
+        ep.intent || "question"
       );
     }
   });
@@ -168,8 +169,8 @@ export async function ingestReddit(options) {
       `INSERT OR REPLACE INTO signals
        (id, context_id, rank, status, title, growth, tags, summary, communities,
         mentions, comments, confidence, volume, why, suggested_title, suggested_sub,
-        next_source, bubble_x, bubble_y, bubble_r)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        next_source, dominant_intent, intent_mix, bubble_x, bubble_y, bubble_r)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
 
     const insertSE = db.prepare("INSERT OR REPLACE INTO signal_evidence (signal_id, evidence_id) VALUES (?, ?)");
@@ -186,6 +187,7 @@ export async function ingestReddit(options) {
         signal.communities, signal.mentions, signal.comments,
         signal.confidence, signal.volume, signal.why,
         signal.suggested_title, signal.suggested_sub, signal.next_source,
+        signal.dominant_intent || "question", signal.intent_mix || "{}",
         signal.bubble_x, signal.bubble_y, signal.bubble_r
       );
 

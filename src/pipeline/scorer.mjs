@@ -61,6 +61,15 @@ export function scoreSignal(signal, evidencePackets) {
   const authors = new Set(evidencePackets.map(ep => ep.author_ref).filter(Boolean));
   const authorDiversity = Math.min(100, Math.round(authors.size / Math.max(1, signal.mentions) * 100));
 
+  // 9. Signal quality — bonus for pain/question, penalty for promotion
+  const dominantIntent = signal.dominant_intent || "question";
+  let signalQuality = 50;
+  if (dominantIntent === "pain") signalQuality = 80;
+  else if (dominantIntent === "question") signalQuality = 60;
+  else if (dominantIntent === "comparison") signalQuality = 65;
+  else if (dominantIntent === "insight") signalQuality = 50;
+  else if (dominantIntent === "promotion") signalQuality = 20;
+
   const components = [
     ["Repetition", repetition],
     ["Pain intensity", painIntensity],
@@ -69,6 +78,7 @@ export function scoreSignal(signal, evidencePackets) {
     ["Engagement quality", engagementQuality],
     ["Freshness", freshness],
     ["Author diversity", authorDiversity],
+    ["Signal quality", signalQuality],
     ["Missing evidence penalty", missingPenalty],
   ];
 
