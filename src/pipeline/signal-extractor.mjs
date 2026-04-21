@@ -10,6 +10,7 @@
 
 import { extractDeepPatterns, classifyDesireType, aggregateFailedSolutions } from "./deep-extractor.mjs";
 import { getDb } from "../db/connection.mjs";
+import { getCachedThemeLabels } from "./theme-labeler.mjs";
 
 function stableId(value) {
   return String(value)
@@ -35,12 +36,13 @@ export function extractSignals(evidencePackets, contextId, options = {}) {
     // Evidence from "regret convincing team" and "switched to Penpot" both
     // go into the "Regret & switching" signal.
     const passes = safeParseJson(context?.research_passes, null);
-    const queryToTheme = buildQueryThemeMap(passes);
+    const llmLabels = getCachedThemeLabels(contextId);
+    const queryToTheme = buildQueryThemeMap(passes, llmLabels);
 
     for (const ep of evidencePackets) {
       const topics = safeParseJson(ep.topics, []);
       const query = topics[0] || "general";
-      const theme = queryToTheme.get(query) || deriveTheme(query, "");
+      const theme = queryToTheme.get(query) || llmLabels[query] || deriveTheme(query, "");
       const key = stableId(theme); // same theme → same key → merged
       if (!key) continue;
       if (!groups.has(key)) {
@@ -98,10 +100,8 @@ export function extractSignals(evidencePackets, contextId, options = {}) {
       return [c, Math.round((count / packets.length) * 100)];
     }).sort((a, b) => b[1] - a[1]);
 
-    // Determine status based on volume
-    let status = "Watch";
-    if (packets.length >= 6) status = "Growing";
-    if (packets.length >= 10) status = "Emerging";
+    // Compute multi-factor signal status
+    const status = computeSignalStatus(packets, communities, authors, contextId);
 
     // Confidence based on evidence breadth
     let confidence = "Low";
@@ -398,80 +398,78 @@ function buildSummary(topic, packets, communities) {
  * Build a map from query string → human-readable theme label.
  * Uses research_passes if available, otherwise derives from the query itself.
  */
-function buildQueryThemeMap(passes) {
+function buildQueryThemeMap(passes, llmLabels = {}) {
   const map = new Map();
   if (!passes) return map;
 
   for (const [passKey, pass] of Object.entries(passes)) {
     const passLabel = pass.label || passKey;
     for (const query of (pass.queries || [])) {
-      // Derive a short theme from the query
-      // Remove common words and extract the core topic
-      const theme = deriveTheme(query, passLabel);
+      // Prefer LLM-generated labels, fall back to keyword extraction
+      const theme = llmLabels[query] || deriveTheme(query, passLabel);
       map.set(query, theme);
     }
   }
   return map;
 }
 
-// Hard-coded readable theme labels for known query patterns.
-// Falls back to keyword extraction for unknown queries.
-const THEME_LABELS = new Map([
-  // Performance
-  ["slow", "Performance & crashes"],
-  ["crash", "Performance & crashes"],
-  ["laggy", "Performance & crashes"],
-  // Auto layout
-  ["auto layout", "Auto layout"],
-  ["autolayout", "Auto layout"],
-  // Handoff
-  ["handoff", "Design-dev handoff"],
-  ["hand off", "Design-dev handoff"],
-  ["hand-off", "Design-dev handoff"],
-  // Components
-  ["component", "Component libraries"],
-  ["design system", "Component libraries"],
-  // Dev
-  ["impossible to build", "Design feasibility"],
-  ["developer", "Design feasibility"],
-  // Regret / switching
-  ["regret", "Regret & switching"],
-  ["switch", "Regret & switching"],
-  ["penpot", "Regret & switching"],
-  ["alternative", "Regret & switching"],
-  // Adobe
-  ["adobe", "Adobe acquisition"],
-  ["acquisition", "Adobe acquisition"],
-  // Bloat / direction
-  ["bloated", "Product direction"],
-  ["listened", "Product direction"],
-  ["update breaks", "Product direction"],
-  ["miss when", "Product direction"],
-  // Branching
-  ["branching", "Branching & versioning"],
-  ["version", "Branching & versioning"],
-  // Code export
-  ["code export", "Code export & plugins"],
-  ["plugin", "Code export & plugins"],
-  // Pricing
-  ["organization plan", "Pricing & plans"],
-  ["pricing", "Pricing & plans"],
-  ["paid for", "Pricing & plans"],
-  // Zeplin / toolchain
-  ["zeplin", "Toolchain integration"],
-]);
-
+/**
+ * Derive a human-readable theme from a query string.
+ * Uses LLM-generated labels if cached, otherwise falls back to keyword extraction.
+ */
 function deriveTheme(query, passLabel) {
   const q = query.toLowerCase();
-  for (const [pattern, label] of THEME_LABELS) {
-    if (q.includes(pattern)) return label;
-  }
-  // Fallback: extract key words
   const cleaned = q
-    .replace(/\b(figma|reddit|i'm|i've|i|the|a|an|is|are|was|it|to|on|in|of|for|and|but|so|my|our|we|every|always|completely|actually|just|really|too|very|still|time|been)\b/g, "")
+    .replace(/\b(reddit|site:reddit\.com|i'm|i've|i|the|a|an|is|are|was|it|to|on|in|of|for|and|but|so|my|our|we|every|always|completely|actually|just|really|too|very|still|time|been)\b/g, "")
     .replace(/\s+/g, " ").trim();
   const words = cleaned.split(" ").filter(w => w.length > 2).slice(0, 3);
   return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") || query.slice(0, 30);
+}
+
+/**
+ * Compute signal status using multiple factors instead of just packet count.
+ *
+ * Factors:
+ *   - Volume (diminishing returns, capped at 25)
+ *   - Community spread (strong signal)
+ *   - Author diversity
+ *   - Evidence quality (average weight)
+ *   - Thread intelligence coverage
+ *
+ * Produces: Watch | Growing | Emerging
+ */
+function computeSignalStatus(packets, communities, authors, contextId) {
+  let score = 0;
+
+  // Volume (diminishing returns — first 10 packets matter most)
+  score += Math.min(25, packets.length * 2.5);
+
+  // Community spread — multiple communities is a strong signal
+  score += Math.min(24, communities.length * 8);
+
+  // Author diversity — more unique voices = more signal
+  score += Math.min(15, authors.length * 2);
+
+  // Evidence quality — average weight > 1.5 means highly upvoted content
+  const avgWeight = packets.reduce((sum, p) => sum + (p.evidence_weight || 1), 0) / packets.length;
+  if (avgWeight >= 1.8) score += 12;
+  else if (avgWeight >= 1.3) score += 6;
+
+  // Thread intelligence coverage (LLM has confirmed patterns)
+  const db = getDb();
+  const threadIds = [...new Set(packets.map(p => p.thread_id).filter(Boolean))];
+  if (threadIds.length > 0) {
+    const placeholders = threadIds.map(() => "?").join(",");
+    const intelCount = db.prepare(
+      `SELECT COUNT(*) as c FROM thread_intelligence WHERE thread_id IN (${placeholders}) AND signal_quality IN ('high', 'medium')`
+    ).get(...threadIds).c;
+    if (intelCount >= 3) score += 12;
+    else if (intelCount >= 1) score += 6;
+  }
+
+  if (score >= 55) return "Emerging";
+  if (score >= 30) return "Growing";
+  return "Watch";
 }
 
 /**

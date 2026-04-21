@@ -499,6 +499,31 @@ function formatIntelligencePrompt({ context, signals, threadIntels, facets, case
   parts.push(`Evidence base: ${evidenceStats.total} posts from ${evidenceStats.communities} communities by ${evidenceStats.authors} authors`);
   parts.push("");
 
+  // Pre-compute signal → thread_intelligence mapping in a single query
+  // instead of N×M per-signal per-thread queries
+  const signalIds = signals.map(s => s.id);
+  const signalThreadMap = new Map(); // signal_id → thread_intelligence[]
+  if (signalIds.length > 0) {
+    const placeholders = signalIds.map(() => "?").join(",");
+    const rows = db.prepare(`
+      SELECT DISTINCT se.signal_id, ti.*
+      FROM signal_evidence se
+      JOIN thread_packets tp ON tp.evidence_id = se.evidence_id
+      JOIN thread_intelligence ti ON ti.thread_id = tp.thread_id
+      WHERE se.signal_id IN (${placeholders})
+        AND ti.signal_quality != 'noise'
+      ORDER BY ti.thread_id
+    `).all(...signalIds);
+    for (const row of rows) {
+      if (!signalThreadMap.has(row.signal_id)) signalThreadMap.set(row.signal_id, []);
+      // Dedupe by thread_id within signal
+      const existing = signalThreadMap.get(row.signal_id);
+      if (!existing.some(t => t.thread_id === row.thread_id)) {
+        existing.push(row);
+      }
+    }
+  }
+
   // Top signals
   parts.push("═══ TOP SIGNALS (ranked by score) ═══");
   for (const sig of signals.slice(0, 10)) {
@@ -513,17 +538,8 @@ function formatIntelligencePrompt({ context, signals, threadIntels, facets, case
       parts.push(`  [${f.tag}] ${f.summary || ""}`);
     }
 
-    // Include key insights from threads
-    const sigIntels = threadIntels.filter(ti => {
-      const packetIds = db.prepare(
-        `SELECT tp.evidence_id FROM thread_packets tp WHERE tp.thread_id = ?`
-      ).all(ti.thread_id).map(r => r.evidence_id);
-      const linked = db.prepare(
-        `SELECT 1 FROM signal_evidence WHERE signal_id = ? AND evidence_id IN (${packetIds.map(() => "?").join(",")}) LIMIT 1`
-      ).get(sig.id, ...packetIds);
-      return !!linked;
-    });
-
+    // Include key insights from threads (pre-computed mapping)
+    const sigIntels = signalThreadMap.get(sig.id) || [];
     if (sigIntels.length > 0) {
       parts.push(`  Thread insights (${sigIntels.length} threads analyzed):`);
       for (const ti of sigIntels.slice(0, 3)) {

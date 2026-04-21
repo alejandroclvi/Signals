@@ -62,11 +62,33 @@ pnpm dev                  # Express server on http://localhost:3000
 ```bash
 pnpm ingest               # Pull live Reddit data into pipeline
 pnpm thread-intel --context <id>   # Run LLM thread analysis
+pnpm research <id>                 # Autonomous adaptive research loop (3 rounds)
+pnpm research <id> --assess        # Assess coverage gaps (no discovery)
+pnpm research <id> --queries       # Generate adaptive queries (dry run)
+pnpm backfill                      # Backfill NULL classifications on existing evidence
+pnpm reclassify <id>               # Upgrade regex classifications to LLM
+pnpm theme-labels <id>             # Generate LLM-derived theme labels
 pnpm brief --context <id>          # Generate research brief
 pnpm push --context <id>           # Generate brief + push to dashboard as modal
 pnpm push --toast "message"        # Send toast notification to dashboard
 pnpm push --reload                 # Trigger data reload in dashboard
 ```
+
+### Adaptive research loop
+The system can autonomously direct its own research. Instead of static queries:
+
+1. **Assess** — analyze evidence distribution, identify coverage gaps (e.g., 2% tried_failed vs 16% target)
+2. **Generate** — LLM creates targeted queries using vocabulary from existing evidence
+3. **Discover** — Chrome discovery with adaptive queries
+4. **Classify** — LLM micro-classifier upgrades regex classifications inline
+5. **Reassess** — check if gaps improved, decide to continue or stop
+
+```bash
+pnpm research <context-id>           # Full loop (3 rounds)
+pnpm research <context-id> --assess  # Just show coverage gaps
+```
+
+The research director also checks thesis validity — if evidence contradicts the hypothesis, it flags for refinement.
 
 ### Intelligence pipeline
 The system has a 3-layer intelligence architecture:
@@ -141,7 +163,10 @@ Follow the global CLAUDE.md rules for HTML-to-PDF via Playwright. The project al
 | `src/views/` | EJS templates |
 | `src/public/` | Frontend JS + CSS (vanilla, no framework) |
 | `src/lib/env.mjs` | Shared .env loader |
-| `scripts/` | CLI tools (ingest, thread-intel, brief, push-report) |
+| `src/pipeline/research-director.mjs` | Adaptive research loop: coverage assessment, query generation, thesis checking |
+| `src/pipeline/llm-classifier.mjs` | Batched LLM micro-classification via Gemini Flash (replaces regex) |
+| `src/pipeline/theme-labeler.mjs` | LLM-derived theme labels for research queries |
+| `scripts/` | CLI tools (ingest, thread-intel, brief, push-report, research, backfill, reclassify) |
 | `PROJECT_BRIEF.md` | Full product vision and signal taxonomy |
 | `SOURCE_INTELLIGENCE.md` | Multi-platform source interpretation framework |
 | `dashboard-prototype/` | Legacy static prototype (superseded by Express app) |

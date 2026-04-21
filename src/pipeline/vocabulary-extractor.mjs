@@ -191,29 +191,32 @@ function addVocab(map, category, phrase, upvotes, fullText, url) {
 
 /**
  * Extract meaningful n-grams near a marker pattern.
+ * Tighter window (4 tokens instead of 8) to reduce noise.
+ * Prefers 3-4 word phrases over bigrams.
  */
 function extractNearbyPhrases(text, markerRegex, windowSize) {
   const phrases = [];
   const words = text.split(/\s+/);
 
   for (let i = 0; i < words.length; i++) {
-    // Find marker word positions
+    // Find marker word positions (narrow context window)
     const window = words.slice(Math.max(0, i - 2), i + 3).join(" ");
     if (!markerRegex.test(window)) continue;
 
-    // Extract 2-4 word phrases around this position
-    for (let len = 2; len <= 4; len++) {
-      for (let start = Math.max(0, i - windowSize); start <= Math.min(words.length - len, i + windowSize); start++) {
+    // Extract 3-4 word phrases first (higher quality), then 2-word as fallback
+    const tightWindow = Math.min(windowSize, 4);
+    for (let len = 4; len >= 2; len--) {
+      for (let start = Math.max(0, i - tightWindow); start <= Math.min(words.length - len, i + tightWindow); start++) {
         const phrase = words.slice(start, start + len).join(" ");
         const cleaned = cleanPhrase(phrase);
-        if (cleaned && isQualityPhrase(cleaned)) {
+        if (cleaned && isQualityPhrase(cleaned) && !isMarkerOnly(cleaned, markerRegex)) {
           phrases.push(cleaned);
         }
       }
     }
   }
 
-  return [...new Set(phrases)].slice(0, 5); // Dedupe, cap per packet
+  return [...new Set(phrases)].slice(0, 3); // Tighter cap — quality over quantity
 }
 
 /**
@@ -266,12 +269,30 @@ function cleanPhrase(phrase) {
 }
 
 function isQualityPhrase(phrase) {
-  if (!phrase || phrase.length < 5) return false;
+  if (!phrase || phrase.length < 7) return false;
   const words = phrase.split(/\s+/);
   if (words.length < 2) return false;
+  // At least 60% meaningful words (non-stopword, > 2 chars)
   const meaningful = words.filter(w => !STOPWORDS.has(w) && w.length > 2);
-  return meaningful.length >= Math.ceil(words.length * 0.5);
+  if (meaningful.length < Math.ceil(words.length * 0.6)) return false;
+  // Reject phrases that are just common word pairs
+  if (words.length === 2 && COMMON_BIGRAMS.has(phrase)) return false;
+  return true;
 }
+
+/** Reject phrases that consist only of the marker word itself */
+function isMarkerOnly(phrase, markerRegex) {
+  const words = phrase.split(/\s+/);
+  const nonMarker = words.filter(w => !markerRegex.test(w) && !STOPWORDS.has(w) && w.length > 2);
+  return nonMarker.length === 0;
+}
+
+const COMMON_BIGRAMS = new Set([
+  "don't know", "can't find", "looking for", "trying to", "want to",
+  "need to", "used to", "going to", "have to", "able to",
+  "supposed to", "hard to", "easy to", "seems like", "feels like",
+  "kind of", "sort of", "lot of", "end up", "turned out",
+]);
 
 function extractQuoteContaining(text, phrase, maxLen) {
   const lower = text.toLowerCase();
@@ -332,10 +353,13 @@ export function synthesizeVocabulary(contextId) {
       }
 
       for (const [category, entries] of byCategory) {
+        // Filter: require frequency >= 2 for pain/desire (noisy categories)
+        const minFreq = (category === "pain" || category === "desire") ? 2 : 1;
         // Rank by validation score: frequency × 10 + upvotes
         const ranked = entries
+          .filter(e => e.frequency >= minFreq)
           .sort((a, b) => (b.frequency * 10 + b.totalUpvotes) - (a.frequency * 10 + a.totalUpvotes))
-          .slice(0, 15); // Top 15 per category
+          .slice(0, 12); // Top 12 per category (tighter)
 
         for (const entry of ranked) {
           upsert.run(

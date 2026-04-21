@@ -13,7 +13,11 @@
     "ingest": "node scripts/ingest-cli.mjs",
     "brief": "node scripts/generate-research-brief.mjs",
     "thread-intel": "node scripts/run-thread-intelligence.mjs",
-    "push": "node scripts/push-report.mjs"
+    "push": "node scripts/push-report.mjs",
+    "backfill": "node scripts/backfill-classifications.mjs",
+    "reclassify": "node scripts/reclassify-llm.mjs",
+    "theme-labels": "node scripts/generate-theme-labels-cli.mjs",
+    "research": "node scripts/research-loop.mjs"
   },
   "keywords": [],
   "author": "",

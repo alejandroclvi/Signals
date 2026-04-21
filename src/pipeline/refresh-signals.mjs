@@ -82,6 +82,13 @@ export function refreshSignals(contextId) {
       db.prepare(`DELETE FROM signal_evidence WHERE signal_id IN (${signalIds.map(() => "?").join(",")})`).run(...signalIds);
     }
 
+    // Remove stale signals whose IDs no longer match (theme label changes can cause ID changes)
+    const newSignalIds = new Set(signals.map(s => s.id));
+    const staleIds = signalIds.filter(id => !newSignalIds.has(id));
+    if (staleIds.length > 0) {
+      db.prepare(`DELETE FROM signals WHERE id IN (${staleIds.map(() => "?").join(",")})`).run(...staleIds);
+    }
+
     for (const signal of signals) {
       const evidenceIds = signalEvidence.get(signal.id) || [];
       const signalPackets = packets.filter(p => evidenceIds.includes(p.id));

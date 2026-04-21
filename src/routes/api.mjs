@@ -169,6 +169,65 @@ router.post("/api/contexts", (req, res) => {
   res.status(201).json({ id, label });
 });
 
+router.post("/api/contexts/from-topic", async (req, res) => {
+  const { topic, description } = req.body;
+  if (!topic) return res.status(400).json({ error: "Topic is required" });
+
+  broadcast("toast", { message: "Generating research context for: " + topic + "...", type: "info" });
+
+  try {
+    const { generateContextFromBrief } = await import("../agents/research-brief.mjs");
+    const result = await generateContextFromBrief(topic, { description });
+    const ctx = result.context;
+
+    const db = getDb();
+    const existing = db.prepare("SELECT id FROM contexts WHERE id = ?").get(ctx.id);
+    if (existing) {
+      // Update instead of fail
+      db.prepare(`
+        UPDATE contexts SET label = ?, description = ?, thesis = ?, avatar = ?, queries = ?, high_intent = ?, research_passes = ?, grouping_mode = ?
+        WHERE id = ?
+      `).run(ctx.label, ctx.description, ctx.thesis, ctx.avatar, JSON.stringify(ctx.queries), JSON.stringify(ctx.high_intent), JSON.stringify(ctx.research_passes), "theme", ctx.id);
+    } else {
+      db.prepare(`
+        INSERT INTO contexts (id, label, description, thesis, avatar, queries, high_intent, research_passes, grouping_mode)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(ctx.id, ctx.label, ctx.description, ctx.thesis, ctx.avatar, JSON.stringify(ctx.queries), JSON.stringify(ctx.high_intent), JSON.stringify(ctx.research_passes), "theme");
+
+      // Seed default source nodes
+      const defaultNodes = [
+        { id: "reddit", name: "Reddit", state: "enabled", layers: ["conversation"], lift: 0, adds: "Pain language and repeated complaints.", cannot: "Cannot prove buying intent, budget, or adoption." },
+        { id: "google-search", name: "Google Search", state: "available", layers: ["intent"], lift: 11, adds: "Active discovery and comparison intent.", cannot: "Cannot prove purchase or retention." },
+        { id: "hacker-news", name: "Hacker News", state: "available", layers: ["conversation"], lift: 7, adds: "Builder debate and technical skepticism.", cannot: "Narrow audience, not broad demand." },
+        { id: "github", name: "GitHub", state: "available", layers: ["behavior"], lift: 9, adds: "Implementation artifacts and developer adoption.", cannot: "Cannot prove buyer budget." },
+        { id: "primary", name: "Primary Sources", state: "available", layers: ["truth"], lift: 10, adds: "Official confirmation, filings, docs, vendor claims.", cannot: "Often validates later than social discovery." },
+      ];
+      const insertNode = db.prepare(
+        "INSERT OR REPLACE INTO source_nodes (id, context_id, name, state, layers, lift, adds, cannot) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+      );
+      for (const n of defaultNodes) {
+        insertNode.run(n.id + ":" + ctx.id, ctx.id, n.name, n.state, JSON.stringify(n.layers), n.lift, n.adds, n.cannot);
+      }
+    }
+
+    // Generate theme labels
+    try {
+      const { generateThemeLabels } = await import("../pipeline/theme-labeler.mjs");
+      await generateThemeLabels(ctx.id);
+    } catch {}
+
+    broadcast("toast", { message: "Context ready: " + ctx.label + " (" + ctx.queries.length + " queries). Open it and run Chrome discovery.", type: "info" });
+
+    // Push the brief as a report modal
+    broadcast("report", { title: "Research Brief: " + ctx.label, body: result.brief, format: "markdown" });
+
+    res.status(201).json({ id: ctx.id, label: ctx.label, queryCount: ctx.queries.length, briefId: result.briefId });
+  } catch (err) {
+    broadcast("toast", { message: "Context generation failed: " + err.message, type: "error" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.delete("/api/contexts/:id", (req, res) => {
   const db = getDb();
   const ctx = db.prepare("SELECT id FROM contexts WHERE id = ?").get(req.params.id);
@@ -773,6 +832,150 @@ router.post("/api/contexts/:id/brief", async (req, res) => {
     res.json({ briefId: result.id, evidenceCount: result.evidenceCount, communityCount: result.communityCount });
   } catch (err) {
     broadcast("toast", { message: "Brief generation failed: " + err.message, type: "error" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Research director (adaptive research loop) ---
+
+router.get("/api/contexts/:id/coverage", async (req, res) => {
+  try {
+    const { assessCoverage } = await import("../pipeline/research-director.mjs");
+    const coverage = assessCoverage(req.params.id);
+    res.json(coverage);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/api/contexts/:id/adaptive-queries", async (req, res) => {
+  try {
+    const { generateAdaptiveQueries } = await import("../pipeline/research-director.mjs");
+    broadcast("toast", { message: "Generating adaptive queries...", type: "info" });
+    const result = await generateAdaptiveQueries(req.params.id);
+    broadcast("toast", { message: result.reason, type: "info" });
+    res.json(result);
+  } catch (err) {
+    broadcast("toast", { message: "Adaptive query generation failed: " + err.message, type: "error" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/api/contexts/:id/research-round", async (req, res) => {
+  const contextId = req.params.id;
+  broadcast("toast", { message: "Starting adaptive research round...", type: "info" });
+
+  try {
+    const { runResearchRound } = await import("../pipeline/research-director.mjs");
+    const result = await runResearchRound(contextId, {
+      onProgress: (event) => {
+        broadcast("toast", { message: event.message, type: event.stage === "error" ? "error" : "info" });
+      },
+    });
+
+    if (result.evidenceCount > 0) {
+      broadcast("reload", { reason: "research round completed" });
+    }
+    res.json(result);
+  } catch (err) {
+    broadcast("toast", { message: "Research round failed: " + err.message, type: "error" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/api/contexts/:id/research-loop", async (req, res) => {
+  const contextId = req.params.id;
+  const maxRounds = parseInt(req.body?.maxRounds) || 3;
+  broadcast("toast", { message: `Starting research loop (max ${maxRounds} rounds)...`, type: "info" });
+
+  try {
+    const { runResearchLoop } = await import("../pipeline/research-director.mjs");
+    const result = await runResearchLoop(contextId, {
+      maxRounds,
+      onProgress: (event) => {
+        broadcast("toast", { message: event.message, type: event.stage === "error" ? "error" : "info" });
+        if (event.stage === "done" && event.round) {
+          broadcast("reload", { reason: `research round ${event.round} complete` });
+        }
+      },
+    });
+
+    broadcast("toast", { message: `Research loop complete: ${result.rounds} rounds, +${result.totalEvidence} evidence`, type: "info" });
+    broadcast("reload", { reason: "research loop completed" });
+
+    // Push research report as a modal
+    const gaps = result.finalCoverage.gaps;
+    const reportBody = [
+      `## Research Loop Complete`,
+      `**Rounds:** ${result.rounds} | **New evidence:** ${result.totalEvidence}`,
+      ``,
+      `### Coverage`,
+      ...Object.entries(result.finalCoverage.stateDist || {}).sort((a, b) => b[1] - a[1]).map(([state, count]) => {
+        const pct = Math.round(count / result.finalCoverage.totalEvidence * 100);
+        return `- **${state}**: ${pct}% (${count})`;
+      }),
+      ``,
+      gaps.length > 0
+        ? `### Remaining Gaps\n${gaps.map(g => `- ${g.state}: ${g.actualPct}% (target ${g.targetPct}%)`).join("\n")}`
+        : `### Coverage Balanced ✓`,
+      ``,
+      `### Decisions`,
+      ...result.decisions.map(d => {
+        let line = `**Round ${d.round}:** +${d.evidenceAdded} evidence, ${d.queriesUsed} queries`;
+        if (d.thesisCheck && d.thesisCheck.status !== "confirmed") {
+          line += `\n  *Thesis ${d.thesisCheck.status}:* ${d.thesisCheck.refinement || d.thesisCheck.reason}`;
+        }
+        return line;
+      }),
+    ].join("\n");
+
+    broadcast("report", { title: "Adaptive Research Report", body: reportBody, format: "markdown" });
+
+    res.json(result);
+  } catch (err) {
+    broadcast("toast", { message: "Research loop failed: " + err.message, type: "error" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- LLM reclassification ---
+
+router.post("/api/contexts/:id/reclassify", async (req, res) => {
+  const contextId = req.params.id;
+  broadcast("toast", { message: "Starting LLM reclassification for " + contextId + "...", type: "info" });
+
+  try {
+    const { reclassifyContext } = await import("../pipeline/llm-classifier.mjs");
+    const { updated } = await reclassifyContext(contextId, {
+      onProgress: ({ completed, total }) => {
+        if (completed % 200 === 0) {
+          broadcast("toast", { message: `Classified ${completed}/${total} packets...`, type: "info" });
+        }
+      },
+    });
+
+    broadcast("toast", { message: `Reclassified ${updated} packets. Refreshing signals...`, type: "info" });
+    const result = refreshSignals(contextId);
+    broadcast("reload", { reason: "reclassification completed" });
+    broadcast("toast", { message: `Done: ${result.signalCount} signals refreshed with LLM classifications`, type: "info" });
+
+    res.json({ updated, ...result });
+  } catch (err) {
+    broadcast("toast", { message: "Reclassification failed: " + err.message, type: "error" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Theme label generation ---
+
+router.post("/api/contexts/:id/theme-labels", async (req, res) => {
+  try {
+    const { generateThemeLabels } = await import("../pipeline/theme-labeler.mjs");
+    const labels = await generateThemeLabels(req.params.id);
+    const themes = [...new Set(Object.values(labels))];
+    broadcast("toast", { message: `Generated ${themes.length} theme labels`, type: "info" });
+    res.json({ labels, themeCount: themes.length });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

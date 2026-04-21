@@ -1152,7 +1152,81 @@ function renderDetail() {
 
   document.getElementById("suggestTitle").textContent = signal.suggested.title;
   document.getElementById("suggestSub").textContent = signal.suggested.sub + " " + signal.next;
+
+  // Intelligence chain — async fetch and render
+  renderIntelligenceChain(signal.id);
   } catch(err) { console.error("renderDetail error:", err); }
+}
+
+function renderIntelligenceChain(signalId) {
+  var el = document.getElementById("intelligenceChain");
+  if (!el) return;
+  el.innerHTML = '<span class="faint">Loading chain\u2026</span>';
+
+  fetch("/api/signals/" + encodeURIComponent(signalId) + "/chain")
+    .then(function(r) { return r.json(); })
+    .then(function(chain) {
+      if (!chain || chain.totalUnits === 0) {
+        el.innerHTML = '<span class="faint">No intelligence chain yet</span>';
+        return;
+      }
+
+      var levelMeta = {
+        observation:     { label: "Observations",    color: "#9aa3ad", icon: "\u25CB" },
+        extraction:      { label: "LLM Extractions", color: "#2d6fbb", icon: "\u25C9" },
+        cross_thread:    { label: "Cross-thread",    color: "#875fb4", icon: "\u25CE" },
+        cross_community: { label: "Cross-community", color: "#3e9558", icon: "\u25C6" },
+        synthesis:       { label: "Synthesis",        color: "#bd842f", icon: "\u2726" },
+        conclusion:      { label: "Conclusions",      color: "#de5c56", icon: "\u2605" },
+      };
+      var levels = ["observation", "extraction", "cross_thread", "cross_community", "synthesis", "conclusion"];
+
+      // Summary bar
+      var barHtml = '<div class="chain-bar">';
+      for (var li = 0; li < levels.length; li++) {
+        var lvl = levels[li];
+        var units = chain.byType[lvl] || [];
+        var meta = levelMeta[lvl];
+        var active = units.length > 0;
+        barHtml += '<div class="chain-level' + (active ? " active" : "") + '" style="' + (active ? "border-color:" + meta.color : "") + '">';
+        barHtml += '<span class="chain-icon" style="color:' + meta.color + '">' + meta.icon + '</span>';
+        barHtml += '<span class="chain-count">' + units.length + '</span>';
+        barHtml += '<span class="chain-label">' + meta.label + '</span>';
+        if (li < levels.length - 1) barHtml += '<span class="chain-arrow">\u2192</span>';
+        barHtml += '</div>';
+      }
+      barHtml += '</div>';
+
+      // Top claims per level (expandable)
+      var claimsHtml = '';
+      for (var ci = 0; ci < levels.length; ci++) {
+        var clvl = levels[ci];
+        var cunits = chain.byType[clvl] || [];
+        if (cunits.length === 0) continue;
+        var cmeta = levelMeta[clvl];
+        claimsHtml += '<div class="chain-claims">';
+        claimsHtml += '<div class="chain-claims-header" style="color:' + cmeta.color + '">' + cmeta.icon + ' ' + cmeta.label + ' (' + cunits.length + ')</div>';
+        var showCount = Math.min(cunits.length, 3);
+        for (var cj = 0; cj < showCount; cj++) {
+          var u = cunits[cj];
+          var conf = Math.round((u.confidence || 0) * 100);
+          var confColor = conf >= 70 ? "#3e9558" : conf >= 40 ? "#bd842f" : "#9aa3ad";
+          claimsHtml += '<div class="chain-claim">';
+          claimsHtml += '<span class="chain-conf" style="color:' + confColor + '">' + conf + '%</span>';
+          claimsHtml += '<span class="chain-text">' + escapeHtml((u.claim || "").slice(0, 120)) + '</span>';
+          claimsHtml += '</div>';
+        }
+        if (cunits.length > 3) {
+          claimsHtml += '<div class="chain-more faint">+' + (cunits.length - 3) + ' more</div>';
+        }
+        claimsHtml += '</div>';
+      }
+
+      el.innerHTML = barHtml + claimsHtml;
+    })
+    .catch(function() {
+      el.innerHTML = '<span class="faint">Chain unavailable</span>';
+    });
 }
 
 function renderContextBrief() {
@@ -1310,22 +1384,44 @@ function openNewContextModal() {
   overlay.innerHTML =
     '<div class="modal">' +
       '<div class="modal-head">' +
-        '<h3>New monitoring context</h3>' +
+        '<h3>New research context</h3>' +
         '<button type="button" class="modal-close" id="modalClose">&times;</button>' +
       '</div>' +
+      '<div class="modal-tabs" id="contextModeTabs">' +
+        '<button class="modal-tab active" data-mode="ai">AI-generated</button>' +
+        '<button class="modal-tab" data-mode="manual">Manual</button>' +
+      '</div>' +
       '<form id="newContextForm">' +
-        '<label class="form-label">Label<input type="text" name="label" class="form-input" placeholder="e.g. AI tools for small law firms" required></label>' +
-        '<label class="form-label">Description<input type="text" name="description" class="form-input" placeholder="What are you monitoring?"></label>' +
-        '<label class="form-label">Subreddits <span class="form-hint">comma-separated</span><input type="text" name="subreddits" class="form-input" placeholder="r/startups, r/SaaS, r/Entrepreneur"></label>' +
-        '<label class="form-label">Search queries <span class="form-hint">comma-separated</span><input type="text" name="queries" class="form-input" placeholder="AI research agent, competitor monitoring"></label>' +
-        '<label class="form-label">High-intent phrases <span class="form-hint">comma-separated</span><input type="text" name="high_intent" class="form-input" placeholder="alternative to, would pay for"></label>' +
+        '<div id="aiFields">' +
+          '<label class="form-label">Topic<input type="text" name="topic" class="form-input" placeholder="e.g. AI agents replacing SaaS subscriptions" id="topicInput"></label>' +
+          '<label class="form-label">Description <span class="form-hint">optional — adds context for the AI</span><input type="text" name="ai_description" class="form-input" placeholder="What angle? Who cares? Why now?"></label>' +
+          '<p class="form-hint" style="padding:4px 0 0;font-size:11px;color:var(--muted)">The AI will generate thesis, avatar, 30+ search queries, and state-targeted research passes.</p>' +
+        '</div>' +
+        '<div id="manualFields" style="display:none">' +
+          '<label class="form-label">Label<input type="text" name="label" class="form-input" placeholder="e.g. AI tools for small law firms"></label>' +
+          '<label class="form-label">Description<input type="text" name="description" class="form-input" placeholder="What are you monitoring?"></label>' +
+          '<label class="form-label">Subreddits <span class="form-hint">comma-separated</span><input type="text" name="subreddits" class="form-input" placeholder="r/startups, r/SaaS, r/Entrepreneur"></label>' +
+          '<label class="form-label">Search queries <span class="form-hint">comma-separated</span><input type="text" name="queries" class="form-input" placeholder="AI research agent, competitor monitoring"></label>' +
+          '<label class="form-label">High-intent phrases <span class="form-hint">comma-separated</span><input type="text" name="high_intent" class="form-input" placeholder="alternative to, would pay for"></label>' +
+        '</div>' +
         '<div class="modal-actions">' +
           '<button type="button" class="button" id="modalCancel">Cancel</button>' +
-          '<button type="submit" class="button primary">Create context</button>' +
+          '<button type="submit" class="button primary" id="contextSubmit">Create context</button>' +
         '</div>' +
       '</form>' +
     '</div>';
   document.body.appendChild(overlay);
+
+  var mode = "ai";
+  var tabs = document.getElementById("contextModeTabs");
+  tabs.addEventListener("click", function(e) {
+    var tab = e.target.closest(".modal-tab");
+    if (!tab) return;
+    mode = tab.dataset.mode;
+    tabs.querySelectorAll(".modal-tab").forEach(function(t) { t.classList.toggle("active", t === tab); });
+    document.getElementById("aiFields").style.display = mode === "ai" ? "" : "none";
+    document.getElementById("manualFields").style.display = mode === "manual" ? "" : "none";
+  });
 
   function close() { overlay.remove(); }
   document.getElementById("modalClose").addEventListener("click", close);
@@ -1335,26 +1431,47 @@ function openNewContextModal() {
   document.getElementById("newContextForm").addEventListener("submit", function(e) {
     e.preventDefault();
     var form = e.target;
-    var splitCsv = function(val) { return val ? val.split(",").map(function(s) { return s.trim(); }).filter(Boolean) : []; };
-    var body = {
-      label: form.label.value.trim(),
-      description: form.description.value.trim(),
-      subreddits: splitCsv(form.subreddits.value),
-      queries: splitCsv(form.queries.value),
-      high_intent: splitCsv(form.high_intent.value),
-    };
-    fetch("/api/contexts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    })
-      .then(function(r) { if (!r.ok) return r.json().then(function(d) { throw new Error(d.error); }); return r.json(); })
-      .then(function(data) {
-        showToast("Context created: " + data.label);
-        close();
-        window.location.href = "/?context=" + encodeURIComponent(data.id);
+    var submitBtn = document.getElementById("contextSubmit");
+    submitBtn.disabled = true;
+    submitBtn.textContent = mode === "ai" ? "Generating\u2026" : "Creating\u2026";
+
+    if (mode === "ai") {
+      var topic = form.topic.value.trim();
+      if (!topic) { showToast("Enter a topic", true); submitBtn.disabled = false; submitBtn.textContent = "Create context"; return; }
+      fetch("/api/contexts/from-topic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: topic, description: form.ai_description.value.trim() }),
       })
-      .catch(function(err) { showToast(err.message || "Failed to create context", true); });
+        .then(function(r) { if (!r.ok) return r.json().then(function(d) { throw new Error(d.error); }); return r.json(); })
+        .then(function(data) {
+          showToast("Context created: " + data.label + " (" + data.queryCount + " queries)");
+          close();
+          window.location.href = "/?context=" + encodeURIComponent(data.id);
+        })
+        .catch(function(err) { showToast(err.message || "Failed to generate context", true); submitBtn.disabled = false; submitBtn.textContent = "Create context"; });
+    } else {
+      var splitCsv = function(val) { return val ? val.split(",").map(function(s) { return s.trim(); }).filter(Boolean) : []; };
+      var body = {
+        label: form.label.value.trim(),
+        description: form.description.value.trim(),
+        subreddits: splitCsv(form.subreddits.value),
+        queries: splitCsv(form.queries.value),
+        high_intent: splitCsv(form.high_intent.value),
+      };
+      fetch("/api/contexts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+        .then(function(r) { if (!r.ok) return r.json().then(function(d) { throw new Error(d.error); }); return r.json(); })
+        .then(function(data) {
+          showToast("Context created: " + data.label);
+          close();
+          window.location.href = "/?context=" + encodeURIComponent(data.id);
+        })
+        .catch(function(err) { showToast(err.message || "Failed to create context", true); submitBtn.disabled = false; submitBtn.textContent = "Create context"; });
+    }
   });
 }
 
@@ -1741,6 +1858,35 @@ renderAll();
         '<button class="cmd-deepen-btn" data-deepen="comparing" style="--dc:#bd842f">Compare</button>' +
       '</div>' +
       '<div class="cmd-divider"></div>' +
+      '<div class="cmd-header">Adaptive research</div>' +
+      '<button class="cmd-btn" data-action="coverage">' +
+        '<span class="cmd-icon">\uD83D\uDCCA</span>' +
+        '<span class="cmd-label">Assess coverage gaps</span>' +
+        '<span class="cmd-desc">Analyze evidence distribution and identify what\u2019s missing</span>' +
+      '</button>' +
+      '<button class="cmd-btn" data-action="research-round">' +
+        '<span class="cmd-icon">\uD83C\uDFAF</span>' +
+        '<span class="cmd-label">Run adaptive research round</span>' +
+        '<span class="cmd-desc">Auto-generate queries for gaps, discover, classify with LLM, refresh</span>' +
+      '</button>' +
+      '<button class="cmd-btn" data-action="research-loop">' +
+        '<span class="cmd-icon">\uD83D\uDD04</span>' +
+        '<span class="cmd-label">Full research loop (3 rounds)</span>' +
+        '<span class="cmd-desc">Autonomous: assess \u2192 discover \u2192 classify \u2192 reassess \u2192 repeat</span>' +
+      '</button>' +
+      '<div class="cmd-divider"></div>' +
+      '<div class="cmd-header">Intelligence</div>' +
+      '<button class="cmd-btn" data-action="reclassify">' +
+        '<span class="cmd-icon">\uD83E\uDD16</span>' +
+        '<span class="cmd-label">LLM reclassify evidence</span>' +
+        '<span class="cmd-desc">Upgrade regex classifications with Gemini Flash (costs ~$0.003/batch)</span>' +
+      '</button>' +
+      '<button class="cmd-btn" data-action="theme-labels">' +
+        '<span class="cmd-icon">\uD83C\uDFF7</span>' +
+        '<span class="cmd-label">Generate theme labels</span>' +
+        '<span class="cmd-desc">Use LLM to derive readable signal names from search queries</span>' +
+      '</button>' +
+      '<div class="cmd-divider"></div>' +
       '<button class="cmd-btn cmd-btn-subtle" data-action="reload">' +
         '<span class="cmd-icon">\u21BB</span>' +
         '<span class="cmd-label">Refresh dashboard</span>' +
@@ -1812,6 +1958,50 @@ renderAll();
           return;
         }
         endpoint = "/api/signals/" + encodeURIComponent(sig.id) + "/analyze";
+        break;
+      case "coverage":
+        endpoint = "/api/contexts/" + encodeURIComponent(contextId) + "/coverage";
+        opts = { method: "GET" };
+        fetch(endpoint)
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            var gapLines = data.gaps.map(function(g) {
+              return "- **" + g.state + "**: " + g.actualPct + "% (target " + g.targetPct + "%, deficit " + g.deficit + "%)";
+            });
+            var body = "## Coverage Assessment\n\n**Total evidence:** " + data.totalEvidence + "\n\n";
+            if (data.gaps.length > 0) {
+              body += "### Gaps\n" + gapLines.join("\n") + "\n\n";
+            } else {
+              body += "### Coverage Balanced\n\n";
+            }
+            body += "### Recommendation\n" + data.recommendation + "\n\n";
+            if (data.topTools.length > 0) body += "### Tools mentioned\n" + data.topTools.join(", ") + "\n\n";
+            if (data.highValueCommunities.length > 0) body += "### High-value communities\n" + data.highValueCommunities.join(", ");
+            fetch("/api/report", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ title: "Coverage Assessment", body: body, format: "markdown" }),
+            });
+            label.textContent = "Done";
+            setTimeout(function() { btn.disabled = false; label.textContent = originalText; }, 2000);
+          })
+          .catch(function(err) { showToast(err.message, true); btn.disabled = false; label.textContent = originalText; });
+        return;
+      case "research-round":
+        endpoint = "/api/contexts/" + encodeURIComponent(contextId) + "/research-round";
+        opts.body = "{}";
+        break;
+      case "research-loop":
+        endpoint = "/api/contexts/" + encodeURIComponent(contextId) + "/research-loop";
+        opts.body = JSON.stringify({ maxRounds: 3 });
+        break;
+      case "reclassify":
+        endpoint = "/api/contexts/" + encodeURIComponent(contextId) + "/reclassify";
+        opts.body = "{}";
+        break;
+      case "theme-labels":
+        endpoint = "/api/contexts/" + encodeURIComponent(contextId) + "/theme-labels";
+        opts.body = "{}";
         break;
       case "reload":
         fetch("/api/reload", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });

@@ -223,6 +223,25 @@ safeAlter("ALTER TABLE signals ADD COLUMN superseded_by TEXT");
 safeAlter("ALTER TABLE signals ADD COLUMN case_id TEXT");
 safeAlter("ALTER TABLE signals ADD COLUMN confidence_tier TEXT");
 
+// Theme labels cache on contexts
+safeAlter("ALTER TABLE contexts ADD COLUMN theme_labels TEXT");
+
+// Performance indexes for key join paths
+const safeIndex = (sql) => { try { db.exec(sql); } catch {} };
+safeIndex("CREATE INDEX IF NOT EXISTS idx_evidence_context ON evidence_packets(context_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_evidence_thread ON evidence_packets(thread_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_signal_evidence_signal ON signal_evidence(signal_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_signal_evidence_evidence ON signal_evidence(evidence_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_thread_packets_thread ON thread_packets(thread_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_thread_packets_evidence ON thread_packets(evidence_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_thread_intelligence_context ON thread_intelligence(context_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_thread_intelligence_thread ON thread_intelligence(thread_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_signals_context ON signals(context_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_intelligence_units_context ON intelligence_units(context_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_intelligence_units_signal ON intelligence_units(signal_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_intelligence_units_source ON intelligence_units(source_type, source_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_intelligence_links_to ON intelligence_links(to_id)");
+
 // Seed evidence layers (static reference data)
 const upsertLayer = db.prepare(
   "INSERT OR REPLACE INTO evidence_layers (id, label, note, sort_order) VALUES (?, ?, ?, ?)"
