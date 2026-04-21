@@ -61,7 +61,7 @@ export async function discoverRedditThreads(queries, { onProgress, resultsPerQue
       });
       const page = await ctx.newPage();
 
-      const searchQuery = `${query} site:reddit.com`;
+      const searchQuery = query.includes("site:reddit.com") ? query : `${query} site:reddit.com`;
       const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}&num=${limit}`;
 
       await page.goto(googleUrl, { waitUntil: "domcontentloaded", timeout: 15000 });

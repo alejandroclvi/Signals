@@ -44,8 +44,8 @@ export async function ingestReddit(options) {
   const context = db.prepare("SELECT * FROM contexts WHERE id = ?").get(contextId);
   if (!context) throw new Error("Context not found: " + contextId);
 
-  const subreddits = options.subreddits || safeParseJson(context.subreddits, []);
-  const queries = options.queries || safeParseJson(context.queries, []);
+  const subreddits = options.subreddits || safeParseJson(context.subreddits, []) || [];
+  const queries = options.queries || safeParseJson(context.queries, []) || [];
 
   if (!queries.length) {
     throw new Error("Context has no queries configured");

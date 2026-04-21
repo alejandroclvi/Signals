@@ -71,12 +71,16 @@ export function assessCoverage(contextId) {
         state, targetPct: Math.round(target * 100), actualPct: 0, deficit: Math.round(target * 100), priority: 1,
       })),
       totalEvidence: 0,
+      stateDist: {},
       isBalanced: false,
       isPlateaued: false,
       communityYields: [],
       queryYields: [],
       topVocabulary: {},
       topTools: [],
+      highValueCommunities: [],
+      saturatedCommunities: [],
+      awarenessDist: {},
       recommendation: "No evidence yet — run initial discovery",
     };
   }
@@ -399,7 +403,8 @@ export async function runResearchRound(contextId, options = {}) {
   const { ingestReddit } = await import("./ingest.mjs");
 
   try {
-    const result = await ingestReddit(contextId, {
+    const result = await ingestReddit({
+      contextId,
       queries: queryStrings,
       subreddits: highValueCommunities.length > 0 ? highValueCommunities : undefined,
       limit: 5, // per query
@@ -569,7 +574,7 @@ Your job: analyze the current state of the research and generate the NEXT batch 
 
 Rules:
 1. Use the ACTUAL vocabulary from existing evidence — the phrases people use, the tool names they mention, the way they describe problems. Don't invent terminology.
-2. Each query should be written as something a real person would type into Google (not a keyword search — a natural language query + "site:reddit.com").
+2. Each query should be written as something a real person would type into Google (not a keyword search — a natural language query). Do NOT include "site:reddit.com" — that is added automatically by the discovery layer.
 3. Target specific evidence states: if we're missing "tried_failed" evidence, write queries that would surface discussions where people tried a specific tool and it failed.
 4. Avoid saturated communities — if we already have 500+ posts from r/webdev, target smaller, less-mined communities.
 5. Include a thesis check: does the evidence so far support the original thesis, or should it be refined?
