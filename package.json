@@ -10,7 +10,10 @@
     "seed": "node scripts/seed-fixtures.mjs",
     "seed:market": "node scripts/seed-market-fixtures.mjs",
     "seed:all": "node scripts/seed-fixtures.mjs && node scripts/seed-market-fixtures.mjs",
-    "ingest": "node scripts/ingest-cli.mjs"
+    "ingest": "node scripts/ingest-cli.mjs",
+    "brief": "node scripts/generate-research-brief.mjs",
+    "thread-intel": "node scripts/run-thread-intelligence.mjs",
+    "push": "node scripts/push-report.mjs"
   },
   "keywords": [],
   "author": "",

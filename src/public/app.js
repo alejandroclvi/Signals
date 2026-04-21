@@ -105,9 +105,11 @@ function selectedSignal() {
   return signals.find((signal) => signal.id === selectedId) || signals[0];
 }
 
-function tagHtml(tag) {
+function tagHtml(tag, signalId) {
   const meta = categories[tag];
-  return '<span class="tag ' + tag + '">' + (meta ? meta.label : tag) + '</span>';
+  return '<span class="tag ' + tag + '" data-facet-tag="' + tag + '"' +
+    (signalId ? ' data-facet-signal="' + signalId + '"' : '') +
+    '>' + (meta ? meta.label : tag) + '</span>';
 }
 
 function linePoints(values, width, height, pad) {
@@ -364,10 +366,10 @@ function renderSignalList() {
     tabFiltered = signals.filter(function(s) { return !s.dismissed && !s.saved; });
   }
 
-  // Intent filter
+  // State filter
   var filtered = activeIntentFilter === "all"
     ? tabFiltered
-    : tabFiltered.filter(function(s) { return s.dominant_intent === activeIntentFilter; });
+    : tabFiltered.filter(function(s) { return s.dominant_state === activeIntentFilter; });
 
   // Sort matching tag signals to the top when a legend filter is active
   if (activeTagFilter) {
@@ -378,18 +380,23 @@ function renderSignalList() {
     });
   }
 
+  var stateDisplayColors = { experiencing_pain:"#de5c56", tried_failed:"#c0392b", seeking:"#2d6fbb", found_what_works:"#3e9558", warning:"#e67e22", sharing_insight:"#875fb4", comparing:"#bd842f", promoting:"#9aa3ad" };
+  var stateDisplayLabels = { experiencing_pain:"Pain", tried_failed:"Tried & failed", seeking:"Seeking", found_what_works:"What works", warning:"Warning", sharing_insight:"Insight", comparing:"Comparing", promoting:"Promo" };
+
   list.innerHTML = filtered.map(function(signal) {
-    var intentLabel = signal.dominant_intent || "question";
-    var intentColor = intentColors[intentLabel] || "#9aa3ad";
+    var state = signal.dominant_state || "sharing_insight";
+    var stColor = stateDisplayColors[state] || "#9aa3ad";
+    var stLabel = stateDisplayLabels[state] || state;
+    var evidenceCount = signal.mentions || 0;
     return '<article class="signal-item ' + (signal.id === selectedId ? "selected" : "") + '" data-signal="' + signal.id + '">' +
       '<div class="signal-top">' +
         '<span><span class="rank">#' + String(signal.rank).padStart(2, "0") + '</span> <span class="signal-state">' + signal.status + '</span></span>' +
-        '<span class="intent-badge" style="color:' + intentColor + '">' + intentLabel + '</span>' +
-        (signal.desire_type ? '<span class="desire-badge ' + signal.desire_type + '">' + (signal.desire_type === "mass_technological" ? "Replacement" : "Discovery") + '</span>' : '') +
+        '<span class="state-badge" style="color:' + stColor + ';border-color:' + stColor + '30">' + stLabel + '</span>' +
+        '<span class="evidence-count-badge">' + evidenceCount + ' posts</span>' +
       '</div>' +
       '<div class="signal-title">' + signal.title + '</div>' +
-      '<div class="tags">' + signal.tags.map(tagHtml).join("") + '</div>' +
-      '<div class="signal-summary">' + signal.summary + '</div>' +
+      '<div class="tags">' + signal.tags.map(function(t) { return tagHtml(t, signal.id); }).join("") + '</div>' +
+      '<div class="signal-summary">' + signalSummaryText(signal) + '</div>' +
       '<div class="signal-meta">' +
         '<span>' + signal.communities.join(" \u00b7 ") + '</span>' +
         '<span class="confidence"><span class="bars"><i></i><i></i><i style="opacity:' + (signal.confidence === "High" ? "1" : ".32") + '"></i></span>' + signal.confidence + '</span>' +
@@ -405,14 +412,16 @@ function renderSignalList() {
     });
   });
 
-  // Update intent filter counts
+  // Update state filter counts
+  var stateFilterLabels = { all:"All", experiencing_pain:"Pain", tried_failed:"Failed", seeking:"Seeking", found_what_works:"Works", warning:"Warning", sharing_insight:"Insight", comparing:"Compare", promoting:"Promo" };
   var filterEl = document.getElementById("intentFilters");
   if (filterEl) {
     filterEl.querySelectorAll(".intent-btn").forEach(function(btn) {
-      var intentValue = btn.dataset.intent;
-      var count = intentValue === "all" ? tabFiltered.length : tabFiltered.filter(function(s) { return s.dominant_intent === intentValue; }).length;
-      btn.textContent = (intentValue === "all" ? "All" : intentValue.charAt(0).toUpperCase() + intentValue.slice(1)) + (count ? " " + count : "");
-      btn.className = "intent-btn" + (intentValue === activeIntentFilter ? " active" : "");
+      var stateValue = btn.dataset.intent;
+      var count = stateValue === "all" ? tabFiltered.length : tabFiltered.filter(function(s) { return s.dominant_state === stateValue; }).length;
+      var label = stateFilterLabels[stateValue] || stateValue;
+      btn.textContent = label + (count ? " " + count : "");
+      btn.className = "intent-btn" + (stateValue === activeIntentFilter ? " active" : "");
     });
   }
 
@@ -686,9 +695,10 @@ function scoreComponents(signal) {
 function renderDetail() {
   var signal = selectedSignal();
   if (!signal) return;
+  try {
   document.getElementById("detailKicker").innerHTML = 'SIGNAL DETAIL \u00b7 first detected Mar 28 2026 \u00b7 <span style="color:var(--green);font-family:inherit;font-weight:760">' + signal.status + '</span>';
   document.getElementById("detailTitle").textContent = signal.title;
-  document.getElementById("detailTags").innerHTML = signal.tags.map(tagHtml).join("") + ' <span class="confidence"><span class="bars"><i></i><i></i><i style="opacity:' + (signal.confidence === "High" ? "1" : ".32") + '"></i></span>' + signal.confidence + ' confidence</span>';
+  document.getElementById("detailTags").innerHTML = signal.tags.map(function(t) { return tagHtml(t, signal.id); }).join("") + ' <span class="confidence"><span class="bars"><i></i><i></i><i style="opacity:' + (signal.confidence === "High" ? "1" : ".32") + '"></i></span>' + signal.confidence + ' confidence</span>';
 
   // Wire detail action buttons
   var actionsContainer = document.querySelector(".detail-actions");
@@ -700,69 +710,311 @@ function renderDetail() {
     document.getElementById("btnSave").addEventListener("click", function() { saveSignal(signal.id); });
     document.getElementById("btnDismiss").addEventListener("click", function() { dismissSignal(signal.id); });
     document.getElementById("btnAlert").addEventListener("click", function() { alertSignal(signal.id); });
+
+    // Analyze button — triggers thread intelligence
+    var analyzeBtn = document.getElementById("btnAnalyze");
+    if (analyzeBtn) {
+      var hasIntel = signal.intelligence && signal.intelligence.count > 0;
+      analyzeBtn.textContent = hasIntel ? "\u2699 Re-analyze" : "\u2699 Analyze";
+      analyzeBtn.addEventListener("click", function() {
+        analyzeBtn.disabled = true;
+        analyzeBtn.textContent = "\u2699 Analyzing...";
+        fetch("/api/signals/" + encodeURIComponent(signal.id) + "/analyze", { method: "POST" })
+          .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+          .then(function(data) {
+            analyzeBtn.textContent = "\u2699 Done (" + data.analyzed + " threads)";
+          })
+          .catch(function() {
+            analyzeBtn.disabled = false;
+            analyzeBtn.textContent = "\u2699 Analyze";
+            showToast("Analysis failed", true);
+          });
+      });
+    }
   }
   document.getElementById("momentumText").textContent = signal.growth + " vs 14-day rolling baseline";
   document.getElementById("drivenBy").textContent = (signal.volume / 100).toFixed(1) + "x post volume \u00b7 " + signal.communities.length + " communities";
-  document.getElementById("whyBox").textContent = signal.why;
+  document.getElementById("whyBox").innerHTML = signalWhyText(signal);
   document.getElementById("detailSpark").innerHTML = '<polyline points="' + linePoints([3, 4, 4, 5, 6, 8, 11, 15, 22], 120, 28, 2) + '" fill="none" stroke="#3e9558" stroke-width="1.7"></polyline>';
 
-  document.getElementById("evidenceList").innerHTML = signal.evidence.map(function(item) {
-    var hasUrl = item.url && item.url !== "#";
-    return '<article class="evidence">' +
-      '<div class="evidence-id" title="' + item.id + '">' + (item.sourceKind || 'post').slice(0, 4) + '</div>' +
-      '<div>' +
-        '<div class="quote">"' + item.quote + '"</div>' +
-        '<div class="evidence-meta">' + item.source + ' \u00b7 ' + item.author + ' \u00b7 ' + item.age + ' \u00b7 \u25b2 ' + item.score + ' \u00b7 ' + item.replies + ' replies</div>' +
-      '</div>' +
-      (hasUrl
-        ? '<a class="open-link" href="' + item.url + '" target="_blank" rel="noopener">open \u203a</a>'
-        : '<span class="open-link disabled">replay</span>') +
-    '</article>';
-  }).join("");
+  // Group evidence into threads
+  try {
+  var threads = {};
+  var orphans = [];
+  signal.evidence.forEach(function(item) {
+    if (item.thread_id) {
+      if (!threads[item.thread_id]) threads[item.thread_id] = [];
+      threads[item.thread_id].push(item);
+    } else {
+      orphans.push(item);
+    }
+  });
 
-  // Intent composition bar
-  var intentEl = document.getElementById("intentComposition");
-  if (intentEl) {
-    var mix = signal.intent_mix || {};
-    var totalEvidence = Object.values(mix).reduce(function(s, v) { return s + v; }, 0) || 1;
-    var barParts = Object.entries(mix)
-      .sort(function(a, b) { return b[1] - a[1]; })
-      .map(function(entry) {
-        var pct = Math.round(entry[1] / totalEvidence * 100);
-        var color = intentColors[entry[0]] || "#9aa3ad";
-        return '<div class="intent-bar-seg" style="width:' + pct + '%;background:' + color + '" title="' + entry[0] + ': ' + pct + '%"></div>';
-      }).join("");
-    var labels = Object.entries(mix)
-      .sort(function(a, b) { return b[1] - a[1]; })
-      .map(function(entry) {
-        var pct = Math.round(entry[1] / totalEvidence * 100);
-        var color = intentColors[entry[0]] || "#9aa3ad";
-        return '<span class="intent-label"><i class="dot" style="background:' + color + '"></i>' + entry[0] + ' ' + pct + '%</span>';
-      }).join("");
-    intentEl.innerHTML = '<div class="intent-bar">' + barParts + '</div><div class="intent-labels">' + labels + '</div>';
+  // Sort each thread: post first, then comments by score
+  Object.values(threads).forEach(function(items) {
+    items.sort(function(a, b) {
+      if (!a.isComment && b.isComment) return -1;
+      if (a.isComment && !b.isComment) return 1;
+      return b.score - a.score;
+    });
+  });
+
+  // Sort threads by top post score
+  var sortedThreadIds = Object.keys(threads).sort(function(a, b) {
+    return (threads[b][0].score || 0) - (threads[a][0].score || 0);
+  });
+
+  var stateColorsMap = { experiencing_pain:"#de5c56", tried_failed:"#c0392b", seeking:"#2d6fbb", found_what_works:"#3e9558", warning:"#e67e22", sharing_insight:"#875fb4", comparing:"#bd842f", promoting:"#9aa3ad" };
+  var stateLabelsMap = { experiencing_pain:"Pain", tried_failed:"Tried & failed", seeking:"Seeking", found_what_works:"Works", warning:"Warning", sharing_insight:"Insight", comparing:"Comparing", promoting:"Promo" };
+
+  var evHtml = "";
+  for (var ti = 0; ti < sortedThreadIds.length; ti++) {
+    var threadItems = threads[sortedThreadIds[ti]];
+    var post = threadItems[0];
+    var comments = threadItems.slice(1);
+    var hasUrl = post.url && post.url !== "#";
+    var postBorderColor = stateColorsMap[post.evidence_state || "sharing_insight"] || "#875fb4";
+
+    evHtml += '<div class="ev-thread">';
+    // Root post
+    evHtml += '<div class="ev-root">';
+    evHtml += '<div class="ev-branch-root"></div>';
+    evHtml += '<div class="ev-node" style="border-left: 3px solid ' + postBorderColor + '">';
+    evHtml += '<div class="ev-node-head">';
+    var postState = post.evidence_state || "sharing_insight";
+    var postStateColor = stateColorsMap[postState] || "#9aa3ad";
+    var postStateExcerpt = extractStateExcerpt(post.quote, postState);
+    evHtml += '<span class="ev-score">\u25b2 ' + post.score + '</span>';
+    evHtml += '<span class="ev-chip evidence-chip" style="background:' + postStateColor + '18;color:' + postStateColor + ';border:1px solid ' + postStateColor + '30" data-chip-excerpt="' + escapeAttr(postStateExcerpt) + '">' + (stateLabelsMap[postState] || postState) + '</span>';
+    evHtml += '<span class="ev-author">' + escapeHtml(post.author) + '</span>';
+    if (comments.length > 0) evHtml += '<span class="ev-comment-count">' + comments.length + ' replies</span>';
+    if (hasUrl) evHtml += '<a class="ev-link" href="' + post.url + '" target="_blank" rel="noopener">source \u203a</a>';
+    evHtml += '</div>';
+    if (post.title && !post.isComment) evHtml += '<div class="ev-title">' + (hasUrl ? '<a href="' + post.url + '" target="_blank" rel="noopener">' + escapeHtml(post.title) + '</a>' : escapeHtml(post.title)) + '</div>';
+    evHtml += '<div class="ev-body">' + escapeHtml(post.quote.slice(0, 300)) + (post.quote.length > 300 ? '...' : '') + '</div>';
+    evHtml += '</div></div>';
+
+    // Comments — show first 2 + last, collapse middle with AI summary
+    var showFirst = 2;
+    var collapsed = comments.length > 3;
+    var visibleComments = collapsed
+      ? [].concat(comments.slice(0, showFirst), [comments[comments.length - 1]])
+      : comments;
+    var hiddenCount = collapsed ? comments.length - 3 : 0;
+    var threadKey = sortedThreadIds[ti];
+
+    // Get AI insight for this thread if available
+    var threadInsight = "";
+    if (signal.intelligence && signal.intelligence.threads) {
+      for (var ii = 0; ii < signal.intelligence.threads.length; ii++) {
+        var ti2 = signal.intelligence.threads[ii];
+        if (ti2.threadId === threadKey && ti2.keyInsight) {
+          threadInsight = ti2.keyInsight;
+          break;
+        }
+      }
+    }
+
+    for (var ci = 0; ci < visibleComments.length; ci++) {
+      var c = visibleComments[ci];
+      var cUrl = c.url && c.url !== "#";
+      var cBorderColor = stateColorsMap[c.evidence_state || "sharing_insight"] || "#875fb4";
+      var isActuallyLast = (ci === visibleComments.length - 1) && (!collapsed);
+      var isLastVisible = ci === visibleComments.length - 1;
+
+      // Insert collapsed summary after first 2 comments
+      if (collapsed && ci === showFirst) {
+        evHtml += '<div class="ev-collapsed" data-thread-expand="' + escapeAttr(threadKey) + '">';
+        evHtml += '<div class="ev-branch"><div class="ev-branch-line"></div><div class="ev-branch-arm" style="border-style:dashed"></div></div>';
+        evHtml += '<div class="ev-collapsed-body">';
+        if (threadInsight) {
+          evHtml += '<div class="ev-collapsed-insight">' + escapeHtml(threadInsight) + '</div>';
+        }
+        evHtml += '<button class="ev-expand-btn" data-thread-expand="' + escapeAttr(threadKey) + '">' + hiddenCount + ' more replies \u2014 click to expand</button>';
+        evHtml += '</div></div>';
+      }
+
+      evHtml += '<div class="ev-comment' + (collapsed && ci === visibleComments.length - 1 ? ' ev-last-peek' : '') + '">';
+      evHtml += '<div class="ev-branch ' + (isLastVisible ? 'ev-branch-last' : '') + '"><div class="ev-branch-line"></div><div class="ev-branch-arm"></div></div>';
+      evHtml += '<div class="ev-node ev-node-comment" style="border-left: 2px solid ' + cBorderColor + '">';
+      evHtml += '<div class="ev-node-head">';
+      var cState = c.evidence_state || "sharing_insight";
+      var cStateColor = stateColorsMap[cState] || "#9aa3ad";
+      var cStateExcerpt = extractStateExcerpt(c.quote, cState);
+      evHtml += '<span class="ev-score">\u25b2 ' + c.score + '</span>';
+      evHtml += '<span class="ev-chip evidence-chip" style="background:' + cStateColor + '18;color:' + cStateColor + ';font-size:10px;border:1px solid ' + cStateColor + '30" data-chip-excerpt="' + escapeAttr(cStateExcerpt) + '">' + (stateLabelsMap[cState] || cState) + '</span>';
+      evHtml += '<span class="ev-author">' + escapeHtml(c.author) + '</span>';
+      if (cUrl) evHtml += '<a class="ev-link" href="' + c.url + '" target="_blank" rel="noopener">\u203a</a>';
+      evHtml += '</div>';
+      evHtml += '<div class="ev-body">' + escapeHtml(c.quote.slice(0, 200)) + (c.quote.length > 200 ? '...' : '') + '</div>';
+      evHtml += '</div></div>';
+    }
+
+    // Store full comments data for expansion
+    if (collapsed) {
+      evHtml += '<div class="ev-hidden-comments" data-thread-hidden="' + escapeAttr(threadKey) + '" style="display:none">';
+      for (var hi = showFirst; hi < comments.length - 1; hi++) {
+        var h = comments[hi];
+        var hUrl = h.url && h.url !== "#";
+        var hBorderColor = stateColorsMap[h.evidence_state || "sharing_insight"] || "#875fb4";
+        var hState = h.evidence_state || "sharing_insight";
+        var hStateColor = stateColorsMap[hState] || "#9aa3ad";
+        var hExcerpt = extractStateExcerpt(h.quote, hState);
+        evHtml += '<div class="ev-comment">';
+        evHtml += '<div class="ev-branch"><div class="ev-branch-line"></div><div class="ev-branch-arm"></div></div>';
+        evHtml += '<div class="ev-node ev-node-comment" style="border-left: 2px solid ' + hBorderColor + '">';
+        evHtml += '<div class="ev-node-head">';
+        evHtml += '<span class="ev-score">\u25b2 ' + h.score + '</span>';
+        evHtml += '<span class="ev-chip evidence-chip" style="background:' + hStateColor + '18;color:' + hStateColor + ';font-size:10px;border:1px solid ' + hStateColor + '30" data-chip-excerpt="' + escapeAttr(hExcerpt) + '">' + (stateLabelsMap[hState] || hState) + '</span>';
+        evHtml += '<span class="ev-author">' + escapeHtml(h.author) + '</span>';
+        if (hUrl) evHtml += '<a class="ev-link" href="' + h.url + '" target="_blank" rel="noopener">\u203a</a>';
+        evHtml += '</div>';
+        evHtml += '<div class="ev-body">' + escapeHtml(h.quote.slice(0, 200)) + (h.quote.length > 200 ? '...' : '') + '</div>';
+        evHtml += '</div></div>';
+      }
+      evHtml += '</div>';
+    }
+
+    evHtml += '</div>';
   }
 
-  // Awareness distribution bar
-  var awarenessEl = document.getElementById("awarenessComposition");
-  if (awarenessEl) {
-    var awDist = signal.awareness_distribution || {};
-    var awTotal = Object.values(awDist).reduce(function(s, v) { return s + v; }, 0) || 1;
-    var awOrder = ["unaware", "problem_aware", "solution_aware", "product_aware", "most_aware"];
-    var awEntries = awOrder.filter(function(k) { return awDist[k]; }).map(function(k) { return [k, awDist[k]]; });
-    if (awEntries.length) {
-      var awBarParts = awEntries.map(function(entry) {
-        var pct = Math.round(entry[1] / awTotal * 100);
-        var color = awarenessColors[entry[0]] || "#9aa3ad";
-        return '<div class="intent-bar-seg" style="width:' + pct + '%;background:' + color + '" title="' + (awarenessLabels[entry[0]] || entry[0]) + ': ' + pct + '%"></div>';
+  // Orphan evidence (no thread)
+  for (var oi = 0; oi < orphans.length; oi++) {
+    var o = orphans[oi];
+    var oUrl = o.url && o.url !== "#";
+    evHtml += '<article class="evidence">' +
+      '<div class="evidence-id">' + (o.isComment ? 'comm' : 'post') + '</div>' +
+      '<div>' +
+        '<div class="quote">"' + escapeHtml(o.quote.slice(0, 200)) + '"</div>' +
+        '<div class="evidence-meta">' + escapeHtml(o.source) + ' \u00b7 ' + escapeHtml(o.author) + ' \u00b7 ' + o.age + ' \u00b7 \u25b2 ' + o.score + '</div>' +
+      '</div>' +
+      (oUrl ? '<a class="open-link" href="' + o.url + '" target="_blank" rel="noopener">open \u203a</a>' : '<span class="open-link disabled">replay</span>') +
+    '</article>';
+  }
+
+  document.getElementById("evidenceList").innerHTML = evHtml;
+
+  // Wire expand buttons
+  document.querySelectorAll(".ev-expand-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var threadKey = btn.dataset.threadExpand;
+      var hidden = document.querySelector('[data-thread-hidden="' + threadKey + '"]');
+      var collapsed = btn.closest(".ev-collapsed");
+      if (hidden && collapsed) {
+        // Insert hidden comments before the last comment
+        var lastPeek = collapsed.parentElement.querySelector(".ev-last-peek");
+        if (lastPeek) {
+          hidden.style.display = "";
+          lastPeek.parentElement.insertBefore(hidden, lastPeek);
+          // Unwrap the container — move children out
+          while (hidden.firstChild) {
+            hidden.parentElement.insertBefore(hidden.firstChild, hidden);
+          }
+          hidden.remove();
+        }
+        collapsed.remove();
+      }
+    });
+  });
+
+  } catch(err) {
+    console.error("Evidence render error:", err);
+    document.getElementById("evidenceList").innerHTML = '<div style="color:red;padding:12px">Error rendering evidence: ' + err.message + '</div>';
+  }
+
+  // Evidence state distribution bar (replaces intent + awareness + sentiment)
+  var stateEl = document.getElementById("stateComposition");
+  if (stateEl) {
+    var stateDist = signal.state_distribution || {};
+    var stateTotal = Object.values(stateDist).reduce(function(s, v) { return s + v; }, 0) || 1;
+    var stateColors = {
+      experiencing_pain: "#de5c56",
+      tried_failed: "#c0392b",
+      seeking: "#2d6fbb",
+      found_what_works: "#3e9558",
+      warning: "#e67e22",
+      sharing_insight: "#875fb4",
+      comparing: "#bd842f",
+      promoting: "#9aa3ad",
+    };
+    var stateLabels = {
+      experiencing_pain: "Experiencing pain",
+      tried_failed: "Tried & failed",
+      seeking: "Seeking solution",
+      found_what_works: "Found what works",
+      warning: "Warning others",
+      sharing_insight: "Sharing insight",
+      comparing: "Comparing",
+      promoting: "Promoting",
+    };
+    var stateOrder = ["experiencing_pain", "tried_failed", "warning", "seeking", "comparing", "found_what_works", "sharing_insight", "promoting"];
+    var stEntries = stateOrder.filter(function(k) { return stateDist[k]; }).map(function(k) { return [k, stateDist[k]]; });
+    if (stEntries.length) {
+      var stBarParts = stEntries.map(function(entry) {
+        var pct = Math.round(entry[1] / stateTotal * 100);
+        var color = stateColors[entry[0]] || "#9aa3ad";
+        return '<div class="intent-bar-seg" style="width:' + pct + '%;background:' + color + '" title="' + (stateLabels[entry[0]] || entry[0]) + ': ' + pct + '%"></div>';
       }).join("");
-      var awLabels = awEntries.map(function(entry) {
-        var pct = Math.round(entry[1] / awTotal * 100);
-        var color = awarenessColors[entry[0]] || "#9aa3ad";
-        return '<span class="intent-label"><i class="dot" style="background:' + color + '"></i>' + (awarenessLabels[entry[0]] || entry[0]) + ' ' + pct + '%</span>';
+      var stLabels = stEntries.map(function(entry) {
+        var pct = Math.round(entry[1] / stateTotal * 100);
+        var color = stateColors[entry[0]] || "#9aa3ad";
+        return '<span class="intent-label"><i class="dot" style="background:' + color + '"></i>' + (stateLabels[entry[0]] || entry[0]) + ' ' + pct + '%</span>';
       }).join("");
-      awarenessEl.innerHTML = '<div class="intent-bar">' + awBarParts + '</div><div class="intent-labels">' + awLabels + '</div>';
+      stateEl.innerHTML = '<div class="intent-bar">' + stBarParts + '</div><div class="intent-labels">' + stLabels + '</div>';
     } else {
-      awarenessEl.innerHTML = '<span class="faint">No awareness data</span>';
+      stateEl.innerHTML = '<span class="faint">No evidence data</span>';
+    }
+  }
+
+  // Thread intelligence — LLM-analyzed thread insights
+  var tiEl = document.getElementById("threadIntelligence");
+  if (tiEl) {
+    var intel = signal.intelligence;
+    if (intel && intel.threads && intel.threads.length > 0) {
+      var tiHtml = '<div class="ti-summary">' + intel.count + ' thread' + (intel.count > 1 ? 's' : '') + ' analyzed</div>';
+      tiHtml += intel.threads.map(function(t) {
+        var qualityColor = { high: "var(--green)", medium: "var(--gold)", low: "var(--muted)" }[t.quality] || "var(--muted)";
+
+        // Hover tooltip content
+        var tooltipParts = [];
+        if (t.arc) tooltipParts.push(t.arc);
+        if (t.painLanguage && t.painLanguage.length > 0) {
+          tooltipParts.push("Pain: \"" + t.painLanguage[0].quote.slice(0, 80) + "\"");
+        }
+        if (t.avatarClues && t.avatarClues.length > 0) {
+          tooltipParts.push("Avatar: " + t.avatarClues[0].clue);
+        }
+        var tooltip = tooltipParts.join("\n");
+
+        // NXY pills
+        var nxyHtml = (t.notXItsY || []).map(function(n) {
+          return '<span class="ti-nxy" title="' + escapeAttr(n.surface) + ' \u2192 ' + escapeAttr(n.deeper) + '">' +
+            '\u201c' + truncate(n.surface, 25) + '\u201d \u2192 \u201c' + truncate(n.deeper, 25) + '\u201d</span>';
+        }).join("");
+
+        // Failed solution pills
+        var fsHtml = (t.failedSolutions || []).map(function(f) {
+          var vColor = f.verdict === "worked" ? "var(--green)" : f.verdict === "mixed" ? "var(--gold)" : "var(--red)";
+          return '<span class="ti-failed" style="border-color:' + vColor + '" title="' + escapeAttr(f.reason || "") + '">' +
+            f.name + '</span>';
+        }).join("");
+
+        var hasUrl = t.url && t.url !== "#";
+
+        return '<div class="ti-thread" title="' + escapeAttr(tooltip) + '">' +
+          '<div class="ti-thread-head">' +
+            '<span class="ti-quality" style="color:' + qualityColor + '">\u25CF</span>' +
+            '<span class="ti-title">' + truncate(t.title || "Thread", 50) + '</span>' +
+            (hasUrl ? '<a class="ti-link" href="' + t.url + '" target="_blank">\u203a</a>' : '') +
+          '</div>' +
+          (t.keyInsight ? '<div class="ti-insight">' + t.keyInsight + '</div>' : '') +
+          (nxyHtml ? '<div class="ti-nxy-row">' + nxyHtml + '</div>' : '') +
+          (fsHtml ? '<div class="ti-failed-row">' + fsHtml + '</div>' : '') +
+        '</div>';
+      }).join("");
+      tiEl.innerHTML = tiHtml;
+    } else {
+      tiEl.innerHTML = '<span class="faint">No thread intelligence yet — click Analyze</span>';
     }
   }
 
@@ -798,6 +1050,49 @@ function renderDetail() {
     }
 
     extractionsEl.innerHTML = html || '<span class="faint">No deep patterns detected</span>';
+  }
+
+  // Vocabulary — categorized language from evidence
+  var vocabEl = document.getElementById("vocabularySection");
+  if (vocabEl) {
+    var vocab = signal.vocabulary;
+    if (vocab && Object.keys(vocab).length > 0) {
+      var vocabCategoryMeta = {
+        pain: { label: "Pain language", color: "#de5c56", icon: "\uD83D\uDD25" },
+        desire: { label: "What they want", color: "#3e9558", icon: "\u2728" },
+        moment: { label: "When it hits", color: "#2d6fbb", icon: "\u23F0" },
+        identity: { label: "Who they are", color: "#875fb4", icon: "\uD83D\uDC64" },
+        temperature: { label: "Intensity", color: "#bd842f", icon: "\uD83C\uDF21" },
+        metaphor: { label: "How they frame it", color: "#1b918d", icon: "\uD83D\uDDE3" },
+        solution: { label: "Tools mentioned", color: "#68717d", icon: "\uD83D\uDEE0" },
+      };
+      var order = ["pain", "desire", "moment", "identity", "solution", "temperature", "metaphor"];
+      var vhtml = "";
+      for (var vi = 0; vi < order.length; vi++) {
+        var cat = order[vi];
+        var items = vocab[cat];
+        if (!items || items.length === 0) continue;
+        var meta = vocabCategoryMeta[cat] || { label: cat, color: "#68717d", icon: "" };
+        vhtml += '<div class="vocab-category">';
+        vhtml += '<div class="vocab-cat-label" style="color:' + meta.color + '">' + meta.icon + ' ' + meta.label + '</div>';
+        vhtml += '<div class="vocab-pills">';
+        for (var vj = 0; vj < Math.min(items.length, 6); vj++) {
+          var item = items[vj];
+          var hasUrl = item.url && item.url !== "#";
+          var title = item.quote ? item.quote.slice(0, 100) : "";
+          vhtml += '<span class="vocab-pill" style="border-color:' + meta.color + '20; background:' + meta.color + '08" title="' + escapeAttr(title) + '">';
+          if (hasUrl) vhtml += '<a href="' + item.url + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">';
+          vhtml += escapeHtml(item.phrase);
+          if (item.upvotes > 0) vhtml += ' <span class="vocab-score">\u25b2' + item.upvotes + '</span>';
+          if (hasUrl) vhtml += '</a>';
+          vhtml += '</span>';
+        }
+        vhtml += '</div></div>';
+      }
+      vocabEl.innerHTML = vhtml;
+    } else {
+      vocabEl.innerHTML = '<span class="faint">No vocabulary extracted yet</span>';
+    }
   }
 
   document.getElementById("phraseGrid").innerHTML = signal.phrases.map(function(entry) {
@@ -857,6 +1152,7 @@ function renderDetail() {
 
   document.getElementById("suggestTitle").textContent = signal.suggested.title;
   document.getElementById("suggestSub").textContent = signal.suggested.sub + " " + signal.next;
+  } catch(err) { console.error("renderDetail error:", err); }
 }
 
 function renderContextBrief() {
@@ -1170,5 +1466,629 @@ document.querySelectorAll(".inbox-tab").forEach(function(tab, i) {
   });
 });
 
+var stateExplanations = {
+  experiencing_pain: "Describing a problem they feel — raw pain language from someone in the middle of it.",
+  tried_failed: "Used a specific tool or approach and found it didn't work — competitive intelligence.",
+  seeking: "Actively looking for a solution — demand signal, they'd pay if the right thing existed.",
+  found_what_works: "Found something that works — adoption signal showing what's winning.",
+  warning: "Telling others to avoid something — community-validated failure.",
+  sharing_insight: "Sharing knowledge, experience, or a workaround they discovered.",
+  comparing: "Evaluating multiple tools or approaches — competitive landscape through user eyes.",
+  promoting: "Promoting their own product or service — lower trust, but shows what's being built.",
+};
+
+function extractStateExcerpt(body, state) {
+  if (!body) return (stateExplanations[state] || "");
+  var explanation = stateExplanations[state] || "";
+  var text = body.replace(/\n+/g, " ").trim();
+  var sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+
+  var statePatterns = {
+    experiencing_pain: /frustrat|annoying|hate|terrible|broken|expensive|struggling|waste|useless|nightmare|sucks|drowning|stuck/i,
+    tried_failed: /tried|used|tested|gave .* a shot|paid for|subscribed|didn't work|waste|terrible|garbage/i,
+    seeking: /looking for|is there|has anyone|recommend|any tool|best way|how do you|need|alternative/i,
+    found_what_works: /game.changer|love it|works great|highly recommend|worth|can't live without|saved/i,
+    warning: /don't waste|stay away|avoid|wouldn't recommend|save your|complete waste|worst/i,
+    sharing_insight: /learned|realized|turns out|the key|what worked|my experience|here's how|tip/i,
+    comparing: /vs|versus|compared|alternative|switch|better than|instead of/i,
+    promoting: /built|created|launched|check out|announcing|just shipped/i,
+  };
+
+  var pat = statePatterns[state];
+  var quote = "";
+  if (pat) {
+    for (var i = 0; i < sentences.length; i++) {
+      if (pat.test(sentences[i])) { quote = sentences[i].trim().slice(0, 100); break; }
+    }
+  }
+  if (!quote) quote = sentences[0] ? sentences[0].trim().slice(0, 80) : "";
+
+  return explanation + "\n\u201c" + quote + "\u201d";
+}
+
 setupFixtureSelector();
 renderAll();
+
+// --- Facet Hover Cards ---
+
+(function setupFacetHover() {
+  var hoverTimer = null;
+  var leaveTimer = null;
+  var activeCard = null;
+
+  function removeFacetCard() {
+    if (activeCard) {
+      activeCard.remove();
+      activeCard = null;
+    }
+  }
+
+  function showFacetCard(tagEl) {
+    removeFacetCard();
+
+    var tag = tagEl.dataset.facetTag;
+    var signalId = tagEl.dataset.facetSignal;
+    if (!tag || !signalId) return;
+
+    var signal = signals.find(function(s) { return s.id === signalId; });
+    if (!signal || !signal.facets) return;
+
+    var facet = signal.facets[tag];
+    if (!facet) return;
+
+    var card = document.createElement("div");
+    card.className = "facet-card";
+
+    var meta = categories[tag];
+    var color = meta ? meta.color : "#68717d";
+
+    // Summary
+    var html = '<div class="facet-card-header" style="border-left-color:' + color + '">';
+    html += '<span class="facet-card-tag" style="color:' + color + '">' + (meta ? meta.label : tag) + '</span>';
+    html += '<span class="facet-card-stats">' + facet.evidenceCount + ' posts \u00b7 ' + facet.totalUpvotes + ' upvotes';
+    if (facet.threadCount > 0) html += ' \u00b7 ' + facet.threadCount + ' threads';
+    html += '</span></div>';
+
+    if (facet.summary) {
+      html += '<div class="facet-card-summary">' + escapeHtml(facet.summary) + '</div>';
+    }
+
+    // Quotes
+    if (facet.quotes && facet.quotes.length > 0) {
+      html += '<div class="facet-card-quotes">';
+      facet.quotes.slice(0, 2).forEach(function(q) {
+        var hasUrl = q.url && q.url !== "#";
+        html += '<div class="facet-card-quote">';
+        if (hasUrl) {
+          html += '<a class="facet-card-quote-text facet-card-link" href="' + q.url + '" target="_blank" rel="noopener">';
+        } else {
+          html += '<span class="facet-card-quote-text">';
+        }
+        html += '\u201c' + escapeHtml(q.quote) + '\u201d';
+        html += hasUrl ? '</a>' : '</span>';
+        html += '<span class="facet-card-quote-meta">' +
+          (q.type === "comment" ? "comment" : "post") + ' \u00b7 ' +
+          escapeHtml(q.community) + ' \u00b7 \u25b2' + q.upvotes +
+          (hasUrl ? ' \u00b7 <a class="facet-card-source" href="' + q.url + '" target="_blank" rel="noopener">view \u203a</a>' : '') +
+          '</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Not X, it's Y
+    if (facet.notXItsY && facet.notXItsY.length > 0) {
+      html += '<div class="facet-card-nxy">';
+      facet.notXItsY.slice(0, 2).forEach(function(n) {
+        html += '<div class="facet-card-nxy-item">\u201c' + escapeHtml(truncate(n.surface, 35)) + '\u201d \u2192 \u201c' + escapeHtml(truncate(n.deeper, 35)) + '\u201d</div>';
+      });
+      html += '</div>';
+    }
+
+    // Failed solutions
+    if (facet.failedSolutions && facet.failedSolutions.length > 0) {
+      html += '<div class="facet-card-failed">';
+      facet.failedSolutions.slice(0, 3).forEach(function(f) {
+        var vColor = f.verdict === "worked" ? "var(--green)" : f.verdict === "mixed" ? "var(--gold)" : "var(--red)";
+        html += '<span class="facet-card-failed-pill" style="border-color:' + vColor + '">' + escapeHtml(f.name) + '</span>';
+      });
+      html += '</div>';
+    }
+
+    card.innerHTML = html;
+    document.body.appendChild(card);
+    activeCard = card;
+
+    // Position below the tag pill
+    var rect = tagEl.getBoundingClientRect();
+    var cardRect = card.getBoundingClientRect();
+    var left = rect.left;
+    var top = rect.bottom + 6;
+
+    // Keep card within viewport
+    if (left + cardRect.width > window.innerWidth - 16) {
+      left = window.innerWidth - cardRect.width - 16;
+    }
+    if (top + cardRect.height > window.innerHeight - 16) {
+      top = rect.top - cardRect.height - 6;
+    }
+
+    card.style.left = left + "px";
+    card.style.top = top + "px";
+
+    // Allow mouse to enter the card
+    card.addEventListener("mouseenter", function() {
+      clearTimeout(leaveTimer);
+    });
+    card.addEventListener("mouseleave", function() {
+      leaveTimer = setTimeout(removeFacetCard, 150);
+    });
+  }
+
+  // Event delegation for all tag pills
+  document.addEventListener("mouseenter", function(e) {
+    var tagEl = e.target.closest("[data-facet-tag]");
+    if (!tagEl) return;
+    clearTimeout(leaveTimer);
+    hoverTimer = setTimeout(function() { showFacetCard(tagEl); }, 200);
+  }, true);
+
+  document.addEventListener("mouseleave", function(e) {
+    var tagEl = e.target.closest("[data-facet-tag]");
+    if (!tagEl) return;
+    clearTimeout(hoverTimer);
+    leaveTimer = setTimeout(removeFacetCard, 150);
+  }, true);
+})();
+
+// --- Evidence Chip Hover Cards (detail pane) ---
+
+(function setupChipHover() {
+  var hoverTimer = null;
+  var leaveTimer = null;
+  var activeCard = null;
+
+  function removeCard() {
+    if (activeCard) { activeCard.remove(); activeCard = null; }
+  }
+
+  function showCard(chip) {
+    removeCard();
+    var excerpt = chip.dataset.chipExcerpt;
+    if (!excerpt) return;
+
+    var label = chip.textContent.trim();
+    var color = chip.style.color || "#68717d";
+
+    var card = document.createElement("div");
+    card.className = "chip-hover-card";
+    // Split on newline: first line = explanation, second = quote
+    var parts = excerpt.split("\n");
+    var explanation = parts[0] || "";
+    var quote = parts[1] || "";
+    card.innerHTML = '<div class="chip-hover-label" style="color:' + color + '">' + escapeHtml(label) + '</div>' +
+      (explanation ? '<div class="chip-hover-explanation">' + escapeHtml(explanation) + '</div>' : '') +
+      (quote ? '<div class="chip-hover-quote">' + escapeHtml(quote) + '</div>' : '');
+    document.body.appendChild(card);
+    activeCard = card;
+
+    var rect = chip.getBoundingClientRect();
+    var cardRect = card.getBoundingClientRect();
+    var left = rect.left;
+    var top = rect.bottom + 4;
+    if (left + cardRect.width > window.innerWidth - 12) left = window.innerWidth - cardRect.width - 12;
+    if (top + cardRect.height > window.innerHeight - 12) top = rect.top - cardRect.height - 4;
+    card.style.left = left + "px";
+    card.style.top = top + "px";
+
+    card.addEventListener("mouseenter", function() { clearTimeout(leaveTimer); });
+    card.addEventListener("mouseleave", function() { leaveTimer = setTimeout(removeCard, 120); });
+  }
+
+  document.addEventListener("mouseenter", function(e) {
+    var chip = e.target && e.target.closest ? e.target.closest(".evidence-chip") : null;
+    if (!chip || !chip.dataset.chipExcerpt) return;
+    clearTimeout(leaveTimer);
+    hoverTimer = setTimeout(function() { showCard(chip); }, 180);
+  }, true);
+
+  document.addEventListener("mouseleave", function(e) {
+    var chip = e.target && e.target.closest ? e.target.closest(".evidence-chip") : null;
+    if (!chip) return;
+    clearTimeout(hoverTimer);
+    leaveTimer = setTimeout(removeCard, 120);
+  }, true);
+})();
+
+// --- Floating Command Panel ---
+
+(function setupCommandPanel() {
+  var panel = document.createElement("div");
+  panel.id = "commandPanel";
+  panel.className = "cmd-panel";
+  panel.innerHTML =
+    '<button class="cmd-toggle" id="cmdToggle" title="Command panel">\u26A1</button>' +
+    '<div class="cmd-body" id="cmdBody">' +
+      '<div class="cmd-header">Actions</div>' +
+      '<button class="cmd-btn" data-action="discover">' +
+        '<span class="cmd-icon">\uD83C\uDF10</span>' +
+        '<span class="cmd-label">Discover evidence (Chrome)</span>' +
+        '<span class="cmd-desc">Opens Chrome, searches Google for Reddit threads, and ingests</span>' +
+      '</button>' +
+      '<button class="cmd-btn" data-action="thread-intel">' +
+        '<span class="cmd-icon">\uD83E\uDDE0</span>' +
+        '<span class="cmd-label">Analyze conversations</span>' +
+        '<span class="cmd-desc">Run LLM analysis on Reddit threads to extract deeper insights</span>' +
+      '</button>' +
+      '<button class="cmd-btn" data-action="brief">' +
+        '<span class="cmd-icon">\uD83D\uDCCB</span>' +
+        '<span class="cmd-label">Generate research brief</span>' +
+        '<span class="cmd-desc">Create a structured intelligence report from collected evidence</span>' +
+      '</button>' +
+      '<button class="cmd-btn" data-action="analyze-signal">' +
+        '<span class="cmd-icon">\uD83D\uDD2C</span>' +
+        '<span class="cmd-label">Deep-analyze selected signal</span>' +
+        '<span class="cmd-desc">Run thread intelligence on the currently selected signal</span>' +
+      '</button>' +
+      '<div class="cmd-divider"></div>' +
+      '<div class="cmd-header">Deepen research</div>' +
+      '<div class="cmd-deepen" id="cmdDeepen">' +
+        '<button class="cmd-deepen-btn" data-deepen="experiencing_pain" style="--dc:#de5c56">Pain</button>' +
+        '<button class="cmd-deepen-btn" data-deepen="tried_failed" style="--dc:#c0392b">Failed</button>' +
+        '<button class="cmd-deepen-btn" data-deepen="seeking" style="--dc:#2d6fbb">Seeking</button>' +
+        '<button class="cmd-deepen-btn" data-deepen="found_what_works" style="--dc:#3e9558">Works</button>' +
+        '<button class="cmd-deepen-btn" data-deepen="warning" style="--dc:#e67e22">Warning</button>' +
+        '<button class="cmd-deepen-btn" data-deepen="comparing" style="--dc:#bd842f">Compare</button>' +
+      '</div>' +
+      '<div class="cmd-divider"></div>' +
+      '<button class="cmd-btn cmd-btn-subtle" data-action="reload">' +
+        '<span class="cmd-icon">\u21BB</span>' +
+        '<span class="cmd-label">Refresh dashboard</span>' +
+        '<span class="cmd-desc">Reload all data without leaving the page</span>' +
+      '</button>' +
+    '</div>';
+  document.body.appendChild(panel);
+
+  var toggle = document.getElementById("cmdToggle");
+  var body = document.getElementById("cmdBody");
+  var open = false;
+
+  toggle.addEventListener("click", function() {
+    open = !open;
+    body.classList.toggle("cmd-open", open);
+    toggle.classList.toggle("cmd-active", open);
+  });
+
+  // Close on click outside
+  document.addEventListener("click", function(e) {
+    if (open && !panel.contains(e.target)) {
+      open = false;
+      body.classList.remove("cmd-open");
+      toggle.classList.remove("cmd-active");
+    }
+  });
+
+  // Action handlers
+  body.addEventListener("click", function(e) {
+    var btn = e.target.closest(".cmd-btn");
+    if (!btn || btn.disabled) return;
+
+    var action = btn.dataset.action;
+    var contextSelector = document.getElementById("contextSelect");
+    var contextId = contextSelector ? contextSelector.value : null;
+
+    if (!contextId && action !== "reload") {
+      showToast("No context selected", true);
+      return;
+    }
+
+    btn.disabled = true;
+    var label = btn.querySelector(".cmd-label");
+    var originalText = label.textContent;
+    label.textContent = "Running...";
+
+    var endpoint;
+    var opts = { method: "POST", headers: { "Content-Type": "application/json" } };
+
+    switch (action) {
+      case "discover":
+        endpoint = "/api/contexts/" + encodeURIComponent(contextId) + "/discover";
+        opts.body = "{}";
+        break;
+      case "thread-intel":
+        endpoint = "/api/contexts/" + encodeURIComponent(contextId) + "/thread-intel";
+        opts.body = JSON.stringify({ limit: 30 });
+        break;
+      case "brief":
+        endpoint = "/api/contexts/" + encodeURIComponent(contextId) + "/brief";
+        opts.body = "{}";
+        break;
+      case "analyze-signal":
+        var sig = selectedSignal();
+        if (!sig) {
+          showToast("Select a signal first", true);
+          btn.disabled = false;
+          label.textContent = originalText;
+          return;
+        }
+        endpoint = "/api/signals/" + encodeURIComponent(sig.id) + "/analyze";
+        break;
+      case "reload":
+        fetch("/api/reload", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+        btn.disabled = false;
+        label.textContent = originalText;
+        return;
+    }
+
+    fetch(endpoint, opts)
+      .then(function(r) {
+        if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || "Failed"); });
+        return r.json();
+      })
+      .then(function(data) {
+        label.textContent = "Done";
+        setTimeout(function() {
+          btn.disabled = false;
+          label.textContent = originalText;
+        }, 2000);
+      })
+      .catch(function(err) {
+        showToast(err.message || "Action failed", true);
+        btn.disabled = false;
+        label.textContent = originalText;
+      });
+  });
+
+  // Deepen research buttons
+  var deepenContainer = document.getElementById("cmdDeepen");
+  if (deepenContainer) {
+    deepenContainer.addEventListener("click", function(e) {
+      var btn = e.target.closest(".cmd-deepen-btn");
+      if (!btn || btn.disabled) return;
+
+      var state = btn.dataset.deepen;
+      var contextSelector = document.getElementById("contextSelect");
+      var contextId = contextSelector ? contextSelector.value : null;
+      if (!contextId) { showToast("No context selected", true); return; }
+
+      btn.disabled = true;
+      var original = btn.textContent;
+      btn.textContent = "...";
+
+      fetch("/api/contexts/" + encodeURIComponent(contextId) + "/discover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: state }),
+      })
+        .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+        .then(function(data) {
+          btn.textContent = "+" + (data.evidenceCount || 0);
+          setTimeout(function() { btn.disabled = false; btn.textContent = original; }, 3000);
+        })
+        .catch(function() {
+          showToast("Deepen failed", true);
+          btn.disabled = false;
+          btn.textContent = original;
+        });
+    });
+  }
+
+  // Keyboard shortcut: Cmd+K or Ctrl+K
+  document.addEventListener("keydown", function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      e.preventDefault();
+      open = !open;
+      body.classList.toggle("cmd-open", open);
+      toggle.classList.toggle("cmd-active", open);
+    }
+  });
+})();
+
+function signalSummaryText(signal) {
+  var intel = signal.intelligence;
+  if (intel && intel.threads && intel.threads.length > 0) {
+    // Use first key insight from thread intelligence
+    for (var i = 0; i < intel.threads.length; i++) {
+      if (intel.threads[i].keyInsight) return intel.threads[i].keyInsight;
+    }
+  }
+  return signal.summary;
+}
+
+function signalWhyText(signal) {
+  var intel = signal.intelligence;
+  if (!intel || !intel.threads || intel.threads.length === 0) {
+    return escapeHtml(signal.why);
+  }
+
+  var parts = [];
+
+  // Collect key insights (deduplicated)
+  var seen = new Set();
+  var insights = [];
+  for (var i = 0; i < intel.threads.length; i++) {
+    var t = intel.threads[i];
+    if (t.keyInsight && !seen.has(t.keyInsight)) {
+      seen.add(t.keyInsight);
+      insights.push(t.keyInsight);
+    }
+  }
+  if (insights.length > 0) {
+    parts.push('<div class="why-insights">' + insights.slice(0, 3).map(function(ins) {
+      return '<div class="why-insight">' + escapeHtml(ins) + '</div>';
+    }).join("") + '</div>');
+  }
+
+  // Collect not-x-its-y across threads
+  var nxyItems = [];
+  for (var j = 0; j < intel.threads.length; j++) {
+    var nxy = intel.threads[j].notXItsY || [];
+    for (var k = 0; k < nxy.length; k++) {
+      if (nxy[k].surface && nxy[k].deeper) {
+        nxyItems.push(nxy[k]);
+      }
+    }
+  }
+  if (nxyItems.length > 0) {
+    parts.push('<div class="why-nxy">' + nxyItems.slice(0, 2).map(function(n) {
+      return '<span class="why-nxy-pill">\u201c' + escapeHtml(truncate(n.surface, 30)) +
+        '\u201d \u2192 \u201c' + escapeHtml(truncate(n.deeper, 30)) + '\u201d</span>';
+    }).join("") + '</div>');
+  }
+
+  // Fallback stats line
+  parts.push('<div class="why-stats">' + escapeHtml(signal.why) + '</div>');
+
+  return parts.join("");
+}
+
+function truncate(str, len) {
+  if (!str) return "";
+  return str.length > len ? str.slice(0, len) + "\u2026" : str;
+}
+
+function escapeAttr(str) {
+  if (!str) return "";
+  return str.replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/\n/g, " ");
+}
+
+// --- Server-Sent Events (real-time push from server/agents) ---
+
+(function setupSSE() {
+  var evtSource = new EventSource("/api/events");
+
+  evtSource.addEventListener("toast", function(e) {
+    var data = JSON.parse(e.data);
+    showToast(data.message, data.type === "error");
+  });
+
+  evtSource.addEventListener("reload", function(e) {
+    var data = JSON.parse(e.data);
+    showToast("Refreshing data...");
+    // Reload radar data for current context
+    var contextSelector = document.getElementById("contextSelect");
+    var contextId = contextSelector ? contextSelector.value : null;
+    if (contextId) {
+      fetch("/api/contexts/" + encodeURIComponent(contextId) + "/radar")
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          signals = data.signals || [];
+          metrics = data.metrics || [];
+          timeline = data.timeline || { posts: [], comments: [], authors: [] };
+          heatmap = data.heatmap || [];
+          intent = data.intent || [];
+          evidenceLayers = data.evidenceLayers || [];
+          sourceNodes = data.sourceNodes || [];
+          pipelineHealth = data.pipelineHealth || null;
+          renderAll();
+        });
+    }
+  });
+
+  evtSource.addEventListener("report", function(e) {
+    var data = JSON.parse(e.data);
+    showReportModal(data);
+  });
+
+  evtSource.onerror = function() {
+    // Reconnect silently on error
+    setTimeout(function() {
+      evtSource.close();
+      setupSSE();
+    }, 3000);
+  };
+})();
+
+// --- Report Modal ---
+
+function showReportModal(data) {
+  // Remove existing modal if any
+  var existing = document.getElementById("reportModal");
+  if (existing) existing.remove();
+
+  var overlay = document.createElement("div");
+  overlay.id = "reportModal";
+  overlay.className = "report-overlay";
+
+  var modal = document.createElement("div");
+  modal.className = "report-modal";
+
+  // Header
+  var header = document.createElement("div");
+  header.className = "report-header";
+  header.innerHTML = '<h2>' + escapeHtml(data.title || "Intelligence Report") + '</h2>' +
+    '<span class="report-time">' + formatReportTime(data.timestamp) + '</span>' +
+    '<button class="report-close" onclick="closeReportModal()">&times;</button>';
+  modal.appendChild(header);
+
+  // Body
+  var body = document.createElement("div");
+  body.className = "report-body";
+  if (data.format === "markdown") {
+    body.innerHTML = renderMarkdown(data.body);
+  } else {
+    body.innerHTML = data.body;
+  }
+  modal.appendChild(body);
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  // Animate in
+  requestAnimationFrame(function() { overlay.classList.add("report-visible"); });
+
+  // Close on overlay click
+  overlay.addEventListener("click", function(e) {
+    if (e.target === overlay) closeReportModal();
+  });
+
+  // Close on Escape
+  document.addEventListener("keydown", function handler(e) {
+    if (e.key === "Escape") {
+      closeReportModal();
+      document.removeEventListener("keydown", handler);
+    }
+  });
+}
+
+function closeReportModal() {
+  var modal = document.getElementById("reportModal");
+  if (modal) {
+    modal.classList.remove("report-visible");
+    setTimeout(function() { modal.remove(); }, 200);
+  }
+}
+
+function formatReportTime(ts) {
+  if (!ts) return "";
+  var d = new Date(ts);
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function escapeHtml(text) {
+  var div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function renderMarkdown(md) {
+  // Lightweight markdown → HTML (handles headers, bold, lists, code blocks, quotes)
+  return md
+    .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^```[\s\S]*?```$/gm, function(block) {
+      var code = block.replace(/^```\w*\n?/, '').replace(/\n?```$/, '');
+      return '<pre><code>' + escapeHtml(code) + '</code></pre>';
+    })
+    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    .replace(/\n{2,}/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+    .replace(/^/, '<p>').replace(/$/, '</p>')
+    .replace(/<p><(h[234]|ul|pre|blockquote)/g, '<$1')
+    .replace(/<\/(h[234]|ul|pre|blockquote)><\/p>/g, '</$1>');
+}

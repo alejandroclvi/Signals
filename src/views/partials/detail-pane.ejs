@@ -10,6 +10,7 @@
         <button class="button" type="button">&#9633; Save</button>
         <button class="button" type="button">&#8855; Dismiss</button>
         <button class="button" type="button">&#9889; Alert</button>
+        <button class="button button-analyze" type="button" id="btnAnalyze" title="Run thread intelligence">&#9881; Analyze</button>
       </div>
     </div>
 
@@ -31,14 +32,17 @@
   </div>
 
   <aside class="detail-side">
-    <div class="section-label">Intent composition</div>
-    <div class="intent-composition" id="intentComposition"></div>
+    <div class="section-label">Evidence breakdown</div>
+    <div class="intent-composition" id="stateComposition"></div>
 
-    <div class="section-label">Awareness spectrum</div>
-    <div class="intent-composition" id="awarenessComposition"></div>
+    <div class="section-label">Thread intelligence</div>
+    <div class="thread-intelligence" id="threadIntelligence"></div>
 
     <div class="section-label">Deeper insight</div>
     <div class="deep-extractions" id="deepExtractions"></div>
+
+    <div class="section-label">Vocabulary</div>
+    <div id="vocabularySection"></div>
 
     <div class="section-label">Detected phrases</div>
     <div class="pill-grid" id="phraseGrid"></div>

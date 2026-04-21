@@ -50,11 +50,22 @@
             <option value="product_aware">Product Aware</option>
             <option value="most_aware">Most Aware</option>
           </select>
+          <select class="select" id="filterSentiment" aria-label="Filter by sentiment">
+            <option value="">All sentiment</option>
+            <option value="positive">Positive</option>
+            <option value="negative">Negative</option>
+            <option value="neutral">Neutral</option>
+            <option value="mixed">Mixed</option>
+          </select>
         </div>
       </header>
 
       <div class="evidence-library-header">
         <span class="evidence-count"><%= evidence.length %> evidence packets</span>
+        <div class="view-toggle">
+          <button class="view-btn active" data-view="thread" id="viewThread">Thread view</button>
+          <button class="view-btn" data-view="flat" id="viewFlat">Flat view</button>
+        </div>
       </div>
 
       <div class="evidence-library" id="evidenceLibrary">
@@ -65,7 +76,194 @@
             <div class="empty-sub">Evidence packets will appear here once data is ingested.</div>
           </div>
         <% } else { %>
-          <table class="evidence-table">
+
+          <%
+            const stateExplanationsServer = {
+              experiencing_pain: "Describing a problem they feel — raw pain language.",
+              tried_failed: "Used a tool and it didn't work — competitive intelligence.",
+              seeking: "Actively looking for a solution — demand signal.",
+              found_what_works: "Found something that works — adoption signal.",
+              warning: "Telling others to avoid — community-validated failure.",
+              sharing_insight: "Sharing knowledge or experience.",
+              comparing: "Evaluating tools or approaches — competitive landscape.",
+              promoting: "Promoting their own product.",
+            };
+
+            function extractStateExcerptServer(body, state) {
+              const explanation = stateExplanationsServer[state] || '';
+              if (!body) return explanation;
+              const text = body.replace(/\n+/g, ' ').trim();
+              const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+              const patterns = {
+                experiencing_pain: /frustrat|annoying|hate|terrible|broken|expensive|struggling|waste|useless|nightmare/i,
+                tried_failed: /tried|used|tested|didn't work|waste|terrible|garbage/i,
+                seeking: /looking for|is there|has anyone|recommend|any tool|how do you|need/i,
+                found_what_works: /game.changer|love|works great|recommend|worth|saved/i,
+                warning: /don't waste|stay away|avoid|wouldn't recommend|save your|worst/i,
+                sharing_insight: /learned|realized|turns out|the key|what worked|experience|tip/i,
+                comparing: /vs|versus|compared|alternative|switch|better than/i,
+                promoting: /built|created|launched|check out|announcing/i,
+              };
+              const pat = patterns[state];
+              let quote = '';
+              if (pat) {
+                const found = sentences.find(s => pat.test(s));
+                if (found) quote = found.trim().slice(0, 100);
+              }
+              if (!quote) quote = sentences[0] ? sentences[0].trim().slice(0, 80) : '';
+              return explanation + ' — &quot;' + quote + '&quot;';
+            }
+          %>
+
+          <%
+            // Group evidence by thread_id for thread view
+            const threads = new Map();
+            const orphans = [];
+            for (const ep of evidence) {
+              if (ep.thread_id) {
+                if (!threads.has(ep.thread_id)) threads.set(ep.thread_id, []);
+                threads.get(ep.thread_id).push(ep);
+              } else {
+                orphans.push(ep);
+              }
+            }
+            // Sort each thread: post first (t3_), then comments by score
+            for (const [tid, packets] of threads) {
+              packets.sort((a, b) => {
+                const aIsPost = (a.source_item_id || '').startsWith('t3_');
+                const bIsPost = (b.source_item_id || '').startsWith('t3_');
+                if (aIsPost && !bIsPost) return -1;
+                if (!aIsPost && bIsPost) return 1;
+                try {
+                  const aScore = JSON.parse(a.metrics || '{}').score || 0;
+                  const bScore = JSON.parse(b.metrics || '{}').score || 0;
+                  return bScore - aScore;
+                } catch { return 0; }
+              });
+            }
+            // Sort threads by top post score
+            const sortedThreads = [...threads.entries()].sort((a, b) => {
+              try {
+                const aScore = JSON.parse(a[1][0].metrics || '{}').score || 0;
+                const bScore = JSON.parse(b[1][0].metrics || '{}').score || 0;
+                return bScore - aScore;
+              } catch { return 0; }
+            });
+          %>
+
+          <!-- Thread view -->
+          <div id="threadView" class="thread-view">
+            <% for (const [threadId, packets] of sortedThreads) { %>
+              <% const post = packets[0]; %>
+              <% const comments = packets.slice(1); %>
+              <% let pm; try { pm = JSON.parse(post.metrics || '{}'); } catch { pm = {}; } %>
+              <div class="thread-group" data-thread="<%= threadId %>" data-community="<%= post.community %>" data-source="<%= post.source_id %>">
+                <!-- Post (root node) -->
+                <%
+                  const postIntentColors = { pain: '#de5c56', question: '#2d6fbb', insight: '#3e9558', comparison: '#bd842f', promotion: '#9aa3ad' };
+                  const postIntentColor = postIntentColors[post.intent] || '#3e9558';
+                %>
+                <div class="thread-root evidence-row" data-intent="<%= post.intent || '' %>" data-awareness="<%= post.awareness_level || '' %>" data-sentiment="<%= post.sentiment || '' %>">
+                  <div class="thread-branch-root"></div>
+                  <div class="thread-node" style="border-left: 3px solid <%= postIntentColor %>; padding-left: 12px">
+                    <div class="thread-node-head">
+                      <span class="mini-chip"><%= post.community || '' %></span>
+                      <span class="thread-score">&#9650; <%= pm.score || 0 %></span>
+                      <span class="thread-comments-count"><%= comments.length %> comments</span>
+                      <%
+                        const postStateColors = { experiencing_pain:'#de5c56', tried_failed:'#c0392b', seeking:'#2d6fbb', found_what_works:'#3e9558', warning:'#e67e22', sharing_insight:'#875fb4', comparing:'#bd842f', promoting:'#9aa3ad' };
+                        const postStateLabels = { experiencing_pain:'Pain', tried_failed:'Tried & failed', seeking:'Seeking', found_what_works:'Works', warning:'Warning', sharing_insight:'Insight', comparing:'Comparing', promoting:'Promo' };
+                        const postEvState = post.evidence_state || 'sharing_insight';
+                        const postEvColor = postStateColors[postEvState] || '#9aa3ad';
+                        const postEvLabel = postStateLabels[postEvState] || postEvState;
+                        const postExcerpt = extractStateExcerptServer(post.body, postEvState);
+                      %>
+                      <span class="mini-chip evidence-chip" style="background: <%= postEvColor %>18; color: <%= postEvColor %>; font-size:10px; border: 1px solid <%= postEvColor %>30" data-chip-excerpt="<%= postExcerpt %>"><%= postEvLabel %></span>
+                      <span class="thread-author"><%= post.author_ref || '' %></span>
+                      <span class="thread-date"><%= post.published_at ? new Date(post.published_at).toLocaleDateString() : '' %></span>
+                      <% if (post.url && post.url !== '#') { %><a href="<%= post.url %>" target="_blank" rel="noopener" class="thread-source">source &#8250;</a><% } %>
+                    </div>
+                    <div class="thread-title"><% if (post.url && post.url !== '#') { %><a href="<%= post.url %>" target="_blank" rel="noopener"><%= post.title || '' %></a><% } else { %><%= post.title || '' %><% } %></div>
+                    <div class="thread-body"><%= (post.body || '').slice(0, 300) %><%= (post.body || '').length > 300 ? '...' : '' %></div>
+                  </div>
+                </div>
+                <!-- Comments (branches) — collapse if >3 -->
+                <%
+                  const shouldCollapse = comments.length > 3;
+                  const visibleIndices = shouldCollapse
+                    ? [0, 1, comments.length - 1]
+                    : comments.map((_, i) => i);
+                  const hiddenCount = shouldCollapse ? comments.length - 3 : 0;
+                  const tInsight = threadInsights[threadId] || '';
+                %>
+                <% for (let ci = 0; ci < comments.length; ci++) { %>
+                  <% const isVisible = visibleIndices.includes(ci); %>
+                  <% if (shouldCollapse && ci === 2) { %>
+                    <!-- Collapsed summary -->
+                    <div class="ev-collapsed" data-thread-page-expand="<%= threadId %>">
+                      <div class="ev-branch"><div class="ev-branch-line"></div><div class="ev-branch-arm" style="border-style:dashed"></div></div>
+                      <div class="ev-collapsed-body">
+                        <% if (tInsight) { %><div class="ev-collapsed-insight"><%= tInsight %></div><% } %>
+                        <button class="ev-expand-btn-page" data-expand-thread="<%= threadId %>"><%= hiddenCount %> more replies — click to expand</button>
+                      </div>
+                    </div>
+                  <% } %>
+                  <% const c = comments[ci]; %>
+                  <% let cm; try { cm = JSON.parse(c.metrics || '{}'); } catch { cm = {}; } %>
+                  <% const isLast = ci === comments.length - 1; %>
+                  <% const isHidden = shouldCollapse && ci >= 2 && ci < comments.length - 1; %>
+                  <%
+                    const intentColors = { pain: '#de5c56', question: '#2d6fbb', insight: '#3e9558', comparison: '#bd842f', promotion: '#9aa3ad' };
+                    const intentColor = intentColors[c.intent] || '#dfe4ea';
+                  %>
+                  <div class="thread-comment evidence-row<%= isHidden ? ' thread-hidden-comment' : '' %><%= shouldCollapse && isLast ? ' ev-last-peek' : '' %>" data-intent="<%= c.intent || '' %>" data-awareness="<%= c.awareness_level || '' %>" data-sentiment="<%= c.sentiment || '' %>" data-thread-parent="<%= threadId %>" <%= isHidden ? 'style="display:none"' : '' %>>
+                    <div class="thread-branch <%= isLast ? 'thread-branch-last' : '' %>">
+                      <div class="thread-branch-line"></div>
+                      <div class="thread-branch-arm"></div>
+                    </div>
+                    <div class="thread-node thread-node-comment" style="border-left: 2px solid <%= intentColor %>">
+                      <div class="thread-node-head">
+                        <span class="thread-score">&#9650; <%= cm.score || 0 %></span>
+                        <%
+                        const cStateColors = { experiencing_pain:'#de5c56', tried_failed:'#c0392b', seeking:'#2d6fbb', found_what_works:'#3e9558', warning:'#e67e22', sharing_insight:'#875fb4', comparing:'#bd842f', promoting:'#9aa3ad' };
+                        const cStateLabels = { experiencing_pain:'Pain', tried_failed:'Tried & failed', seeking:'Seeking', found_what_works:'Works', warning:'Warning', sharing_insight:'Insight', comparing:'Comparing', promoting:'Promo' };
+                        const cEvState = c.evidence_state || 'sharing_insight';
+                        const cEvColor = cStateColors[cEvState] || '#9aa3ad';
+                        const cEvLabel = cStateLabels[cEvState] || cEvState;
+                        const cExcerpt = extractStateExcerptServer(c.body, cEvState);
+                      %>
+                      <span class="mini-chip evidence-chip" style="background: <%= cEvColor %>18; color: <%= cEvColor %>; font-size:10px; border: 1px solid <%= cEvColor %>30" data-chip-excerpt="<%= cExcerpt %>"><%= cEvLabel %></span>
+                        <span class="thread-author"><%= c.author_ref || '' %></span>
+                        <% if (c.url && c.url !== '#') { %><a href="<%= c.url %>" target="_blank" rel="noopener" class="thread-source">source &#8250;</a><% } %>
+                      </div>
+                      <div class="thread-body"><%= (c.body || '').slice(0, 250) %><%= (c.body || '').length > 250 ? '...' : '' %></div>
+                    </div>
+                  </div>
+                <% } %>
+              </div>
+            <% } %>
+
+            <% if (orphans.length > 0) { %>
+              <div class="thread-group-label">Unthreaded evidence (<%= orphans.length %>)</div>
+              <% for (const ep of orphans.slice(0, 50)) { %>
+                <% let m; try { m = JSON.parse(ep.metrics || '{}'); } catch { m = {}; } %>
+                <div class="thread-root evidence-row" data-source="<%= ep.source_id %>" data-community="<%= ep.community %>" data-intent="<%= ep.intent || '' %>" data-awareness="<%= ep.awareness_level || '' %>">
+                  <div class="thread-branch-root"></div>
+                  <div class="thread-node">
+                    <div class="thread-node-head">
+                      <span class="mini-chip"><%= ep.community || '' %></span>
+                      <span class="thread-score">&#9650; <%= m.score || 0 %></span>
+                      <span class="thread-author"><%= ep.author_ref || '' %></span>
+                    </div>
+                    <div class="thread-body"><%= (ep.body || '').slice(0, 200) %></div>
+                  </div>
+                </div>
+              <% } %>
+            <% } %>
+          </div>
+
+          <!-- Flat view (original table) -->
+          <table class="evidence-table" id="flatView" style="display:none">
             <thead>
               <tr>
                 <th>Source</th>
@@ -123,6 +321,7 @@
     var filterCommunity = document.getElementById("filterCommunity");
     var filterIntent = document.getElementById("filterIntent");
     var filterAwareness = document.getElementById("filterAwareness");
+    var filterSentiment = document.getElementById("filterSentiment");
 
     function filterEvidence() {
       var term = (searchInput.value || "").trim().toLowerCase();
@@ -130,6 +329,9 @@
       var community = filterCommunity.value;
       var intent = filterIntent.value;
       var awareness = filterAwareness ? filterAwareness.value : "";
+      var sentiment = filterSentiment ? filterSentiment.value : "";
+
+      // Filter flat view rows
       var rows = document.querySelectorAll(".evidence-row");
       var visible = 0;
       rows.forEach(function(row) {
@@ -138,10 +340,23 @@
         var matchComm = !community || row.dataset.community === community;
         var matchIntent = !intent || row.dataset.intent === intent;
         var matchAwareness = !awareness || row.dataset.awareness === awareness;
-        var show = matchText && matchSource && matchComm && matchIntent && matchAwareness;
+        var matchSentiment = !sentiment || row.dataset.sentiment === sentiment;
+        var show = matchText && matchSource && matchComm && matchIntent && matchAwareness && matchSentiment;
         row.style.display = show ? "" : "none";
         if (show) visible++;
       });
+
+      // Filter thread groups — show group if any child matches
+      var groups = document.querySelectorAll(".thread-group");
+      groups.forEach(function(group) {
+        var matchComm = !community || group.dataset.community === community;
+        var matchSource = !source || group.dataset.source === source;
+        var childRows = group.querySelectorAll(".evidence-row");
+        var anyChildVisible = false;
+        childRows.forEach(function(r) { if (r.style.display !== "none") anyChildVisible = true; });
+        group.style.display = (matchComm && matchSource && anyChildVisible) ? "" : "none";
+      });
+
       document.querySelector(".evidence-count").textContent = visible + " evidence packets";
     }
 
@@ -162,9 +377,99 @@
     if (filterCommunity) filterCommunity.addEventListener("change", filterEvidence);
     if (filterIntent) filterIntent.addEventListener("change", filterEvidence);
     if (filterAwareness) filterAwareness.addEventListener("change", filterEvidence);
+    if (filterSentiment) filterSentiment.addEventListener("change", filterEvidence);
 
     // Apply initial filter if URL params set
     if (params.get("community") || params.get("intent") || params.get("awareness")) filterEvidence();
+
+    // View toggle: thread vs flat
+    var viewThread = document.getElementById("viewThread");
+    var viewFlat = document.getElementById("viewFlat");
+    var threadViewEl = document.getElementById("threadView");
+    var flatViewEl = document.getElementById("flatView");
+
+    if (viewThread && viewFlat) {
+      viewThread.addEventListener("click", function() {
+        viewThread.classList.add("active");
+        viewFlat.classList.remove("active");
+        if (threadViewEl) threadViewEl.style.display = "";
+        if (flatViewEl) flatViewEl.style.display = "none";
+      });
+      viewFlat.addEventListener("click", function() {
+        viewFlat.classList.add("active");
+        viewThread.classList.remove("active");
+        if (threadViewEl) threadViewEl.style.display = "none";
+        if (flatViewEl) flatViewEl.style.display = "";
+      });
+    }
+
+    // Thread expand buttons
+    document.querySelectorAll('.ev-expand-btn-page').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var threadId = btn.dataset.expandThread;
+        var hiddenComments = document.querySelectorAll('[data-thread-parent="' + threadId + '"].thread-hidden-comment');
+        hiddenComments.forEach(function(el) { el.style.display = ''; el.classList.remove('thread-hidden-comment'); });
+        var collapsed = btn.closest('.ev-collapsed');
+        if (collapsed) collapsed.remove();
+        // Remove last-peek dimming
+        var lastPeek = document.querySelector('[data-thread-parent="' + threadId + '"].ev-last-peek');
+        if (lastPeek) lastPeek.classList.remove('ev-last-peek');
+      });
+    });
+
+    // Evidence chip hover cards
+    (function() {
+      var hoverTimer = null;
+      var leaveTimer = null;
+      var activeCard = null;
+
+      function removeCard() {
+        if (activeCard) { activeCard.remove(); activeCard = null; }
+      }
+
+      function showChipCard(chip) {
+        removeCard();
+        var excerpt = chip.dataset.chipExcerpt;
+        if (!excerpt) return;
+
+        var label = chip.textContent.trim();
+        var isAwareness = chip.classList.contains('awareness-problem_aware') || chip.classList.contains('awareness-solution_aware') || chip.classList.contains('awareness-product_aware') || chip.classList.contains('awareness-most_aware') || chip.classList.contains('awareness-unaware');
+        var color = isAwareness ? (getComputedStyle(chip).color || '#68717d') : (chip.style.color || '#68717d');
+
+        var card = document.createElement('div');
+        card.className = 'chip-hover-card';
+        card.innerHTML = '<div class="chip-hover-label" style="color:' + color + '">' + label + '</div>' +
+          '<div class="chip-hover-excerpt">' + excerpt.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</div>';
+        document.body.appendChild(card);
+        activeCard = card;
+
+        var rect = chip.getBoundingClientRect();
+        var cardRect = card.getBoundingClientRect();
+        var left = rect.left;
+        var top = rect.bottom + 4;
+        if (left + cardRect.width > window.innerWidth - 12) left = window.innerWidth - cardRect.width - 12;
+        if (top + cardRect.height > window.innerHeight - 12) top = rect.top - cardRect.height - 4;
+        card.style.left = left + 'px';
+        card.style.top = top + 'px';
+
+        card.addEventListener('mouseenter', function() { clearTimeout(leaveTimer); });
+        card.addEventListener('mouseleave', function() { leaveTimer = setTimeout(removeCard, 120); });
+      }
+
+      document.addEventListener('mouseenter', function(e) {
+        var chip = e.target.closest('.evidence-chip');
+        if (!chip || !chip.dataset.chipExcerpt) return;
+        clearTimeout(leaveTimer);
+        hoverTimer = setTimeout(function() { showChipCard(chip); }, 180);
+      }, true);
+
+      document.addEventListener('mouseleave', function(e) {
+        var chip = e.target.closest('.evidence-chip');
+        if (!chip) return;
+        clearTimeout(hoverTimer);
+        leaveTimer = setTimeout(removeCard, 120);
+      }, true);
+    })();
 
     // Context switching
     var contextSelect = document.getElementById("contextSelect");

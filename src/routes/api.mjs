@@ -1,6 +1,12 @@
 import { Router } from "express";
 import { getDb } from "../db/connection.mjs";
 import { ingestReddit } from "../pipeline/ingest.mjs";
+import { reconstructThreads, qualifyThreads, storeThreads } from "../pipeline/thread-reconstructor.mjs";
+import { analyzeThreadBatch, storeThreadIntelligence } from "../pipeline/thread-intelligence.mjs";
+import { reconcileThread } from "../pipeline/thread-reconciler.mjs";
+import { refreshSignals } from "../pipeline/refresh-signals.mjs";
+import { createUnit, getSignalChain, getChain, getContextChain } from "../pipeline/intelligence-chain.mjs";
+import { broadcast } from "./sse.mjs";
 
 const router = Router();
 
@@ -86,21 +92,31 @@ router.post("/api/source-nodes/:id/toggle", (req, res) => {
 
 router.post("/api/signals/:id/save", (req, res) => {
   const db = getDb();
-  const signal = db.prepare("SELECT id, saved FROM signals WHERE id = ?").get(req.params.id);
+  const signal = db.prepare("SELECT id, saved, title, context_id FROM signals WHERE id = ?").get(req.params.id);
   if (!signal) return res.status(404).json({ error: "Signal not found" });
 
   const newValue = signal.saved ? 0 : 1;
   db.prepare("UPDATE signals SET saved = ?, updated_at = datetime('now') WHERE id = ?").run(newValue, req.params.id);
+
+  if (newValue) {
+    try { createUnit({ unitType: "conclusion", claim: "Signal confirmed: " + signal.title, sourceType: "human", sourceId: signal.id, method: "human", parentIds: [], signalId: signal.id, contextId: signal.context_id, confidence: 0.95, confidenceBasis: "human confirmation", createdBy: "human" }); } catch {}
+  }
+
   res.json({ id: req.params.id, saved: newValue });
 });
 
 router.post("/api/signals/:id/dismiss", (req, res) => {
   const db = getDb();
-  const signal = db.prepare("SELECT id, dismissed FROM signals WHERE id = ?").get(req.params.id);
+  const signal = db.prepare("SELECT id, dismissed, title, context_id FROM signals WHERE id = ?").get(req.params.id);
   if (!signal) return res.status(404).json({ error: "Signal not found" });
 
   const newValue = signal.dismissed ? 0 : 1;
   db.prepare("UPDATE signals SET dismissed = ?, updated_at = datetime('now') WHERE id = ?").run(newValue, req.params.id);
+
+  if (newValue) {
+    try { createUnit({ unitType: "conclusion", claim: "Signal dismissed: " + signal.title, sourceType: "human", sourceId: signal.id, method: "human", parentIds: [], signalId: signal.id, contextId: signal.context_id, confidence: 0.1, confidenceBasis: "human dismissal", createdBy: "human" }); } catch {}
+  }
+
   res.json({ id: req.params.id, dismissed: newValue });
 });
 
@@ -456,6 +472,405 @@ export function buildRadarData(contextId, fixtureId) {
   };
 }
 
+// --- Signal intelligence (trigger thread analysis from UI) ---
+
+router.post("/api/signals/:id/analyze", async (req, res) => {
+  const db = getDb();
+  const signal = db.prepare("SELECT * FROM signals WHERE id = ?").get(req.params.id);
+  if (!signal) return res.status(404).json({ error: "Signal not found" });
+
+  broadcast("toast", { message: "Analyzing threads for " + signal.title + "...", type: "info" });
+
+  try {
+    // Get evidence packet IDs for this signal
+    const evidenceIds = db.prepare(
+      "SELECT evidence_id FROM signal_evidence WHERE signal_id = ?"
+    ).all(signal.id).map(r => r.evidence_id);
+
+    if (evidenceIds.length === 0) {
+      return res.json({ analyzed: 0, message: "No evidence packets" });
+    }
+
+    // Reconstruct threads for this context, filter to this signal's threads
+    let threads = reconstructThreads(signal.context_id);
+    const evidenceSet = new Set(evidenceIds);
+    threads = threads.filter(t => t.allPackets.some(p => evidenceSet.has(p.id)));
+    storeThreads(threads);
+
+    // Qualify and analyze
+    const qualified = qualifyThreads(threads, { minWeightedEvidence: 2.0, minComments: 1, minRelevance: 0.1 });
+
+    if (qualified.length === 0) {
+      broadcast("toast", { message: "No qualifying threads to analyze", type: "info" });
+      return res.json({ analyzed: 0, message: "No qualifying threads" });
+    }
+
+    const { results, skipped, errors } = await analyzeThreadBatch(qualified, { maxConcurrency: 3 });
+
+    for (const result of results) {
+      storeThreadIntelligence(result, signal.context_id);
+    }
+
+    // Reconcile
+    for (const result of results) {
+      reconcileThread(result.threadId, signal.context_id);
+    }
+
+    // Refresh signals so scores update
+    refreshSignals(signal.context_id);
+
+    broadcast("toast", { message: results.length + " threads analyzed, " + skipped.length + " unchanged", type: "info" });
+    broadcast("reload", { reason: "signal analyzed" });
+
+    res.json({
+      analyzed: results.length,
+      skipped: skipped.length,
+      errors: errors.length,
+      threadCount: threads.length,
+    });
+  } catch (err) {
+    broadcast("toast", { message: "Analysis failed: " + err.message, type: "error" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Google Chrome Discovery + Ingest ---
+
+router.post("/api/contexts/:id/discover", async (req, res) => {
+  const db = getDb();
+  const context = db.prepare("SELECT * FROM contexts WHERE id = ?").get(req.params.id);
+  if (!context) return res.status(404).json({ error: "Context not found" });
+
+  const targetState = req.body.state; // optional — if set, uses state-targeted queries
+  let queries;
+
+  if (targetState) {
+    const stateQueryTemplates = {
+      experiencing_pain: ["{t} frustrating nightmare waste of time", "{t} spent hours debugging impossible", "{t} driving me crazy broken again", "{t} can't maintain unmaintainable mess"],
+      tried_failed: ["tried {t} didn't work regret", "used {t} made everything worse", "{t} failed production shipped broken", "paid for {t} waste of money"],
+      seeking: ["alternative to {t} looking for", "best replacement for {t}", "what to use instead of {t}", "how to fix {t} problems"],
+      found_what_works: ["{t} actually great love it", "{t} game changer our team", "what I love about {t}", "{t} done right works well"],
+      warning: ["don't use {t} biggest mistake", "warning {t} will ruin your project", "avoid {t} learned hard way", "stop using {t} too late"],
+      comparing: ["{t} vs alternatives comparison", "{t} compared to competitors", "switched from {t} experience", "{t} pros cons honest review"],
+    };
+    const templates = stateQueryTemplates[targetState] || [];
+    const topic = context.label.split(/[-—:]/).map(s => s.trim()).filter(s => s.length > 2)[0] || context.label;
+    queries = templates.map(t => t.replace(/\{t\}/g, topic));
+  } else {
+    queries = JSON.parse(context.queries || "[]");
+  }
+
+  if (queries.length === 0) return res.status(400).json({ error: "No queries" });
+
+  broadcast("toast", { message: "Opening Chrome for discovery... solve CAPTCHA if shown", type: "info" });
+
+  // Respond immediately — discovery runs async
+  res.json({ status: "discovery_started", queries: queries.length });
+
+  try {
+    const { discoverRedditThreads } = await import("../pipeline/google-discover.mjs");
+
+    const discovery = await discoverRedditThreads({
+      queries,
+      contextId: context.id,
+      limit: 10,
+      onProgress: (info) => {
+        if (info.stage === "captcha") broadcast("toast", { message: "CAPTCHA — solve it in the Chrome window", type: "error" });
+        else if (info.stage === "ready") broadcast("toast", { message: "Google ready, searching...", type: "info" });
+        else if (info.stage === "result") broadcast("toast", { message: `[${info.index + 1}] ${info.message} (${info.communities?.join(", ") || ""})`, type: "info" });
+      },
+    });
+
+    broadcast("toast", { message: `Discovered ${discovery.threads.length} threads. Ingesting...`, type: "info" });
+
+    // Ingest the discovered threads (fetches from Reddit, classifies, extracts, scores)
+    const { ingestDiscoveredThreads } = await import("../pipeline/ingest-discovered.mjs");
+    const result = await ingestDiscoveredThreads(context.id, {
+      onProgress: (info) => {
+        if (info.fetched % 20 === 0) {
+          broadcast("toast", { message: `Fetched ${info.fetched}/${info.total} threads (${info.packets} packets)`, type: "info" });
+        }
+      },
+    });
+
+    broadcast("toast", { message: `Done: ${discovery.threads.length} discovered, ${result.evidenceCount} ingested, ${result.signalCount} signals`, type: "info" });
+    broadcast("reload", { reason: "discovery completed" });
+
+  } catch (err) {
+    broadcast("toast", { message: "Discovery error: " + err.message, type: "error" });
+  }
+});
+
+// --- Deepen research for a specific evidence state ---
+
+router.post("/api/contexts/:id/deepen", async (req, res) => {
+  const db = getDb();
+  const context = db.prepare("SELECT * FROM contexts WHERE id = ?").get(req.params.id);
+  if (!context) return res.status(404).json({ error: "Context not found" });
+
+  const targetState = req.body.state;
+  if (!targetState) return res.status(400).json({ error: "state required" });
+
+  const stateQueryTemplates = {
+    experiencing_pain: [
+      "{topic} frustrating waste of time",
+      "{topic} nightmare impossible to work with",
+      "{topic} spent hours debugging can't figure out",
+      "{topic} driving me crazy broken again",
+    ],
+    tried_failed: [
+      "tried {topic} didn't work gave up",
+      "used {topic} regret made everything worse",
+      "{topic} failed in production shipped broken",
+      "paid for {topic} complete waste of money",
+    ],
+    seeking: [
+      "alternative to {topic} looking for",
+      "best replacement for {topic} recommendations",
+      "how to fix {topic} problems anyone solved this",
+      "what do you use instead of {topic}",
+    ],
+    found_what_works: [
+      "{topic} actually great when you learn it properly",
+      "{topic} game changer for our team workflow",
+      "love {topic} best thing about it",
+      "{topic} done right here is what works",
+    ],
+    warning: [
+      "don't use {topic} biggest mistake",
+      "warning {topic} will ruin your project",
+      "avoid {topic} learned the hard way",
+      "stop using {topic} before it's too late",
+    ],
+    comparing: [
+      "{topic} vs alternatives honest comparison",
+      "{topic} compared to competitors which is better",
+      "switched from {topic} to something else experience",
+      "{topic} pros and cons real review",
+    ],
+  };
+
+  const templates = stateQueryTemplates[targetState];
+  if (!templates) return res.status(400).json({ error: "Unknown state: " + targetState });
+
+  // Extract topic keyword from context label
+  const topic = context.label.split(/[-—:]/).map(s => s.trim()).filter(s => s.length > 2)[0] || context.label;
+  const queries = templates.map(t => t.replace(/\{topic\}/g, topic));
+
+  // Get existing subreddits from evidence for targeted search
+  const topCommunities = db.prepare(
+    `SELECT community, COUNT(*) as c FROM evidence_packets WHERE context_id = ? AND community IS NOT NULL
+     GROUP BY community ORDER BY c DESC LIMIT 5`
+  ).all(context.id).map(r => r.community.replace("r/", ""));
+
+  const stateLabels = {
+    experiencing_pain: "pain", tried_failed: "failures", seeking: "demand",
+    found_what_works: "successes", warning: "warnings", comparing: "comparisons",
+  };
+
+  broadcast("toast", { message: "Searching for more " + (stateLabels[targetState] || targetState) + "...", type: "info" });
+
+  try {
+    const result = await ingestReddit({
+      contextId: context.id,
+      subreddits: topCommunities,
+      queries,
+      limitPerQuery: 5,
+      sort: "relevance",
+      onProgress: () => {},
+    });
+
+    // Backfill evidence_state on new packets
+    const { classifyEvidenceState } = await import("../pipeline/normalizer.mjs");
+    const newPackets = db.prepare(
+      "SELECT id, title, body FROM evidence_packets WHERE context_id = ? AND evidence_state IS NULL"
+    ).all(context.id);
+    const update = db.prepare("UPDATE evidence_packets SET evidence_state = ? WHERE id = ?");
+    const backfill = db.transaction(() => {
+      for (const p of newPackets) update.run(classifyEvidenceState(p.title, p.body), p.id);
+    });
+    backfill();
+
+    // Refresh signals
+    refreshSignals(context.id);
+
+    const msg = result.evidenceCount + " new packets found for " + (stateLabels[targetState] || targetState);
+    broadcast("toast", { message: msg, type: "info" });
+    broadcast("reload", { reason: "deepened research" });
+
+    res.json({ evidenceCount: result.evidenceCount, signalCount: result.signalCount, queries });
+  } catch (err) {
+    broadcast("toast", { message: "Deepen failed: " + err.message, type: "error" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Context-level thread intelligence (all qualifying threads) ---
+
+router.post("/api/contexts/:id/thread-intel", async (req, res) => {
+  const db = getDb();
+  const context = db.prepare("SELECT * FROM contexts WHERE id = ?").get(req.params.id);
+  if (!context) return res.status(404).json({ error: "Context not found" });
+
+  broadcast("toast", { message: "Running thread intelligence for " + context.label + "...", type: "info" });
+
+  try {
+    let threads = reconstructThreads(context.id);
+    storeThreads(threads);
+    const qualified = qualifyThreads(threads, { minWeightedEvidence: 2.0, minComments: 1, minRelevance: 0.2 });
+
+    if (qualified.length === 0) {
+      broadcast("toast", { message: "No qualifying threads", type: "info" });
+      return res.json({ analyzed: 0, skipped: 0 });
+    }
+
+    const limit = Math.min(qualified.length, req.body.limit || 30);
+    const batch = qualified.slice(0, limit);
+
+    broadcast("toast", { message: "Analyzing " + batch.length + " threads...", type: "info" });
+
+    const { results, skipped, errors } = await analyzeThreadBatch(batch, { maxConcurrency: 3 });
+
+    for (const result of results) {
+      storeThreadIntelligence(result, context.id);
+      reconcileThread(result.threadId, context.id);
+    }
+
+    refreshSignals(context.id);
+
+    broadcast("toast", { message: results.length + " threads analyzed, " + skipped.length + " unchanged", type: "info" });
+    broadcast("reload", { reason: "thread intelligence completed" });
+
+    res.json({ analyzed: results.length, skipped: skipped.length, errors: errors.length, total: qualified.length });
+  } catch (err) {
+    broadcast("toast", { message: "Thread intelligence failed: " + err.message, type: "error" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Context-level research brief ---
+
+router.post("/api/contexts/:id/brief", async (req, res) => {
+  const { generateBriefFromIntelligence } = await import("../agents/research-brief.mjs");
+  const db = getDb();
+  const context = db.prepare("SELECT * FROM contexts WHERE id = ?").get(req.params.id);
+  if (!context) return res.status(404).json({ error: "Context not found" });
+
+  broadcast("toast", { message: "Generating research brief for " + context.label + "...", type: "info" });
+
+  try {
+    const result = await generateBriefFromIntelligence(context.id);
+
+    broadcast("report", {
+      title: "Research Brief: " + context.label,
+      body: result.content,
+      format: "markdown",
+      timestamp: new Date().toISOString(),
+    });
+
+    broadcast("toast", { message: "Research brief ready (" + result.evidenceCount + " packets analyzed)", type: "info" });
+
+    res.json({ briefId: result.id, evidenceCount: result.evidenceCount, communityCount: result.communityCount });
+  } catch (err) {
+    broadcast("toast", { message: "Brief generation failed: " + err.message, type: "error" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Intelligence chain API ---
+
+router.get("/api/signals/:id/chain", (req, res) => {
+  const chain = getSignalChain(req.params.id);
+  res.json(chain);
+});
+
+router.get("/api/intelligence/:unitId", (req, res) => {
+  const chain = getChain(req.params.unitId, { maxDepth: parseInt(req.query.depth) || 5 });
+  if (!chain) return res.status(404).json({ error: "Unit not found" });
+  res.json(chain);
+});
+
+router.get("/api/contexts/:id/intelligence", (req, res) => {
+  const chain = getContextChain(req.params.id, { minConfidence: parseFloat(req.query.minConfidence) || 0.3 });
+  res.json(chain);
+});
+
+// --- Thread intelligence for a signal (read-only) ---
+
+router.get("/api/signals/:id/intelligence", (req, res) => {
+  const db = getDb();
+  const signal = db.prepare("SELECT * FROM signals WHERE id = ?").get(req.params.id);
+  if (!signal) return res.status(404).json({ error: "Signal not found" });
+
+  const intelligence = getSignalIntelligence(signal.id);
+  res.json(intelligence);
+});
+
+function getSignalIntelligence(signalId) {
+  const db = getDb();
+
+  const threadIntels = db.prepare(`
+    SELECT ti.*, t.title as thread_title, t.community, t.url as thread_url,
+           t.comment_count, t.total_score
+    FROM thread_intelligence ti
+    JOIN threads t ON t.id = ti.thread_id
+    JOIN thread_packets tp ON tp.thread_id = ti.thread_id
+    JOIN signal_evidence se ON se.evidence_id = tp.evidence_id
+    WHERE se.signal_id = ?
+    GROUP BY ti.id
+    ORDER BY ti.signal_quality DESC, t.total_score DESC
+  `).all(signalId);
+
+  if (threadIntels.length === 0) return { threads: [], summary: null };
+
+  // Aggregate across threads
+  const allPain = [];
+  const allNxy = [];
+  const allFailed = [];
+  const allAvatarClues = [];
+  const keyInsights = [];
+
+  for (const ti of threadIntels) {
+    const pain = safeJson(ti.pain_language, []);
+    allPain.push(...pain);
+    const nxy = safeJson(ti.not_x_its_y, []);
+    allNxy.push(...nxy);
+    const failed = safeJson(ti.failed_solutions, []);
+    allFailed.push(...failed);
+    const clues = safeJson(ti.avatar_clues, []);
+    allAvatarClues.push(...clues);
+    if (ti.key_insight) keyInsights.push(ti.key_insight);
+  }
+
+  return {
+    threads: threadIntels.map(ti => ({
+      threadId: ti.thread_id,
+      title: ti.thread_title,
+      community: ti.community,
+      url: ti.thread_url,
+      commentCount: ti.comment_count,
+      signalQuality: ti.signal_quality,
+      keyInsight: ti.key_insight,
+      conversationArc: ti.conversation_arc,
+      awarenessLevel: ti.awareness_level,
+      desireType: ti.desire_type,
+      confidenceTier: ti.confidence_tier,
+      painLanguage: safeJson(ti.pain_language, []),
+      notXItsY: safeJson(ti.not_x_its_y, []),
+      failedSolutions: safeJson(ti.failed_solutions, []),
+      avatarClues: safeJson(ti.avatar_clues, []),
+    })),
+    summary: {
+      threadsAnalyzed: threadIntels.length,
+      keyInsights,
+      topPain: allPain.slice(0, 5),
+      topNxy: allNxy.slice(0, 3),
+      topFailed: allFailed.slice(0, 5),
+      avatarClues: allAvatarClues.slice(0, 5),
+    },
+  };
+}
+
 export function buildFixtureData(fixtureId) {
   const db = getDb();
   const fixtureMeta = db.prepare("SELECT * FROM fixture_meta WHERE id = ?").get(fixtureId);
@@ -496,6 +911,10 @@ function formatSignal(row) {
     intent_mix: safeJson(row.intent_mix, {}),
     awareness_distribution: safeJson(row.awareness_distribution, {}),
     dominant_awareness: row.dominant_awareness || null,
+    sentiment_distribution: safeJson(row.sentiment_distribution, {}),
+    dominant_sentiment: row.dominant_sentiment || "neutral",
+    state_distribution: safeJson(row.state_distribution, {}),
+    dominant_state: row.dominant_state || "sharing_insight",
     desire_type: row.desire_type || null,
     top_extractions: safeJson(row.top_extractions, []),
     failed_solutions: safeJson(row.failed_solutions, []),
@@ -507,23 +926,116 @@ function formatSignal(row) {
     saved: row.saved || 0,
     dismissed: row.dismissed || 0,
     alerted: row.alerted || 0,
+    confidence_tier: row.confidence_tier || null,
     evidence: evidence.map(formatEvidencePacket),
     phrases: phrases.map(p => [p.phrase, p.count]),
     spread: spread.map(s => [s.community, s.percentage]),
     related: related.map(r => [r.label, r.tag, r.score]),
+    intelligence: getSignalIntelligenceSummary(row.id),
+    facets: getSignalFacets(row.id),
+    vocabulary: getSignalVocabulary(row.id),
+  };
+}
+
+function getSignalVocabulary(signalId) {
+  const db = getDb();
+  const rows = db.prepare(
+    "SELECT * FROM signal_vocabulary WHERE signal_id = ? ORDER BY category, (frequency * 10 + total_upvotes) DESC"
+  ).all(signalId);
+
+  if (rows.length === 0) return null;
+
+  const byCategory = {};
+  for (const r of rows) {
+    if (!byCategory[r.category]) byCategory[r.category] = [];
+    byCategory[r.category].push({
+      phrase: r.phrase,
+      frequency: r.frequency,
+      upvotes: r.total_upvotes,
+      quote: r.example_quote,
+      url: r.example_url,
+    });
+  }
+  return byCategory;
+}
+
+function getSignalFacets(signalId) {
+  const db = getDb();
+  const rows = db.prepare("SELECT * FROM signal_facets WHERE signal_id = ?").all(signalId);
+  const facets = {};
+  for (const f of rows) {
+    facets[f.tag] = {
+      evidenceCount: f.evidence_count,
+      threadCount: f.thread_count,
+      totalUpvotes: f.total_upvotes,
+      quotes: safeJson(f.quotes, []),
+      notXItsY: safeJson(f.not_x_its_y, []),
+      failedSolutions: safeJson(f.failed_solutions, []),
+      avatarClues: safeJson(f.avatar_clues, []),
+      awarenessLevel: f.awareness_level,
+      summary: f.summary,
+    };
+  }
+  return facets;
+}
+
+function getSignalIntelligenceSummary(signalId) {
+  const db = getDb();
+  const threadIntels = db.prepare(`
+    SELECT ti.key_insight, ti.signal_quality, ti.awareness_level, ti.desire_type,
+           ti.conversation_arc, ti.not_x_its_y, ti.failed_solutions, ti.pain_language,
+           ti.avatar_clues, ti.confidence_tier,
+           t.title as thread_title, t.community, t.url as thread_url, t.comment_count
+    FROM thread_intelligence ti
+    JOIN threads t ON t.id = ti.thread_id
+    JOIN thread_packets tp ON tp.thread_id = ti.thread_id
+    JOIN signal_evidence se ON se.evidence_id = tp.evidence_id
+    WHERE se.signal_id = ? AND ti.signal_quality != 'noise'
+    GROUP BY ti.id
+    ORDER BY t.total_score DESC
+    LIMIT 10
+  `).all(signalId);
+
+  if (threadIntels.length === 0) return null;
+
+  return {
+    count: threadIntels.length,
+    threads: threadIntels.map(ti => ({
+      title: ti.thread_title,
+      community: ti.community,
+      url: ti.thread_url,
+      commentCount: ti.comment_count,
+      quality: ti.signal_quality,
+      keyInsight: ti.key_insight,
+      arc: ti.conversation_arc,
+      awareness: ti.awareness_level,
+      desire: ti.desire_type,
+      tier: ti.confidence_tier,
+      notXItsY: safeJson(ti.not_x_its_y, []),
+      failedSolutions: safeJson(ti.failed_solutions, []),
+      painLanguage: safeJson(ti.pain_language, []).slice(0, 3),
+      avatarClues: safeJson(ti.avatar_clues, []).slice(0, 2),
+    })),
   };
 }
 
 function formatEvidencePacket(row) {
   const metrics = safeJson(row.metrics, {});
+  const sid = row.source_item_id || "";
   return {
     id: row.id,
+    source_item_id: sid,
+    thread_id: row.thread_id || null,
+    isComment: sid.startsWith("t1_"),
+    title: row.title || "",
     quote: row.body || row.title || "",
     source: row.community || row.source_id || "source",
     source_id: row.source_id || "",
     source_layer: row.source_layer || "",
     intent: row.intent || "question",
     awareness_level: row.awareness_level || null,
+    sentiment: row.sentiment || "neutral",
+    evidence_state: row.evidence_state || "sharing_insight",
     evidence_weight: row.evidence_weight || 1.0,
     quality_score: row.quality_score || null,
     author: row.author_ref || "anonymous",

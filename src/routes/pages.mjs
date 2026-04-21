@@ -75,6 +75,15 @@ router.get("/evidence", (req, res) => {
     "SELECT DISTINCT intent FROM evidence_packets WHERE context_id = ? AND intent IS NOT NULL AND intent != '' ORDER BY intent"
   ).all(activeContext.id).map(r => r.intent);
 
+  // Thread intelligence for collapsed summaries
+  const threadInsights = {};
+  const tiRows = db.prepare(
+    `SELECT ti.thread_id, ti.key_insight FROM thread_intelligence ti
+     JOIN threads t ON t.id = ti.thread_id
+     WHERE t.context_id = ? AND ti.signal_quality != 'noise' AND ti.key_insight IS NOT NULL`
+  ).all(activeContext.id);
+  for (const row of tiRows) threadInsights[row.thread_id] = row.key_insight;
+
   res.render("evidence", {
     contexts,
     activeContext,
@@ -84,6 +93,7 @@ router.get("/evidence", (req, res) => {
     sources,
     communities,
     intents,
+    threadInsights,
   });
 });
 

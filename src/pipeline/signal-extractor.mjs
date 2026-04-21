@@ -9,6 +9,7 @@
  */
 
 import { extractDeepPatterns, classifyDesireType, aggregateFailedSolutions } from "./deep-extractor.mjs";
+import { getDb } from "../db/connection.mjs";
 
 function stableId(value) {
   return String(value)
@@ -22,20 +23,43 @@ function stableId(value) {
  * Extract candidate signals from evidence packets.
  * Returns { signals: [], signalEvidence: Map<signalId, evidenceId[]> }
  */
-export function extractSignals(evidencePackets, contextId) {
-  // Group by COMMUNITY — each subreddit is a distinct conversation context.
-  // This prevents noise from mixing (r/SaaS about competitors ≠ r/FanFiction about "shipping").
-  // The signal title comes from the community + its dominant theme, not the query that found it.
+export function extractSignals(evidencePackets, contextId, options = {}) {
+  const db = getDb();
+  const context = db.prepare("SELECT grouping_mode, research_passes FROM contexts WHERE id = ?").get(contextId);
+  const groupingMode = options.groupingMode || context?.grouping_mode || "community";
+
   const groups = new Map();
 
-  for (const ep of evidencePackets) {
-    const community = ep.community || "unknown";
-    const key = stableId(community);
-    if (!key) continue;
-    if (!groups.has(key)) {
-      groups.set(key, { topic: community, key, packets: [] });
+  if (groupingMode === "theme") {
+    // Group by THEME — multiple queries can map to the same theme.
+    // Evidence from "regret convincing team" and "switched to Penpot" both
+    // go into the "Regret & switching" signal.
+    const passes = safeParseJson(context?.research_passes, null);
+    const queryToTheme = buildQueryThemeMap(passes);
+
+    for (const ep of evidencePackets) {
+      const topics = safeParseJson(ep.topics, []);
+      const query = topics[0] || "general";
+      const theme = queryToTheme.get(query) || deriveTheme(query, "");
+      const key = stableId(theme); // same theme → same key → merged
+      if (!key) continue;
+      if (!groups.has(key)) {
+        groups.set(key, { topic: theme, key, packets: [] });
+      }
+      groups.get(key).packets.push(ep);
     }
-    groups.get(key).packets.push(ep);
+  } else {
+    // Group by COMMUNITY — each subreddit is a distinct conversation context.
+    // Used for market research where different communities = different signals.
+    for (const ep of evidencePackets) {
+      const community = ep.community || "unknown";
+      const key = stableId(community);
+      if (!key) continue;
+      if (!groups.has(key)) {
+        groups.set(key, { topic: community, key, packets: [] });
+      }
+      groups.get(key).packets.push(ep);
+    }
   }
 
   // Convert groups to candidate signals
@@ -105,6 +129,24 @@ export function extractSignals(evidencePackets, contextId) {
     const dominantAwareness = Object.entries(awarenessCounts)
       .sort((a, b) => b[1] - a[1])[0]?.[0] || "problem_aware";
 
+    // Sentiment distribution — count evidence by sentiment
+    const sentimentCounts = {};
+    for (const p of packets) {
+      const s = p.sentiment || "neutral";
+      sentimentCounts[s] = (sentimentCounts[s] || 0) + 1;
+    }
+    const dominantSentiment = Object.entries(sentimentCounts)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || "neutral";
+
+    // Evidence state distribution
+    const stateCounts = {};
+    for (const p of packets) {
+      const s = p.evidence_state || "sharing_insight";
+      stateCounts[s] = (stateCounts[s] || 0) + 1;
+    }
+    const dominantState = Object.entries(stateCounts)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || "sharing_insight";
+
     // Deep extraction — behavioral drivers, failed solutions, identity pain
     const deepExtractions = extractDeepPatterns(packets);
     const desireType = classifyDesireType(packets, awarenessCounts, deepExtractions);
@@ -127,6 +169,27 @@ export function extractSignals(evidencePackets, contextId) {
         confidence: e.confidence,
         upvotes: e.upvotes,
       }));
+
+    // Merge LLM thread intelligence extractions (if available)
+    const llmExtractions = getThreadIntelExtractions(packets);
+    if (llmExtractions.length > 0) {
+      // Add LLM not_x_its_y that regex missed (deduplicated)
+      for (const llm of llmExtractions.notXItsY) {
+        const alreadyHas = topExtractions.some(e =>
+          e.type === "not_x_its_y" && textOverlap(e.surface + " " + e.deeper, llm.surface + " " + llm.deeper) > 0.3
+        );
+        if (!alreadyHas && topExtractions.length < 8) {
+          topExtractions.push({ type: "not_x_its_y", surface: llm.surface, deeper: llm.deeper, confidence: llm.confidence || 0.7, upvotes: 0, source: "llm" });
+        }
+      }
+      // Merge LLM failed solutions into aggregated list
+      for (const llm of llmExtractions.failedSolutions) {
+        const exists = failedSolutions.some(f => f.name.toLowerCase() === (llm.name || "").toLowerCase());
+        if (!exists && llm.name) {
+          failedSolutions.push({ name: llm.name, count: 1, validation: llm.upvotes || 0, verdict: llm.verdict || "failed", source: "llm" });
+        }
+      }
+    }
 
     // Bubble position — higher rank = upper-right quadrant
     const x = Math.min(780, 400 + Math.round(packets.length * 18 + communities.length * 30));
@@ -161,6 +224,10 @@ export function extractSignals(evidencePackets, contextId) {
       next_source: recommendNextSource(tags),
       dominant_intent: dominantIntent,
       intent_mix: JSON.stringify(intentCounts),
+      sentiment_distribution: JSON.stringify(sentimentCounts),
+      dominant_sentiment: dominantSentiment,
+      state_distribution: JSON.stringify(stateCounts),
+      dominant_state: dominantState,
       awareness_distribution: JSON.stringify(awarenessCounts),
       dominant_awareness: dominantAwareness,
       desire_type: desireType,
@@ -325,4 +392,126 @@ function buildSummary(topic, packets, communities) {
     return "Active discussion around \"" + topic + "\" across " + commStr + " with " + packets.length + " posts showing repeated interest.";
   }
   return "Early evidence of interest in \"" + topic + "\" appearing in " + commStr + ".";
+}
+
+/**
+ * Build a map from query string → human-readable theme label.
+ * Uses research_passes if available, otherwise derives from the query itself.
+ */
+function buildQueryThemeMap(passes) {
+  const map = new Map();
+  if (!passes) return map;
+
+  for (const [passKey, pass] of Object.entries(passes)) {
+    const passLabel = pass.label || passKey;
+    for (const query of (pass.queries || [])) {
+      // Derive a short theme from the query
+      // Remove common words and extract the core topic
+      const theme = deriveTheme(query, passLabel);
+      map.set(query, theme);
+    }
+  }
+  return map;
+}
+
+// Hard-coded readable theme labels for known query patterns.
+// Falls back to keyword extraction for unknown queries.
+const THEME_LABELS = new Map([
+  // Performance
+  ["slow", "Performance & crashes"],
+  ["crash", "Performance & crashes"],
+  ["laggy", "Performance & crashes"],
+  // Auto layout
+  ["auto layout", "Auto layout"],
+  ["autolayout", "Auto layout"],
+  // Handoff
+  ["handoff", "Design-dev handoff"],
+  ["hand off", "Design-dev handoff"],
+  ["hand-off", "Design-dev handoff"],
+  // Components
+  ["component", "Component libraries"],
+  ["design system", "Component libraries"],
+  // Dev
+  ["impossible to build", "Design feasibility"],
+  ["developer", "Design feasibility"],
+  // Regret / switching
+  ["regret", "Regret & switching"],
+  ["switch", "Regret & switching"],
+  ["penpot", "Regret & switching"],
+  ["alternative", "Regret & switching"],
+  // Adobe
+  ["adobe", "Adobe acquisition"],
+  ["acquisition", "Adobe acquisition"],
+  // Bloat / direction
+  ["bloated", "Product direction"],
+  ["listened", "Product direction"],
+  ["update breaks", "Product direction"],
+  ["miss when", "Product direction"],
+  // Branching
+  ["branching", "Branching & versioning"],
+  ["version", "Branching & versioning"],
+  // Code export
+  ["code export", "Code export & plugins"],
+  ["plugin", "Code export & plugins"],
+  // Pricing
+  ["organization plan", "Pricing & plans"],
+  ["pricing", "Pricing & plans"],
+  ["paid for", "Pricing & plans"],
+  // Zeplin / toolchain
+  ["zeplin", "Toolchain integration"],
+]);
+
+function deriveTheme(query, passLabel) {
+  const q = query.toLowerCase();
+  for (const [pattern, label] of THEME_LABELS) {
+    if (q.includes(pattern)) return label;
+  }
+  // Fallback: extract key words
+  const cleaned = q
+    .replace(/\b(figma|reddit|i'm|i've|i|the|a|an|is|are|was|it|to|on|in|of|for|and|but|so|my|our|we|every|always|completely|actually|just|really|too|very|still|time|been)\b/g, "")
+    .replace(/\s+/g, " ").trim();
+  const words = cleaned.split(" ").filter(w => w.length > 2).slice(0, 3);
+  return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") || query.slice(0, 30);
+}
+
+/**
+ * Get LLM thread intelligence extractions for packets in this signal.
+ * Queries thread_intelligence via packet thread_ids.
+ */
+function getThreadIntelExtractions(packets) {
+  const db = getDb();
+  const threadIds = [...new Set(packets.map(p => p.thread_id).filter(Boolean))];
+  if (threadIds.length === 0) return [];
+
+  const placeholders = threadIds.map(() => "?").join(",");
+  const intels = db.prepare(
+    `SELECT not_x_its_y, failed_solutions FROM thread_intelligence WHERE thread_id IN (${placeholders}) AND signal_quality != 'noise'`
+  ).all(...threadIds);
+
+  if (intels.length === 0) return [];
+
+  const notXItsY = [];
+  const failedSolutions = [];
+
+  for (const ti of intels) {
+    const nxy = safeParseJson(ti.not_x_its_y, []);
+    notXItsY.push(...nxy);
+    const fs = safeParseJson(ti.failed_solutions, []);
+    failedSolutions.push(...fs);
+  }
+
+  return { notXItsY, failedSolutions, length: notXItsY.length + failedSolutions.length };
+}
+
+/**
+ * Simple word overlap check (for deduplication).
+ */
+function textOverlap(a, b) {
+  if (!a || !b) return 0;
+  const wordsA = new Set(a.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+  const wordsB = new Set(b.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+  if (wordsA.size === 0 || wordsB.size === 0) return 0;
+  const intersection = [...wordsA].filter(w => wordsB.has(w)).length;
+  const union = new Set([...wordsA, ...wordsB]).size;
+  return intersection / union;
 }

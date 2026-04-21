@@ -52,19 +52,79 @@ source data (or replay fixture)
 
 ## Working With This Repo
 
-### Dashboard prototype
+### Running the app
 ```bash
-# Just open in browser — no server needed
-open dashboard-prototype/index.html
-
-# Pull live Reddit data (requires network)
-node dashboard-prototype/tools/pull-reddit-search.mjs
+pnpm install
+pnpm dev                  # Express server on http://localhost:3000
 ```
 
+### CLI scripts
+```bash
+pnpm ingest               # Pull live Reddit data into pipeline
+pnpm thread-intel --context <id>   # Run LLM thread analysis
+pnpm brief --context <id>          # Generate research brief
+pnpm push --context <id>           # Generate brief + push to dashboard as modal
+pnpm push --toast "message"        # Send toast notification to dashboard
+pnpm push --reload                 # Trigger data reload in dashboard
+```
+
+### Intelligence pipeline
+The system has a 3-layer intelligence architecture:
+
+1. **Pipeline** (regex, heuristic) — `pnpm ingest` runs 4-stage pipeline: collect → classify → extract → validate
+2. **Thread intelligence** (LLM) — `pnpm thread-intel` reconstructs Reddit threads, sends to Gemini Flash via OpenRouter, reconciles with regex
+3. **Research brief** (LLM) — `pnpm brief` generates structured research briefs from evidence or topic hypothesis
+
+### Agent → Dashboard communication (SSE)
+The dashboard accepts real-time events via Server-Sent Events. Any agent or script can push to the UI:
+
+```bash
+# Toast notification
+curl -X POST localhost:3000/api/toast -H 'Content-Type: application/json' \
+  -d '{"message": "Analyzing threads...", "type": "info"}'
+
+# Intelligence report (opens modal)
+curl -X POST localhost:3000/api/report -H 'Content-Type: application/json' \
+  -d '{"title": "Research Brief", "body": "## Thesis\n...", "format": "markdown"}'
+
+# Trigger data reload
+curl -X POST localhost:3000/api/reload
+```
+
+The UI listens on `GET /api/events` (EventSource). Events: `toast`, `report`, `reload`.
+
+### Triggering intelligence from the dashboard
+- Click the **Analyze** button on any signal detail → runs thread intelligence for that signal's threads, reconciles, refreshes scores, pushes results via SSE
+- `POST /api/signals/:id/analyze` — API endpoint for programmatic trigger
+- `GET /api/signals/:id/intelligence` — read thread intelligence for a signal
+
 ### Fixtures
-- `reddit-category-pain-radar.fixture.js` — main replay scenarios
-- `reddit-live-search.fixture.js` — output from live pull
-- `reddit-live-search.config.json` — pull configuration
+- `dashboard-prototype/fixtures/` — replay data for law firms and founder AI tools scenarios
+- Seeds: `pnpm seed`, `pnpm seed:market`, or `pnpm seed:all`
+
+### Environment
+- `.env` in project root with `OPENROUTER_API_KEY=sk-or-...` (required for LLM features)
+- Node 22 required (`nvm use 22`)
+
+### Sending notifications to the dashboard
+
+When running multi-step workflows (ingestion, thread intelligence, research briefs, or any long-running task), send toast notifications to the dashboard so the user can see progress in real time. Use curl from Bash:
+
+```bash
+# Info toast
+curl -s -X POST http://localhost:3000/api/toast -H 'Content-Type: application/json' -d '{"message": "Step 1: Pulling evidence from Reddit...", "type": "info"}'
+
+# Error toast
+curl -s -X POST http://localhost:3000/api/toast -H 'Content-Type: application/json' -d '{"message": "Ingestion failed: rate limited", "type": "error"}'
+
+# Push a report modal (markdown)
+curl -s -X POST http://localhost:3000/api/report -H 'Content-Type: application/json' -d '{"title": "Analysis Complete", "body": "## Summary\n...", "format": "markdown"}'
+
+# Trigger data reload
+curl -s -X POST http://localhost:3000/api/reload -H 'Content-Type: application/json' -d '{}'
+```
+
+**Always notify the user** at each meaningful step: starting a task, progress updates, completion, and errors. The dashboard must be running (`pnpm dev`) for notifications to appear.
 
 ### PDF generation
 Follow the global CLAUDE.md rules for HTML-to-PDF via Playwright. The project already has a reference PDF at `Signals · Radar.pdf`.
@@ -73,22 +133,26 @@ Follow the global CLAUDE.md rules for HTML-to-PDF via Playwright. The project al
 
 | Path | Purpose |
 |---|---|
+| `src/pipeline/` | 4-stage ingestion pipeline + thread intelligence + reconciliation |
+| `src/agents/` | Research brief agent (OpenRouter) |
+| `src/routes/api.mjs` | REST API (signals, evidence, ingest, analyze, intelligence) |
+| `src/routes/sse.mjs` | Server-Sent Events (toast, report, reload) |
+| `src/routes/pages.mjs` | HTML routes (dashboard, evidence, watchlist, communities) |
+| `src/views/` | EJS templates |
+| `src/public/` | Frontend JS + CSS (vanilla, no framework) |
+| `src/lib/env.mjs` | Shared .env loader |
+| `scripts/` | CLI tools (ingest, thread-intel, brief, push-report) |
 | `PROJECT_BRIEF.md` | Full product vision and signal taxonomy |
 | `SOURCE_INTELLIGENCE.md` | Multi-platform source interpretation framework |
-| `dashboard-prototype/` | Working static prototype |
-| `research/producers/` | Per-platform API/access research (20+ sources) |
-| `research/corroboration-engine/` | Validation engine design |
-| `research/system-architecture/` | System design docs |
-| `02 Projects/Signal/` | Implementation workspace, roadmap, role index |
-| `role-prompts/` | Builder role definitions (7 roles) |
+| `dashboard-prototype/` | Legacy static prototype (superseded by Express app) |
+| `research/` | Producer viability, corroboration engine, system architecture |
+| `02 Projects/Signal/` | Implementation workspace, roadmap, progress reports |
 | `linear/` | Linear project management plan |
-| `output/` | Generated artifacts (screenshots, PDFs) |
 
 ## What NOT To Build Yet
 
 - Production infrastructure, deployment, CI/CD
-- Live connectors beyond Reddit (until fixture loop is proven)
-- ML models (start with transparent heuristics)
+- ML models (start with transparent heuristics + LLM-assist)
 - User auth, multi-tenancy
 - Generic social listening features (word clouds, sentiment dashboards, influencer rankings)
 
@@ -97,3 +161,5 @@ Follow the global CLAUDE.md rules for HTML-to-PDF via Playwright. The project al
 - Evidence packets use `url: "#"` for synthetic/fixture data — never fake real URLs.
 - Charts are custom SVG/HTML, no charting library yet.
 - Design direction comes from `Signals · Radar.pdf`.
+- Toast notifications via `showToast(message, isError)` in app.js.
+- Reports pushed via SSE render as markdown in a modal overlay.

@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import apiRouter from "./routes/api.mjs";
 import pageRouter from "./routes/pages.mjs";
+import { sseRouter, broadcast } from "./routes/sse.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -19,6 +20,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
 
 // Routes
+app.use(sseRouter);
 app.use(apiRouter);
 app.use(pageRouter);
 

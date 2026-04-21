@@ -87,6 +87,10 @@ export function scoreSignal(signal, evidencePackets) {
   const failedValidation = failedSols.reduce((sum, e) => sum + (e.upvotes || 0), 0);
   const solutionGap = Math.min(100, failedSols.length * 20 + Math.round(failedValidation / 10));
 
+  // 12. Thread intelligence — bonus for LLM-analyzed threads with confirmed findings
+  const threadIntel = getThreadIntelForSignal(signal, evidencePackets);
+  const threadIntelScore = computeThreadIntelScore(threadIntel);
+
   const components = [
     ["Repetition", repetition],
     ["Pain intensity", painIntensity],
@@ -99,11 +103,63 @@ export function scoreSignal(signal, evidencePackets) {
     ["Missing evidence penalty", missingPenalty],
     ["Insight depth", insightDepth],
     ["Solution gap", solutionGap],
+    ["Thread intelligence", threadIntelScore],
   ];
 
   const total = components.reduce((sum, c) => sum + c[1], 0);
 
   return { components, total };
+}
+
+/**
+ * Query thread intelligence linked to a signal's evidence packets.
+ */
+function getThreadIntelForSignal(signal, evidencePackets) {
+  const db = getDb();
+  const threadIds = [...new Set(evidencePackets.map(ep => ep.thread_id).filter(Boolean))];
+  if (threadIds.length === 0) return [];
+
+  const placeholders = threadIds.map(() => "?").join(",");
+  return db.prepare(
+    `SELECT * FROM thread_intelligence WHERE thread_id IN (${placeholders})`
+  ).all(...threadIds);
+}
+
+/**
+ * Compute thread intelligence score (0-100).
+ * - Each analyzed thread with signal_quality "high" contributes heavily
+ * - "confirmed" confidence tier gets 1.5x multiplier
+ * - not_x_its_y findings are the most valuable
+ */
+function computeThreadIntelScore(intels) {
+  if (intels.length === 0) return 0;
+
+  let score = 0;
+
+  for (const ti of intels) {
+    const quality = ti.signal_quality || "low";
+    const tier = ti.confidence_tier || "llm_only";
+    const tierMultiplier = tier === "confirmed" ? 1.5 : 1.0;
+
+    // Base score by quality
+    let base = 0;
+    if (quality === "high") base = 20;
+    else if (quality === "medium") base = 12;
+    else if (quality === "low") base = 5;
+    // noise = 0
+
+    // Bonus for not_x_its_y findings
+    const nxy = safeParseJson(ti.not_x_its_y, []);
+    base += nxy.length * 8;
+
+    // Bonus for failed solutions
+    const failed = safeParseJson(ti.failed_solutions, []);
+    base += failed.length * 5;
+
+    score += base * tierMultiplier;
+  }
+
+  return Math.min(100, Math.round(score));
 }
 
 /**

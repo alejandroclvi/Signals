@@ -13,6 +13,7 @@ import { collect } from "./stages/collect.mjs";
 import { classify } from "./stages/classify.mjs";
 import { extract } from "./stages/extract.mjs";
 import { validate } from "./stages/validate.mjs";
+import { createUnits } from "./intelligence-chain.mjs";
 import crypto from "node:crypto";
 
 function safeParseJson(value, fallback) {
@@ -103,8 +104,8 @@ export async function ingestReddit(options) {
     `INSERT OR IGNORE INTO evidence_packets
      (id, context_id, source_id, source_layer, source_item_id, url, title, body,
       author_ref, community, observed_at, published_at, metrics, topics, raw_ref, content_hash,
-      intent, awareness_level, evidence_weight, quality_score, pipeline_run_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      intent, awareness_level, sentiment, evidence_state, evidence_weight, quality_score, pipeline_run_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
 
   const writeEvidence = db.transaction(() => {
@@ -113,12 +114,41 @@ export async function ingestReddit(options) {
         ep.id, ep.context_id, ep.source_id, ep.source_layer, ep.source_item_id,
         ep.url, ep.title, ep.body, ep.author_ref, ep.community,
         ep.observed_at, ep.published_at, ep.metrics, ep.topics, ep.raw_ref, ep.content_hash,
-        ep.intent || "question", ep.awareness_level || "problem_aware", ep.evidence_weight || 1.0,
-        ep.quality_score || null, runId
+        ep.intent || "question", ep.awareness_level || "problem_aware", ep.sentiment || "neutral",
+        ep.evidence_state || "sharing_insight",
+        ep.evidence_weight || 1.0, ep.quality_score || null, runId
       );
     }
   });
   writeEvidence();
+
+  // --- Intelligence chain: create L0 observations for high-signal evidence ---
+  try {
+    const obsUnits = evidencePackets
+      .filter(ep => {
+        const m = safeParseJson(ep.metrics, {});
+        return (ep.evidence_weight || 1) >= 1.5 || (m.score || 0) >= 10;
+      })
+      .map(ep => {
+        const m = safeParseJson(ep.metrics, {});
+        const body = (ep.body || ep.title || "").slice(0, 120);
+        return {
+          unitType: "observation",
+          claim: body + (body.length >= 120 ? "\u2026" : ""),
+          detail: ep.title,
+          sourceType: "evidence_packet",
+          sourceId: ep.id,
+          method: "ingestion",
+          parentIds: [],
+          contextId,
+          community: ep.community,
+          confidence: 0.3 + Math.min(0.4, (m.score || 0) / 100),
+          confidenceBasis: (m.score || 0) + " upvotes",
+          createdBy: "ingest",
+        };
+      });
+    if (obsUnits.length > 0) createUnits(obsUnits);
+  } catch (e) { /* chain is non-blocking */ }
 
   // --- Stage 3: Extraction (from ALL evidence in context, cumulative) ---
   const allEvidence = db.prepare(
