@@ -268,6 +268,7 @@ export function normalizeRedditPost(post, contextId) {
     sentiment: classifySentiment(post.title, post.selftext),
     evidence_state: classifyEvidenceState(post.title, post.selftext),
     evidence_weight: 1.0,
+    source_kind: "post",
   };
 
   packet.evidence_weight = computeEvidenceWeight(packet);
@@ -319,6 +320,7 @@ export function normalizeRedditComment(comment, contextId) {
     sentiment: classifySentiment(comment.link_title, comment.body),
     evidence_state: classifyEvidenceState(comment.link_title, comment.body),
     evidence_weight: 1.0,
+    source_kind: "comment",
   };
 
   packet.evidence_weight = computeEvidenceWeight(packet);

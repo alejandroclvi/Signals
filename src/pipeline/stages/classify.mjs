@@ -47,8 +47,8 @@ export function classify({ evidencePackets, onProgress }) {
   const filtered = scored.filter(ep => {
     if (!ep.body || ep.body.trim().length < 20) return false;
     if (/^https?:\/\/\S+$/.test(ep.body.trim())) return false;
-    // Drop evidence from clearly irrelevant communities
-    if (communityRelevance(ep.community) <= 0.1) return false;
+    // Drop evidence from irrelevant communities (0.1 = hobbies/fiction, 0.2 = finance noise/chatgpt)
+    if (communityRelevance(ep.community) <= 0.2) return false;
     return true;
   });
 

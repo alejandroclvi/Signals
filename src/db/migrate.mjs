@@ -226,6 +226,30 @@ safeAlter("ALTER TABLE signals ADD COLUMN confidence_tier TEXT");
 // Theme labels cache on contexts
 safeAlter("ALTER TABLE contexts ADD COLUMN theme_labels TEXT");
 
+// Agent mode: research, content, ads, competitive, product
+safeAlter("ALTER TABLE contexts ADD COLUMN agent_mode TEXT");
+
+// source_kind: explicit type for evidence packets (post, comment, market_prediction, market_price)
+safeAlter("ALTER TABLE evidence_packets ADD COLUMN source_kind TEXT");
+
+// Backfill source_kind from source_item_id prefix for existing data
+db.exec(`
+  UPDATE evidence_packets SET source_kind = 'comment'
+  WHERE source_kind IS NULL AND source_item_id LIKE 't1_%'
+`);
+db.exec(`
+  UPDATE evidence_packets SET source_kind = 'post'
+  WHERE source_kind IS NULL AND source_item_id LIKE 't3_%'
+`);
+db.exec(`
+  UPDATE evidence_packets SET source_kind = 'market_prediction'
+  WHERE source_kind IS NULL AND source_item_id LIKE 'pm-%'
+`);
+db.exec(`
+  UPDATE evidence_packets SET source_kind = 'market_price'
+  WHERE source_kind IS NULL AND source_item_id LIKE 'stk-%'
+`);
+
 // Performance indexes for key join paths
 const safeIndex = (sql) => { try { db.exec(sql); } catch {} };
 safeIndex("CREATE INDEX IF NOT EXISTS idx_evidence_context ON evidence_packets(context_id)");

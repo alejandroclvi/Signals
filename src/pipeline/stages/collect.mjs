@@ -22,7 +22,7 @@ const DELAY_MS = 1200;
 const COMMENT_THRESHOLD = 5;
 const COMMENT_LIMIT = 8;
 
-export async function collect({ contextId, subreddits, queries, limitPerQuery, sort, existingIds, existingSourceItems, onProgress }) {
+export async function collect({ contextId, subreddits, queries, limitPerQuery, sort, afterDate, beforeDate, existingIds, existingSourceItems, onProgress }) {
   const errors = [];
   const isDiscovery = !subreddits || subreddits.length === 0;
 
@@ -35,6 +35,8 @@ export async function collect({ contextId, subreddits, queries, limitPerQuery, s
 
     const discovered = await discoverRedditThreads(queries, {
       resultsPerQuery: limitPerQuery || 10,
+      afterDate,
+      beforeDate,
       onProgress: (info) => {
         if (info.error) errors.push(info.error);
         if (info.stage === "discovery-complete") {
@@ -108,6 +110,8 @@ export async function collect({ contextId, subreddits, queries, limitPerQuery, s
       queries,
       limitPerQuery: limitPerQuery || 12,
       sort: sort || "new",
+      afterDate,
+      beforeDate,
       onProgress: (info) => {
         if (info.error) errors.push(info.error);
         if (onProgress) onProgress({ stage: "collect", ...info });

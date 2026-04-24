@@ -20,6 +20,7 @@ import "../lib/env.mjs";
 import { getDb } from "../db/connection.mjs";
 import { classifyPackets } from "./llm-classifier.mjs";
 import { refreshSignals } from "./refresh-signals.mjs";
+import { getAgentMode, getStateTargets, buildSystemPrompt, buildPromptSuffix } from "./agent-modes.mjs";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const MODEL = "google/gemini-2.0-flash-001";
@@ -29,26 +30,28 @@ function safeParseJson(value, fallback) {
   try { return JSON.parse(value); } catch { return fallback; }
 }
 
-// --- Coverage ideal targets ---
-// These represent the distribution we want for a well-researched topic.
-// "promoting" is intentionally low (noise), "tried_failed" and "warning"
-// are high-value but rare, so we actively pursue them.
-const STATE_TARGETS = {
-  experiencing_pain: 0.22,
-  seeking:           0.18,
-  tried_failed:      0.16,
-  found_what_works:  0.12,
-  sharing_insight:   0.10,
-  comparing:         0.10,
-  warning:           0.07,
-  promoting:         0.05,
-};
+/**
+ * Resolve the agent mode for a given context.
+ * Priority: explicit option > context.agent_mode > "research" default.
+ */
+function resolveAgentMode(contextId, explicitMode) {
+  if (explicitMode) return explicitMode;
+  const db = getDb();
+  const ctx = db.prepare("SELECT agent_mode FROM contexts WHERE id = ?").get(contextId);
+  return ctx?.agent_mode || "research";
+}
 
 /**
  * Assess current evidence coverage for a context.
  * Returns gaps, yields, and a recommendation.
+ *
+ * @param {string} contextId
+ * @param {object} options
+ * @param {string} options.agentMode — override agent mode (default: context setting or "research")
  */
-export function assessCoverage(contextId) {
+export function assessCoverage(contextId, options = {}) {
+  const agentMode = resolveAgentMode(contextId, options.agentMode);
+  const STATE_TARGETS = getStateTargets(agentMode);
   const db = getDb();
 
   // State distribution
@@ -216,7 +219,8 @@ export function assessCoverage(contextId) {
  * generates the NEXT queries to fill coverage gaps.
  */
 export async function generateAdaptiveQueries(contextId, options = {}) {
-  const coverage = assessCoverage(contextId);
+  const agentMode = resolveAgentMode(contextId, options.agentMode);
+  const coverage = assessCoverage(contextId, { agentMode });
   const db = getDb();
   const context = db.prepare("SELECT * FROM contexts WHERE id = ?").get(contextId);
 
@@ -240,6 +244,7 @@ export async function generateAdaptiveQueries(contextId, options = {}) {
   };
 
   const prompt = buildAdaptivePrompt({
+    agentMode,
     topic: context.label,
     thesis: context.thesis,
     avatar: context.avatar,
@@ -256,8 +261,10 @@ export async function generateAdaptiveQueries(contextId, options = {}) {
   });
 
   if (!OPENROUTER_API_KEY) {
-    return { queries: fallbackQueries(topGaps, coverage.topTools), coverage, reason: "No API key — using fallback queries" };
+    return { queries: fallbackQueries(topGaps, coverage.topTools), coverage, reason: "No API key — using fallback queries", agentMode };
   }
+
+  const systemPrompt = buildSystemPrompt(agentMode);
 
   try {
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -274,7 +281,7 @@ export async function generateAdaptiveQueries(contextId, options = {}) {
         temperature: 0.3,
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: DIRECTOR_SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           { role: "user", content: prompt },
         ],
       }),
@@ -313,11 +320,12 @@ export async function generateAdaptiveQueries(contextId, options = {}) {
       thesisCheck,
       avatarRefinement,
       shouldContinue,
-      reason: `Generated ${queries.length} adaptive queries for ${topGaps.map(g => g.state).join(", ")}`,
+      agentMode,
+      reason: `[${agentMode}] Generated ${queries.length} adaptive queries for ${topGaps.map(g => g.state).join(", ")}`,
     };
   } catch (err) {
     console.warn("Research director error:", err.message);
-    return { queries: fallbackQueries(topGaps, coverage.topTools), coverage, reason: "Error — fallback queries" };
+    return { queries: fallbackQueries(topGaps, coverage.topTools), coverage, agentMode, reason: "Error — fallback queries" };
   }
 }
 
@@ -332,25 +340,26 @@ export async function generateAdaptiveQueries(contextId, options = {}) {
  * @returns {{ evidenceCount, signalCount, queriesUsed, coverageBefore, coverageAfter }}
  */
 export async function runResearchRound(contextId, options = {}) {
-  const { onProgress = () => {}, llmClassify = true } = options;
+  const { onProgress = () => {}, llmClassify = true, afterDate, beforeDate, agentMode: explicitAgent } = options;
+  const agentMode = resolveAgentMode(contextId, explicitAgent);
   const db = getDb();
 
   // 1. Assess current coverage
-  onProgress({ stage: "assess", message: "Assessing evidence coverage..." });
-  const coverageBefore = assessCoverage(contextId);
+  onProgress({ stage: "assess", message: `Assessing evidence coverage (agent: ${agentMode})...` });
+  const coverageBefore = assessCoverage(contextId, { agentMode });
 
   if (coverageBefore.isBalanced && coverageBefore.isPlateaued) {
     onProgress({ stage: "done", message: "Research saturated — coverage balanced, confidence high" });
     return {
       evidenceCount: 0, signalCount: 0, queriesUsed: 0,
       coverageBefore, coverageAfter: coverageBefore,
-      stopped: true, reason: "Coverage balanced and plateaued",
+      agentMode, stopped: true, reason: "Coverage balanced and plateaued",
     };
   }
 
   // 2. Generate adaptive queries
   onProgress({ stage: "generate", message: "Generating adaptive queries..." });
-  const { queries, thesisCheck, shouldContinue } = await generateAdaptiveQueries(contextId);
+  const { queries, thesisCheck, shouldContinue } = await generateAdaptiveQueries(contextId, { agentMode });
 
   if (queries.length === 0) {
     onProgress({ stage: "done", message: "No queries generated — coverage may be balanced" });
@@ -408,6 +417,8 @@ export async function runResearchRound(contextId, options = {}) {
       queries: queryStrings,
       subreddits: highValueCommunities.length > 0 ? highValueCommunities : undefined,
       limit: 5, // per query
+      afterDate,
+      beforeDate,
     });
     evidenceCount = result?.evidenceCount || 0;
   } catch (err) {
@@ -454,7 +465,7 @@ export async function runResearchRound(contextId, options = {}) {
   const refreshResult = refreshSignals(contextId);
 
   // 7. Re-assess coverage
-  const coverageAfter = assessCoverage(contextId);
+  const coverageAfter = assessCoverage(contextId, { agentMode });
 
   // 8. Report results
   const improvement = coverageBefore.gaps.map(gap => {
@@ -498,7 +509,8 @@ export async function runResearchRound(contextId, options = {}) {
  * @returns {{ rounds, totalEvidence, finalCoverage, decisions }}
  */
 export async function runResearchLoop(contextId, options = {}) {
-  const { maxRounds = 3, onProgress = () => {} } = options;
+  const { maxRounds = 3, onProgress = () => {}, afterDate, beforeDate, agentMode: explicitAgent } = options;
+  const agentMode = resolveAgentMode(contextId, explicitAgent);
 
   const decisions = [];
   let totalEvidence = 0;
@@ -511,6 +523,9 @@ export async function runResearchLoop(contextId, options = {}) {
     onProgress({ stage: "round", message: `=== Round ${round}/${maxRounds} ===`, round });
 
     const result = await runResearchRound(contextId, {
+      afterDate,
+      beforeDate,
+      agentMode,
       onProgress: (event) => {
         onProgress({ ...event, round });
       },
@@ -551,7 +566,7 @@ export async function runResearchLoop(contextId, options = {}) {
     }
   }
 
-  const finalCoverage = assessCoverage(contextId);
+  const finalCoverage = assessCoverage(contextId, { agentMode });
 
   onProgress({
     stage: "complete",
@@ -567,29 +582,9 @@ export async function runResearchLoop(contextId, options = {}) {
 }
 
 // --- LLM Prompts ---
+// System prompts are now in agent-modes.mjs. The old hardcoded prompt lives there as the "research" mode.
 
-const DIRECTOR_SYSTEM_PROMPT = `You are a research strategist directing an evidence-gathering operation on Reddit.
-
-Your job: analyze the current state of the research and generate the NEXT batch of search queries that will fill specific coverage gaps.
-
-Rules:
-1. Use the ACTUAL vocabulary from existing evidence — the phrases people use, the tool names they mention, the way they describe problems. Don't invent terminology.
-2. Each query should be written as something a real person would type into Google (not a keyword search — a natural language query). Do NOT include "site:reddit.com" — that is added automatically by the discovery layer.
-3. Target specific evidence states: if we're missing "tried_failed" evidence, write queries that would surface discussions where people tried a specific tool and it failed.
-4. Avoid saturated communities — if we already have 500+ posts from r/webdev, target smaller, less-mined communities.
-5. Include a thesis check: does the evidence so far support the original thesis, or should it be refined?
-
-Respond with ONLY valid JSON matching this schema:
-{
-  "queries": [
-    {"query": "natural search query", "target_state": "tried_failed", "rationale": "why this query", "target_communities": ["r/community"]}
-  ],
-  "thesis_check": {"status": "confirmed|refine|pivot", "reason": "why", "refinement": "new thesis if refine/pivot"},
-  "avatar_refinement": "updated avatar description if evidence reveals something new, or null",
-  "should_continue": true
-}`;
-
-function buildAdaptivePrompt({ topic, thesis, avatar, totalEvidence, stateDist, gaps, stateDescriptions, topTools, topVocabulary, highValueCommunities, saturatedCommunities, queryYields, awarenessDist }) {
+function buildAdaptivePrompt({ agentMode, topic, thesis, avatar, totalEvidence, stateDist, gaps, stateDescriptions, topTools, topVocabulary, highValueCommunities, saturatedCommunities, queryYields, awarenessDist }) {
   const parts = [];
 
   parts.push(`RESEARCH TOPIC: ${topic}`);
@@ -658,11 +653,10 @@ function buildAdaptivePrompt({ topic, thesis, avatar, totalEvidence, stateDist, 
     }
   }
 
-  // The ask
+  // The ask — agent-mode-specific instructions
   parts.push(`\nGENERATE ${Math.min(gaps.length * 3, 8)} search queries targeting the coverage gaps.`);
   parts.push("Use the vocabulary and tool names from the evidence above.");
-  parts.push("Each query should find Reddit posts that naturally classify into the target state.");
-  parts.push("Also include a thesis_check and avatar_refinement based on what the evidence reveals.");
+  parts.push(buildPromptSuffix(agentMode));
 
   return parts.join("\n");
 }

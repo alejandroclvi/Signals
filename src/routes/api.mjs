@@ -280,6 +280,8 @@ router.post("/api/ingest/reddit", async (req, res) => {
         contextId,
         limitPerQuery: req.body.limitPerQuery || 12,
         sort: req.body.sort || "new",
+        afterDate: req.body.afterDate,
+        beforeDate: req.body.beforeDate,
         onProgress: (info) => {
           console.log("[ingest]", info.stage, info.message || (info.subreddit + "/" + info.query + ": " + info.count));
         },
@@ -861,6 +863,11 @@ router.post("/api/contexts/:id/adaptive-queries", async (req, res) => {
   }
 });
 
+router.get("/api/agent-modes", async (req, res) => {
+  const { listAgentModes } = await import("../pipeline/agent-modes.mjs");
+  res.json(listAgentModes());
+});
+
 router.post("/api/contexts/:id/research-round", async (req, res) => {
   const contextId = req.params.id;
   broadcast("toast", { message: "Starting adaptive research round...", type: "info" });
@@ -868,6 +875,9 @@ router.post("/api/contexts/:id/research-round", async (req, res) => {
   try {
     const { runResearchRound } = await import("../pipeline/research-director.mjs");
     const result = await runResearchRound(contextId, {
+      afterDate: req.body?.afterDate,
+      beforeDate: req.body?.beforeDate,
+      agentMode: req.body?.agentMode,
       onProgress: (event) => {
         broadcast("toast", { message: event.message, type: event.stage === "error" ? "error" : "info" });
       },
@@ -892,6 +902,9 @@ router.post("/api/contexts/:id/research-loop", async (req, res) => {
     const { runResearchLoop } = await import("../pipeline/research-director.mjs");
     const result = await runResearchLoop(contextId, {
       maxRounds,
+      afterDate: req.body?.afterDate,
+      beforeDate: req.body?.beforeDate,
+      agentMode: req.body?.agentMode,
       onProgress: (event) => {
         broadcast("toast", { message: event.message, type: event.stage === "error" ? "error" : "info" });
         if (event.stage === "done" && event.round) {

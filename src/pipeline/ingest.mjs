@@ -75,6 +75,7 @@ export async function ingestReddit(options) {
   const collected = await collect({
     contextId, subreddits: cleanSubs, queries,
     limitPerQuery: options.limitPerQuery, sort: options.sort,
+    afterDate: options.afterDate, beforeDate: options.beforeDate,
     existingIds, existingSourceItems, onProgress,
   });
   stageResults.collection = collected.stats;
@@ -104,8 +105,9 @@ export async function ingestReddit(options) {
     `INSERT OR IGNORE INTO evidence_packets
      (id, context_id, source_id, source_layer, source_item_id, url, title, body,
       author_ref, community, observed_at, published_at, metrics, topics, raw_ref, content_hash,
-      intent, awareness_level, sentiment, evidence_state, evidence_weight, quality_score, pipeline_run_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      intent, awareness_level, sentiment, evidence_state, evidence_weight, quality_score, pipeline_run_id,
+      source_kind)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
 
   const writeEvidence = db.transaction(() => {
@@ -116,7 +118,8 @@ export async function ingestReddit(options) {
         ep.observed_at, ep.published_at, ep.metrics, ep.topics, ep.raw_ref, ep.content_hash,
         ep.intent || "question", ep.awareness_level || "problem_aware", ep.sentiment || "neutral",
         ep.evidence_state || "sharing_insight",
-        ep.evidence_weight || 1.0, ep.quality_score || null, runId
+        ep.evidence_weight || 1.0, ep.quality_score || null, runId,
+        ep.source_kind || null
       );
     }
   });

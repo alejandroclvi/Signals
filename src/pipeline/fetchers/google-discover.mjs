@@ -17,7 +17,7 @@ const SEARCH_DELAY_MS = 3000;
  * Search Google for Reddit threads matching pain phrases.
  * Returns array of { url, title, snippet, query, subreddit }.
  */
-export async function discoverRedditThreads(queries, { onProgress, resultsPerQuery } = {}) {
+export async function discoverRedditThreads(queries, { onProgress, resultsPerQuery, afterDate, beforeDate } = {}) {
   const limit = resultsPerQuery || 10;
 
   // Step 1: Get validated proxies
@@ -61,7 +61,9 @@ export async function discoverRedditThreads(queries, { onProgress, resultsPerQue
       });
       const page = await ctx.newPage();
 
-      const searchQuery = query.includes("site:reddit.com") ? query : `${query} site:reddit.com`;
+      let searchQuery = query.includes("site:reddit.com") ? query : `${query} site:reddit.com`;
+      if (afterDate) searchQuery += ` after:${afterDate}`;
+      if (beforeDate) searchQuery += ` before:${beforeDate}`;
       const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}&num=${limit}`;
 
       await page.goto(googleUrl, { waitUntil: "domcontentloaded", timeout: 15000 });

@@ -34,6 +34,8 @@ if (!contextId) {
 }
 
 const limit = parseInt(flag("limit") || "10", 10);
+const afterDate = flag("after");
+const beforeDate = flag("before");
 
 const db = getDb();
 const context = db.prepare("SELECT * FROM contexts WHERE id = ?").get(contextId);
@@ -86,7 +88,9 @@ const allResults = [];
 
 for (let i = 0; i < queries.length; i++) {
   const query = queries[i];
-  const searchQuery = `${query} site:reddit.com`;
+  let searchQuery = `${query} site:reddit.com`;
+  if (afterDate) searchQuery += ` after:${afterDate}`;
+  if (beforeDate) searchQuery += ` before:${beforeDate}`;
 
   process.stdout.write(`[${i + 1}/${queries.length}] "${query.slice(0, 55)}" `);
 

@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS contexts (
   thesis        TEXT,  -- Why are we looking? What do we expect to find?
   avatar        TEXT,  -- Who is the person experiencing this pain?
   research_passes TEXT, -- JSON {pass1: [...], pass2: [...], pass3: [...]}
+  agent_mode    TEXT,  -- research, content, ads, competitive, product (default: research)
   created_at    TEXT DEFAULT (datetime('now')),
   updated_at    TEXT DEFAULT (datetime('now'))
 );
@@ -36,7 +37,8 @@ CREATE TABLE IF NOT EXISTS evidence_packets (
   sentiment       TEXT,  -- positive, negative, neutral, mixed
   evidence_weight REAL DEFAULT 1.0,
   quality_score   REAL,
-  pipeline_run_id TEXT
+  pipeline_run_id TEXT,
+  source_kind     TEXT   -- post, comment, market_prediction, market_price, search_result, repo, review
 );
 
 CREATE TABLE IF NOT EXISTS signals (

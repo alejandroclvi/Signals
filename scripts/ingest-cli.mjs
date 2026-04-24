@@ -6,6 +6,8 @@
  * Usage:
  *   pnpm run ingest -- --context law-firms
  *   node scripts/ingest-cli.mjs --context law-firms --limit 20 --sort hot
+ *   node scripts/ingest-cli.mjs --context law-firms --after 2026-04-14
+ *   node scripts/ingest-cli.mjs --context law-firms --after 2026-04-14 --before 2026-04-21
  */
 
 import { ingestReddit } from "../src/pipeline/ingest.mjs";
@@ -27,14 +29,21 @@ if (!contextId) {
 
 const limitPerQuery = parseInt(flag("limit") || "12", 10);
 const sort = flag("sort") || "new";
+const afterDate = flag("after");
+const beforeDate = flag("before");
 
-console.log(`Ingesting Reddit for context "${contextId}" (limit=${limitPerQuery}, sort=${sort})...\n`);
+const timeInfo = afterDate || beforeDate
+  ? `, time: ${afterDate || "∞"} → ${beforeDate || "∞"}`
+  : "";
+console.log(`Ingesting Reddit for context "${contextId}" (limit=${limitPerQuery}, sort=${sort}${timeInfo})...\n`);
 
 try {
   const result = await ingestReddit({
     contextId,
     limitPerQuery,
     sort,
+    afterDate,
+    beforeDate,
     onProgress: (info) => {
       console.log(`  [${info.stage}] ${info.message || ""}`);
     },

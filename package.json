@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Early-warning system for detecting internet momentum",
+  "engines": {
+    "node": ">=22 <23"
+  },
   "scripts": {
     "start": "node src/server.mjs",
     "dev": "node --watch src/server.mjs",
@@ -17,7 +20,8 @@
     "backfill": "node scripts/backfill-classifications.mjs",
     "reclassify": "node scripts/reclassify-llm.mjs",
     "theme-labels": "node scripts/generate-theme-labels-cli.mjs",
-    "research": "node scripts/research-loop.mjs"
+    "research": "node scripts/research-loop.mjs",
+    "test:smoke": "node scripts/smoke-test.mjs"
   },
   "keywords": [],
   "author": "",

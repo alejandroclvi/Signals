@@ -65,6 +65,8 @@ pnpm thread-intel --context <id>   # Run LLM thread analysis
 pnpm research <id>                 # Autonomous adaptive research loop (3 rounds)
 pnpm research <id> --assess        # Assess coverage gaps (no discovery)
 pnpm research <id> --queries       # Generate adaptive queries (dry run)
+pnpm research <id> --after 2026-04-14                    # Only posts after date
+pnpm research <id> --after 2026-04-14 --before 2026-04-21  # Time window
 pnpm backfill                      # Backfill NULL classifications on existing evidence
 pnpm reclassify <id>               # Upgrade regex classifications to LLM
 pnpm theme-labels <id>             # Generate LLM-derived theme labels
@@ -72,6 +74,7 @@ pnpm brief --context <id>          # Generate research brief
 pnpm push --context <id>           # Generate brief + push to dashboard as modal
 pnpm push --toast "message"        # Send toast notification to dashboard
 pnpm push --reload                 # Trigger data reload in dashboard
+pnpm test:smoke                    # Run health checks (DB, evidence, signals, relevance)
 ```
 
 ### Adaptive research loop
@@ -86,9 +89,30 @@ The system can autonomously direct its own research. Instead of static queries:
 ```bash
 pnpm research <context-id>           # Full loop (3 rounds)
 pnpm research <context-id> --assess  # Just show coverage gaps
+pnpm research <context-id> --after 2026-04-14  # Only recent evidence
 ```
 
 The research director also checks thesis validity — if evidence contradicts the hypothesis, it flags for refinement.
+
+### Time window boundaries
+All ingestion and research commands accept optional `--after` and `--before` flags (ISO date format: YYYY-MM-DD). These are not included by default — without them, the system searches all time.
+
+- **Google discovery**: Appends `after:` / `before:` to Google search queries
+- **Reddit fetcher**: Converts dates to Reddit's `t=` param (day/week/month/year) for server-side filtering, then applies precise client-side filtering on `created_utc`
+- **Interactive discovery**: Adds date operators to the headed browser's Google searches
+- **API**: Pass `afterDate` / `beforeDate` in request body
+
+```bash
+# CLI
+pnpm research <id> --after 2026-04-14 --before 2026-04-21
+pnpm ingest -- --context <id> --after 2026-04-14
+node scripts/discover-reddit-threads.mjs --context <id> --after 2026-04-14
+
+# API
+curl -X POST localhost:3000/api/ingest/reddit \
+  -H 'Content-Type: application/json' \
+  -d '{"context_id": "<id>", "afterDate": "2026-04-14"}'
+```
 
 ### Intelligence pipeline
 The system has a 3-layer intelligence architecture:
@@ -126,7 +150,33 @@ The UI listens on `GET /api/events` (EventSource). Events: `toast`, `report`, `r
 
 ### Environment
 - `.env` in project root with `OPENROUTER_API_KEY=sk-or-...` (required for LLM features)
-- Node 22 required (`nvm use 22`)
+- Node 22 required — `.nvmrc` and `package.json engines` are pinned (`nvm use`)
+
+### Smoke test
+`pnpm test:smoke` validates database health across 44 checks:
+- All contexts have queries and source nodes
+- All evidence has `source_kind` (post, comment, market_prediction, market_price)
+- No evidence from irrelevant communities (relevance score ≤ 0.2)
+- No orphaned signals (signals without linked evidence)
+- No duplicate ranks per context
+- Market fixtures seeded and intact
+- No failed pipeline runs
+
+### Evidence contract
+Every evidence packet has:
+- `source_kind` — explicit type: `post`, `comment`, `market_prediction`, `market_price` (future: `search_result`, `repo`, `review`)
+- `evidence_state` — buyer journey position: `experiencing_pain`, `seeking`, `tried_failed`, `found_what_works`, `sharing_insight`, `warning`, `comparing`, `promoting`
+- `intent`, `awareness_level`, `sentiment` — legacy 3-dimension classification (still populated)
+- `evidence_weight` — upvote-based weight (comments: 0.6x–2.6x, posts: 1.0x–2.0x)
+- `quality_score` — combined relevance + intent + awareness + weight score
+
+### Community relevance
+The classify stage drops evidence from irrelevant communities (score ≤ 0.2). Relevance tiers:
+- **1.0** — business, tech, marketing, professional (SaaS, startups, programming, etc.)
+- **0.5** — career, work-adjacent (careerguidance, personalfinance, etc.)
+- **0.2** — finance noise, general AI chat (stocks, ChatGPT, wallstreetbets, etc.) — **filtered out**
+- **0.1** — hobbies, fiction, gaming, relationships — **filtered out**
+- **0.5** — unknown communities get a chance
 
 ### Sending notifications to the dashboard
 
@@ -166,7 +216,8 @@ Follow the global CLAUDE.md rules for HTML-to-PDF via Playwright. The project al
 | `src/pipeline/research-director.mjs` | Adaptive research loop: coverage assessment, query generation, thesis checking |
 | `src/pipeline/llm-classifier.mjs` | Batched LLM micro-classification via Gemini Flash (replaces regex) |
 | `src/pipeline/theme-labeler.mjs` | LLM-derived theme labels for research queries |
-| `scripts/` | CLI tools (ingest, thread-intel, brief, push-report, research, backfill, reclassify) |
+| `scripts/` | CLI tools (ingest, thread-intel, brief, push-report, research, backfill, reclassify, smoke-test) |
+| `src/pipeline/community-relevance.mjs` | Community relevance scoring (filters noise communities) |
 | `PROJECT_BRIEF.md` | Full product vision and signal taxonomy |
 | `SOURCE_INTELLIGENCE.md` | Multi-platform source interpretation framework |
 | `dashboard-prototype/` | Legacy static prototype (superseded by Express app) |
