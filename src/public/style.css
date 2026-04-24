@@ -2261,6 +2261,32 @@ h1 {
   line-height: 1.5;
   margin-bottom: 6px;
   font-style: italic;
+}
+
+/* Thread-level AI insight banner */
+.thread-insight-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: -4px 0 4px 28px;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, rgba(45,111,187,.06) 0%, rgba(135,95,180,.06) 100%);
+  border: 1px solid rgba(45,111,187,.12);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.thread-insight-icon {
+  color: #2d6fbb;
+  font-size: 12px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.thread-insight-text {
+  color: var(--ink-muted, #3a444f);
+  font-style: italic;
   border-left: 2px solid var(--purple, #875fb4);
   padding-left: 8px;
 }

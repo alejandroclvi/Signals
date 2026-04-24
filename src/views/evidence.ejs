@@ -187,6 +187,13 @@
                     <div class="thread-body"><%= (post.body || '').slice(0, 300) %><%= (post.body || '').length > 300 ? '...' : '' %></div>
                   </div>
                 </div>
+                <% const topInsight = threadInsights[threadId] || ''; %>
+                <% if (topInsight) { %>
+                <div class="thread-insight-banner">
+                  <span class="thread-insight-icon">&#9672;</span>
+                  <span class="thread-insight-text"><%= topInsight %></span>
+                </div>
+                <% } %>
                 <!-- Comments (branches) — collapse if >3 -->
                 <%
                   const shouldCollapse = comments.length > 3;

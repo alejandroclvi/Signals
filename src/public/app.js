@@ -794,6 +794,20 @@ function renderDetail() {
     evHtml += '<div class="ev-body">' + escapeHtml(post.quote.slice(0, 300)) + (post.quote.length > 300 ? '...' : '') + '</div>';
     evHtml += '</div></div>';
 
+    // Thread-level AI insight banner
+    var topInsight = "";
+    if (signal.intelligence && signal.intelligence.threads) {
+      for (var ii0 = 0; ii0 < signal.intelligence.threads.length; ii0++) {
+        if (signal.intelligence.threads[ii0].threadId === threadKey && signal.intelligence.threads[ii0].keyInsight) {
+          topInsight = signal.intelligence.threads[ii0].keyInsight;
+          break;
+        }
+      }
+    }
+    if (topInsight) {
+      evHtml += '<div class="thread-insight-banner"><span class="thread-insight-icon">&#9672;</span><span class="thread-insight-text">' + escapeHtml(topInsight) + '</span></div>';
+    }
+
     // Comments — show first 2 + last, collapse middle with AI summary
     var showFirst = 2;
     var collapsed = comments.length > 3;
