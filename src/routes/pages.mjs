@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { getDb } from "../db/connection.mjs";
 import { buildRadarData } from "./api.mjs";
+import { listAgentModes, getAgentMode } from "../pipeline/agent-modes.mjs";
 
 const router = Router();
 
@@ -158,6 +159,48 @@ router.get("/communities", (req, res) => {
     page: "communities",
     stats,
     communities,
+  });
+});
+
+router.get("/lens/:name", (req, res) => {
+  const db = getDb();
+  const resolved = resolveContext(db, req);
+  if (!resolved) return res.send(emptyPage);
+
+  const { contexts, activeContext } = resolved;
+  const stats = getStats(db, activeContext.id);
+  const allLenses = listAgentModes();
+  const lensId = req.params.name;
+  const lensInfo = allLenses.find(l => l.id === lensId);
+  if (!lensInfo) return res.status(404).send(`Lens not found: ${lensId}. Available: ${allLenses.map(l => l.id).join(", ")}`);
+
+  const signals = db.prepare(`
+    SELECT s.id, s.title, s.status, s.dominant_state, s.mentions,
+           ss.total, ss.rank_in_ctx, ss.components
+    FROM signal_scores ss
+    JOIN signals s ON s.id = ss.signal_id
+    WHERE s.context_id = ? AND ss.lens = ?
+    ORDER BY ss.rank_in_ctx
+  `).all(activeContext.id, lensId).map(r => {
+    let topComponents = [];
+    try {
+      const arr = JSON.parse(r.components);
+      topComponents = arr
+        .filter(c => c.weighted > 0)
+        .sort((a, b) => b.weighted - a.weighted)
+        .slice(0, 4);
+    } catch { /* ignore */ }
+    return { ...r, topComponents };
+  });
+
+  res.render("lens", {
+    contexts,
+    activeContext,
+    page: "lens",
+    stats,
+    lensInfo,
+    allLenses,
+    signals,
   });
 });
 

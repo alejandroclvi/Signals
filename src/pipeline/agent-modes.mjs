@@ -20,6 +20,16 @@ const MODES = {
   research: {
     label: "Research Strategist",
     description: "Balanced evidence gathering for complete market understanding. Fills coverage gaps evenly.",
+    view: "/",
+    brief: { template: "thesis" },
+    scoringWeights: {
+      "Repetition": 1.0, "Pain intensity": 1.0, "Cross-community": 1.0,
+      "Tool request": 1.0, "Engagement quality": 1.0, "Freshness": 1.0,
+      "Author diversity": 1.0, "Signal quality": 1.0, "Missing evidence penalty": 1.0,
+      "Insight depth": 1.0, "Solution gap": 1.0, "Thread intelligence": 1.0,
+      "Velocity (z-score)": 1.0, "Corroboration (layers × sources)": 1.0,
+      "Independence (community spread)": 1.0,
+    },
     stateTargets: {
       experiencing_pain: 0.22,
       seeking:           0.18,
@@ -48,6 +58,16 @@ Also include a thesis_check and avatar_refinement based on what the evidence rev
   content: {
     label: "Content Creator",
     description: "Find material to repurpose into LinkedIn posts, threads, and educational content. Optimizes for shareability, contrarian takes, and relatable pain.",
+    view: "/lens/content",
+    brief: { template: "content-series" },
+    scoringWeights: {
+      "Repetition": 0.7, "Pain intensity": 1.3, "Cross-community": 1.0,
+      "Tool request": 0.7, "Engagement quality": 1.5, "Freshness": 1.5,
+      "Author diversity": 1.0, "Signal quality": 1.2, "Missing evidence penalty": 0.6,
+      "Insight depth": 1.4, "Solution gap": 1.0, "Thread intelligence": 1.2,
+      "Velocity (z-score)": 1.5, "Corroboration (layers × sources)": 0.8,
+      "Independence (community spread)": 0.9,
+    },
     stateTargets: {
       warning:           0.25,  // contrarian takes → highest engagement
       experiencing_pain: 0.22,  // relatable hooks → "here's what I'm seeing"
@@ -86,6 +106,16 @@ Also include a thesis_check on whether the topic has enough heat for a content s
   ads: {
     label: "Ad Copywriter",
     description: "Find emotional triggers, exact pain phrases, before/after narratives, and failed-solution language for ad copy and landing pages.",
+    view: "/lens/ads",
+    brief: { template: "headline-bank" },
+    scoringWeights: {
+      "Repetition": 0.5, "Pain intensity": 2.0, "Cross-community": 0.8,
+      "Tool request": 0.7, "Engagement quality": 1.0, "Freshness": 0.6,
+      "Author diversity": 0.8, "Signal quality": 1.0, "Missing evidence penalty": 0.4,
+      "Insight depth": 1.5, "Solution gap": 1.8, "Thread intelligence": 1.5,
+      "Velocity (z-score)": 1.2, "Corroboration (layers × sources)": 0.7,
+      "Independence (community spread)": 0.7,
+    },
     stateTargets: {
       experiencing_pain: 0.30,  // raw pain language → headlines
       tried_failed:      0.25,  // "I tried X" → objection handling
@@ -124,6 +154,16 @@ Also flag any recurring "rock bottom" phrases that appear across multiple posts 
   competitive: {
     label: "Competitive Intel",
     description: "Track tool switching patterns, comparison language, and competitive positioning to understand market movement.",
+    view: "/lens/competitive",
+    brief: { template: "tool-switch-matrix" },
+    scoringWeights: {
+      "Repetition": 0.8, "Pain intensity": 0.9, "Cross-community": 1.5,
+      "Tool request": 1.8, "Engagement quality": 1.0, "Freshness": 1.2,
+      "Author diversity": 1.2, "Signal quality": 1.3, "Missing evidence penalty": 0.7,
+      "Insight depth": 1.0, "Solution gap": 1.4, "Thread intelligence": 1.2,
+      "Velocity (z-score)": 1.3, "Corroboration (layers × sources)": 2.0,
+      "Independence (community spread)": 1.5,
+    },
     stateTargets: {
       comparing:         0.28,  // head-to-head comparisons
       tried_failed:      0.22,  // tool churn — what's losing
@@ -158,10 +198,61 @@ Each query should surface posts where someone is:
 Also report which tools appear most frequently in positive vs negative contexts.`,
   },
 
+  // ─── Capital: expectation/price divergence vs conversation ───
+  capital: {
+    label: "Capital Signal",
+    description: "Surface signals where expectation markets (Polymarket) move against or alongside conversation. Weights corroboration and velocity heavily; ignores conversational fluff.",
+    view: "/lens/capital",
+    brief: { template: "polymarket-divergence" },
+    scoringWeights: {
+      "Repetition": 0.4, "Pain intensity": 0.5, "Cross-community": 1.0,
+      "Tool request": 0.5, "Engagement quality": 0.6, "Freshness": 1.4,
+      "Author diversity": 0.7, "Signal quality": 0.8, "Missing evidence penalty": 0.3,
+      "Insight depth": 0.7, "Solution gap": 0.6, "Thread intelligence": 0.6,
+      "Velocity (z-score)": 2.0, "Corroboration (layers × sources)": 2.5,
+      "Independence (community spread)": 1.6,
+    },
+    stateTargets: {
+      expectation_rising:  0.30,
+      expectation_falling: 0.20,
+      expectation_stable:  0.10,
+      tried_failed:        0.10,
+      experiencing_pain:   0.10,
+      seeking:             0.05,
+      sharing_insight:     0.05,
+      comparing:           0.05,
+      warning:             0.05,
+    },
+    systemPrompt: `You are a capital-markets analyst surfacing where prediction markets, equities, or expectation movement disagree with public conversation.
+
+Your job: find signals where Polymarket probability has moved sharply in one direction while Reddit/HN sentiment moves the opposite way, OR where both move together (confirming a strong narrative). The arbitrage of attention IS the signal.
+
+Rules:
+1. Prioritize MULTI-LAYER evidence — a signal is meaningless on Polymarket alone or Reddit alone.
+2. Look for divergence: Polymarket says 70% YES while conversation says "this will never happen."
+3. Look for confirmation: Polymarket and conversation agree, with Polymarket moving days ahead.
+4. Money-backed forecasts beat opinion every time. A small $5k market with stable price is less informative than a $200k market moving 10pp in 3 days.`,
+    promptSuffix: `Each query should surface evidence that crosses layers. Find:
+- Polymarket markets with active price movement
+- Conversation that mentions the underlying event/probability
+- Resolution events (YES/NO) and their conversation aftermath
+Also report any market-conversation divergence as a top finding.`,
+  },
+
   // ─── Product scout: find unmet demand and feature gaps ───
   product: {
     label: "Product Scout",
     description: "Find unmet demand, missing features, workaround patterns, and build-vs-buy frustration for product roadmap decisions.",
+    view: "/lens/product",
+    brief: { template: "unmet-demand-list" },
+    scoringWeights: {
+      "Repetition": 1.0, "Pain intensity": 1.2, "Cross-community": 1.3,
+      "Tool request": 2.0, "Engagement quality": 1.0, "Freshness": 1.0,
+      "Author diversity": 1.1, "Signal quality": 1.2, "Missing evidence penalty": 0.5,
+      "Insight depth": 1.2, "Solution gap": 1.5, "Thread intelligence": 1.1,
+      "Velocity (z-score)": 1.3, "Corroboration (layers × sources)": 1.2,
+      "Independence (community spread)": 1.2,
+    },
     stateTargets: {
       seeking:           0.28,  // active demand — "is there a tool that..."
       experiencing_pain: 0.25,  // unmet needs — problems without solutions
@@ -251,6 +342,18 @@ export function buildPromptSuffix(modeName) {
 export function getStateTargets(modeName) {
   const mode = getAgentMode(modeName);
   return mode.stateTargets;
+}
+
+export function getScoringWeights(modeName) {
+  return getAgentMode(modeName).scoringWeights || {};
+}
+
+export function getBriefTemplate(modeName) {
+  return getAgentMode(modeName).brief?.template || "thesis";
+}
+
+export function getView(modeName) {
+  return getAgentMode(modeName).view || "/";
 }
 
 export default MODES;

@@ -21,6 +21,10 @@
     "reclassify": "node scripts/reclassify-llm.mjs",
     "theme-labels": "node scripts/generate-theme-labels-cli.mjs",
     "research": "node scripts/research-loop.mjs",
+    "graph:sync": "node scripts/sync-graph.mjs",
+    "ingest:multi": "node scripts/ingest-multi.mjs",
+    "report:weekly": "node scripts/weekly-report.mjs",
+    "flow": "node scripts/flow.mjs",
     "test:smoke": "node scripts/smoke-test.mjs"
   },
   "keywords": [],

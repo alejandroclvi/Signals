@@ -250,6 +250,51 @@ db.exec(`
   WHERE source_kind IS NULL AND source_item_id LIKE 'stk-%'
 `);
 
+// Signal lifecycle: current trajectory state per signal.
+// State machine: forming → emerging → fresh → mature → fading
+//                       ↘ stalled (didn't progress) ↘ dormant (died)
+db.exec(`CREATE TABLE IF NOT EXISTS signal_lifecycle (
+  signal_id           TEXT PRIMARY KEY REFERENCES signals(id) ON DELETE CASCADE,
+  context_id          TEXT NOT NULL,
+  state               TEXT NOT NULL,           -- forming|emerging|fresh|mature|fading|stalled|dormant
+  state_reason        TEXT,                    -- short human-readable why
+  prev_state          TEXT,
+  state_since         TEXT,                    -- when we entered this state
+  materialized_at     TEXT,                    -- timestamp of forming/emerging → fresh transition
+  evidence_total      INTEGER DEFAULT 0,
+  evidence_30d        INTEGER DEFAULT 0,
+  evidence_7d         INTEGER DEFAULT 0,
+  evidence_prev_30d   INTEGER DEFAULT 0,       -- 30-60 days ago, for fading detection
+  trend_ratio         REAL,                    -- evidence_30d / evidence_prev_30d
+  latest_evidence_at  TEXT,
+  research_attempts   INTEGER DEFAULT 0,
+  last_research_at    TEXT,
+  updated_at          TEXT DEFAULT (datetime('now'))
+)`);
+
+// Time-series of lifecycle snapshots — gives us the "timeline" view per signal
+db.exec(`CREATE TABLE IF NOT EXISTS signal_lifecycle_snapshots (
+  signal_id           TEXT NOT NULL,
+  observed_at         TEXT NOT NULL,
+  state               TEXT NOT NULL,
+  evidence_total      INTEGER,
+  evidence_30d        INTEGER,
+  evidence_7d         INTEGER,
+  trend_ratio         REAL,
+  PRIMARY KEY (signal_id, observed_at)
+)`);
+
+// Per-lens materialized scores: same signal can rank differently per goal
+db.exec(`CREATE TABLE IF NOT EXISTS signal_scores (
+  signal_id    TEXT NOT NULL REFERENCES signals(id) ON DELETE CASCADE,
+  lens         TEXT NOT NULL,
+  total        REAL NOT NULL,
+  components   TEXT NOT NULL,    -- JSON array of [name, weighted, raw, weight]
+  rank_in_ctx  INTEGER,
+  computed_at  TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (signal_id, lens)
+)`);
+
 // Performance indexes for key join paths
 const safeIndex = (sql) => { try { db.exec(sql); } catch {} };
 safeIndex("CREATE INDEX IF NOT EXISTS idx_evidence_context ON evidence_packets(context_id)");
@@ -265,6 +310,11 @@ safeIndex("CREATE INDEX IF NOT EXISTS idx_intelligence_units_context ON intellig
 safeIndex("CREATE INDEX IF NOT EXISTS idx_intelligence_units_signal ON intelligence_units(signal_id)");
 safeIndex("CREATE INDEX IF NOT EXISTS idx_intelligence_units_source ON intelligence_units(source_type, source_id)");
 safeIndex("CREATE INDEX IF NOT EXISTS idx_intelligence_links_to ON intelligence_links(to_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_signal_scores_lens_total ON signal_scores(lens, total DESC)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_signal_scores_signal ON signal_scores(signal_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_lifecycle_state ON signal_lifecycle(state)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_lifecycle_context ON signal_lifecycle(context_id)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_lifecycle_snapshots_signal ON signal_lifecycle_snapshots(signal_id, observed_at DESC)");
 
 // Seed evidence layers (static reference data)
 const upsertLayer = db.prepare(
