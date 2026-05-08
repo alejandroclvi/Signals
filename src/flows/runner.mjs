@@ -41,18 +41,31 @@ const FLOWS_DIR = path.resolve(__dirname, "../../flows");
 const FULL_REF = /^\$\{([^}]+)\}$/;
 const PARTIAL_REF = /\$\{([^}]+)\}/g;
 
+const SENTINEL = Symbol("missing");
+function resolvePath(scope, path) {
+  const parts = path.split(".");
+  let v = scope;
+  for (const p of parts) {
+    if (v === null || v === undefined) return SENTINEL;
+    if (!(p in v)) return SENTINEL;
+    v = v[p];
+  }
+  return v;
+}
+
 function interp(value, scope) {
   if (typeof value !== "string") return value;
   const full = FULL_REF.exec(value);
   if (full) {
     const key = full[1].trim();
-    if (!(key in scope)) throw new Error(`Unknown variable: \${${key}}`);
-    return scope[key];
+    const v = resolvePath(scope, key);
+    if (v === SENTINEL) throw new Error(`Unknown variable: \${${key}}`);
+    return v;
   }
   return value.replace(PARTIAL_REF, (_, key) => {
     const k = key.trim();
-    if (!(k in scope)) throw new Error(`Unknown variable: \${${k}}`);
-    const v = scope[k];
+    const v = resolvePath(scope, k);
+    if (v === SENTINEL) throw new Error(`Unknown variable: \${${k}}`);
     if (typeof v === "object") return JSON.stringify(v);
     return String(v);
   });
