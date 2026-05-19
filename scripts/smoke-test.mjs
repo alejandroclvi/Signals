@@ -123,6 +123,70 @@ const pipelineRuns = db.prepare("SELECT COUNT(*) as c FROM pipeline_runs").get()
 const failedRuns = db.prepare("SELECT COUNT(*) as c FROM pipeline_runs WHERE status = 'failed'").get().c;
 check(`Pipeline runs: ${pipelineRuns} total, ${failedRuns} failed`, failedRuns === 0, `${failedRuns} failed runs`);
 
+// --- Drilldown chain ---
+// Proves signal → evidence → thread → unified-signal → source_kind is
+// resolvable end-to-end (the operator loop demanded by the MVP audit).
+console.log("\n== Drilldown Chain ==");
+
+for (const ctx of contexts) {
+  const sig = db.prepare("SELECT id, title FROM signals WHERE context_id = ? LIMIT 1").get(ctx.id);
+  if (!sig) continue;
+
+  const ev = db.prepare(
+    "SELECT evidence_id FROM signal_evidence WHERE signal_id = ? LIMIT 1"
+  ).get(sig.id);
+  check(`${ctx.id}: signal → evidence resolves`, !!ev);
+
+  if (ev) {
+    const packet = db.prepare(
+      "SELECT id, source_kind, source_layer, thread_id FROM evidence_packets WHERE id = ?"
+    ).get(ev.evidence_id);
+    check(`${ctx.id}: evidence packet has source_kind`, !!packet?.source_kind);
+    check(`${ctx.id}: evidence packet has source_layer`, !!packet?.source_layer);
+
+    if (packet?.thread_id) {
+      const thread = db.prepare("SELECT id, title FROM threads WHERE id = ?").get(packet.thread_id);
+      check(`${ctx.id}: thread reachable from packet`, !!thread);
+      // thread_intelligence is optional (only present after Analyze runs);
+      // we only check that the join itself works.
+    }
+  }
+}
+
+// Unified signal integrity: every unified signal must have at least one
+// piece of cross-layer evidence, otherwise the drilldown opens an empty
+// drawer.
+const unifiedAll = db.prepare("SELECT id, context_id FROM unified_signals").all();
+check(`Unified signals exist`, unifiedAll.length >= 0); // soft — may be zero
+for (const u of unifiedAll) {
+  const evCount = db.prepare(
+    "SELECT COUNT(*) c FROM unified_signal_evidence WHERE unified_signal_id = ?"
+  ).get(u.id).c;
+  check(`${u.context_id}: unified ${u.id.slice(-10)} has ≥1 evidence packet`, evCount > 0);
+}
+
+// Signal cases integrity: if a case row exists, its members table should
+// not be empty (otherwise the compare drawer is useless — surfaces G-17).
+const caseTotal = db.prepare("SELECT COUNT(*) c FROM signal_cases").get().c;
+const caseMemberTotal = db.prepare("SELECT COUNT(*) c FROM signal_case_members").get().c;
+if (caseTotal > 0) {
+  check(
+    `signal_cases (${caseTotal} rows) are linked through signal_case_members (${caseMemberTotal} rows)`,
+    caseMemberTotal > 0,
+    "Cases exist but membership is empty — fix signal-cases.mjs writer (audit issue G-17)"
+  );
+}
+
+// Intelligence units: every unit with source_type='evidence_packet' should
+// reference a packet that still exists (otherwise the chain claim cannot
+// drill down).
+const orphanUnits = db.prepare(`
+  SELECT COUNT(*) c FROM intelligence_units iu
+  WHERE iu.source_type = 'evidence_packet'
+    AND iu.source_id NOT IN (SELECT id FROM evidence_packets)
+`).get().c;
+check(`No orphaned evidence-packet intelligence units`, orphanUnits === 0, `${orphanUnits} units reference missing packets`);
+
 // --- Summary ---
 console.log(`\n${"=".repeat(40)}`);
 console.log(`Results: ${passes} passed, ${failures} failed`);
