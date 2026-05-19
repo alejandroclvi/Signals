@@ -6,6 +6,9 @@
  * to steal for original posts.
  *
  *   pnpm flow run hook-radar [--topic "AI"] [--minScore 75] [--sinceDays 21]
+ *   pnpm flow run hook-radar --subs "ClaudeCode,ClaudeAI" --minTitleLen 12
+ *
+ * Use --minTitleLen 12 for Claude-heavy subs (many thread titles are short).
  *
  * Defaults: scans r/Futurology + r/technology + r/Singularity + r/OpenAI +
  * r/ChatGPT + r/artificial + r/Economics + r/geopolitics + r/business +
@@ -29,6 +32,7 @@ export default {
     includeHN:     { default: true },
     minScore:      { default: 70 },
     max:           { default: 12 },
+    minTitleLen:   { default: 28 },
     asOf:          { default: () => new Date().toISOString().slice(0, 10) },
   },
 
@@ -43,6 +47,7 @@ export default {
         sinceDays: "${sinceDays}",
         perQueryLimit: "${perQueryLimit}",
         includeHN: "${includeHN}",
+        minTitleLen: "${minTitleLen}",
       },
       capture: "discovery",
     },
@@ -64,6 +69,7 @@ export default {
         classified: "${verdicts.classified}",
         topic: "${topic}",
         totalConsidered: "${discovery.totalQueries}",
+        hooksConsidered: "${discovery.hooks.length}",
         asOf: "${asOf}",
       },
       capture: "outpath",

@@ -158,6 +158,11 @@ export default async function discoverBroadHooks({
   hnMinPoints = 30,
   hnLimit = 40,
 } = {}) {
+  minTitleLen = Number(minTitleLen) || 28;
+  sinceDays = Number(sinceDays) || 14;
+  topPerSub = Number(topPerSub) || 30;
+  hotPerSub = Number(hotPerSub) || 20;
+
   const subList = (typeof subs === "string" && subs) ? subs.split(",").map(s => s.trim()).filter(Boolean) : DEFAULT_SUBS;
   const patternList = (typeof patterns === "string" && patterns) ? patterns.split("|").map(s => s.trim()).filter(Boolean) : DEFAULT_PATTERNS;
   const usePatterns = includePatternSearch === true || includePatternSearch === "true";

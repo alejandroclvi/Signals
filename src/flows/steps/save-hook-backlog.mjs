@@ -20,6 +20,7 @@ export default async function saveHookBacklog({
   classified = [],
   topic = "",
   totalConsidered = 0,
+  hooksConsidered = null,
   asOf = new Date().toISOString().slice(0, 10),
   outDir = "output/hook-backlog",
 } = {}) {
@@ -29,7 +30,14 @@ export default async function saveHookBacklog({
   const lines = [];
   lines.push(`# Hook radar — ${asOf}${topic ? ` — ${topic}` : ""}`);
   lines.push("");
-  lines.push(`**Considered:** ${totalConsidered} titles  ·  **Surfaced:** ${filtered.length} (score ≥ threshold)`);
+  const titles = hooksConsidered != null && hooksConsidered !== ""
+    ? Number(hooksConsidered) || hooksConsidered
+    : null;
+  lines.push(
+    titles != null
+      ? `**Titles collected:** ${titles} · **HTTP queries:** ${totalConsidered} · **Surfaced:** ${filtered.length} (score ≥ threshold)`
+      : `**HTTP queries:** ${totalConsidered} · **Surfaced:** ${filtered.length} (score ≥ threshold)`,
+  );
   lines.push("");
   lines.push("> Each row is a real Reddit/HN post whose **title** scored well as a standalone LinkedIn hook. Steal the pattern, not the words.");
   lines.push("");
