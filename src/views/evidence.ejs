@@ -265,6 +265,7 @@
                 </div>
                 <% for (const ep of orphansShown) { %>
                   <% let m; try { m = JSON.parse(ep.metrics || '{}'); } catch { m = {}; } %>
+                  <% const epHasUrl = ep.url && ep.url !== '#'; %>
                   <div class="thread-root evidence-row" data-source="<%= ep.source_id %>" data-community="<%= ep.community %>" data-intent="<%= ep.intent || '' %>" data-awareness="<%= ep.awareness_level || '' %>">
                     <div class="thread-branch-root"></div>
                     <div class="thread-node">
@@ -272,7 +273,11 @@
                         <span class="mini-chip"><%= ep.community || '' %></span>
                         <span class="thread-score">&#9650; <%= m.score || 0 %></span>
                         <span class="thread-author"><%= ep.author_ref || '' %></span>
+                        <% if (epHasUrl) { %><a href="<%= ep.url %>" target="_blank" rel="noopener" class="thread-source">source &#8250;</a><% } %>
                       </div>
+                      <% if (ep.title) { %>
+                        <div class="thread-title"><% if (epHasUrl) { %><a href="<%= ep.url %>" target="_blank" rel="noopener"><%= ep.title %></a><% } else { %><%= ep.title %><% } %></div>
+                      <% } %>
                       <div class="thread-body"><%= (ep.body || '').slice(0, 200) %></div>
                     </div>
                   </div>
