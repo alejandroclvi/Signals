@@ -1,23 +1,22 @@
 # Signals — Workspace Instructions
 
+> Canonical operating references for this repo:
+> - **[AGENT_README.md](./AGENT_README.md)** — read this first when patching code
+> - **[HUMAN_README.md](./HUMAN_README.md)** — what a non-technical operator sees
+> - **[README.md](./README.md)** — three-command splash
+>
+> This file (`CLAUDE.md`) is Claude-Code-specific guidance only. Don't duplicate the READMEs here.
+
 ## What This Is
 
-Signals is an early-warning system for detecting internet momentum. It surfaces behavior changes (not just mentions) from online sources — starting with Reddit — and helps users understand what is changing, among whom, and why it might matter.
+Signals is an early-warning system for detecting internet momentum. It surfaces behavior changes (not just mentions) from online sources and helps users understand what is changing, among whom, and why it might matter.
 
-This workspace is currently in **local proof-of-concept** phase. The goal is to prove the core intelligence loop before building production infrastructure.
+## Current State (2026-05-19)
 
-## Current State
-
-- **Phase**: Pre-MVP, local PoC
-- **First slice**: Reddit Category Pain Radar
-- **Dashboard prototype**: `dashboard-prototype/index.html` (static HTML/CSS/JS, no build step)
-- **Fixtures**: `dashboard-prototype/fixtures/` — replay data for law firms and founder AI tools scenarios
-- **Live pull tool**: `dashboard-prototype/tools/pull-reddit-search.mjs` (Node.js, needs network)
-- **Research docs**: `research/` — producer viability, corroboration engine, system architecture
-- **Obsidian vault**: `00 Home/` through `07 Sources/` — project knowledge base
-- **Role prompts**: `role-prompts/` — 7 builder role definitions for the team
-- **Linear plan**: `linear/SIGNAL_MVP_LINEAR_PROJECT_PLAN.md`
-- **MVP target**: June 12, 2026
+- **Phase**: working MVP, local only
+- **Live data**: 11 topics · 23K observations · 1.5K threads · 378 signals · 29 cross-source theses · 30 cross-community groups (176 members) · 7-layer source coverage
+- **Active surfaces**: dashboard at `src/views/`, API at `src/routes/api.mjs`, flows in `flows/`, pipeline in `src/pipeline/`, smoke test in `scripts/smoke-test.mjs`
+- **Recent shipping audits**: `SIGNAL_AGENT_MVP_REPORT.md` (drilldown architecture, 17 gaps catalogued), `FLOW_SIMPLIFICATION_REPORT.md` (UX/terminology audit)
 
 ## Core Loop To Prove
 
