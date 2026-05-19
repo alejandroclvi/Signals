@@ -6,6 +6,7 @@ import { analyzeThreadBatch, storeThreadIntelligence } from "../pipeline/thread-
 import { reconcileThread } from "../pipeline/thread-reconciler.mjs";
 import { refreshSignals } from "../pipeline/refresh-signals.mjs";
 import { createUnit, getSignalChain, getChain, getContextChain } from "../pipeline/intelligence-chain.mjs";
+import { regenerateThread } from "../pipeline/thread-regen.mjs";
 import { broadcast } from "./sse.mjs";
 
 const router = Router();
@@ -1022,6 +1023,532 @@ router.get("/api/signals/:id/intelligence", (req, res) => {
   res.json(intelligence);
 });
 
+// --- Drilldown chain: signal → evidence → thread → unified → case ---
+
+router.get("/api/evidence/:id", (req, res) => {
+  const db = getDb();
+  const packet = db.prepare("SELECT * FROM evidence_packets WHERE id = ?").get(req.params.id);
+  if (!packet) return res.status(404).json({ error: "Evidence packet not found" });
+
+  let thread = null;
+  if (packet.thread_id) {
+    const tRow = db.prepare("SELECT * FROM threads WHERE id = ?").get(packet.thread_id);
+    if (tRow) {
+      const siblings = db.prepare(
+        `SELECT ep.* FROM evidence_packets ep
+         JOIN thread_packets tp ON tp.evidence_id = ep.id
+         WHERE tp.thread_id = ?
+         ORDER BY tp.position, ep.published_at`
+      ).all(tRow.id);
+      const intel = db.prepare(
+        "SELECT * FROM thread_intelligence WHERE thread_id = ? ORDER BY created_at DESC LIMIT 1"
+      ).get(tRow.id);
+      thread = {
+        id: tRow.id,
+        title: tRow.title,
+        url: tRow.url,
+        community: tRow.community,
+        comment_count: tRow.comment_count,
+        total_score: tRow.total_score,
+        quality_tier: tRow.quality_tier,
+        packets: siblings.map(formatEvidencePacket),
+        intelligence: intel ? formatThreadIntelligence(intel) : null,
+      };
+    }
+  }
+
+  const citingSignals = db.prepare(
+    `SELECT s.id, s.title, s.context_id, s.rank
+     FROM signals s
+     JOIN signal_evidence se ON se.signal_id = s.id
+     WHERE se.evidence_id = ?`
+  ).all(packet.id);
+
+  const unifiedSignals = db.prepare(
+    `SELECT us.id, us.topic, us.temporal_state, us.corroboration_score, use_.layer
+     FROM unified_signals us
+     JOIN unified_signal_evidence use_ ON use_.unified_signal_id = us.id
+     WHERE use_.evidence_id = ?`
+  ).all(packet.id);
+
+  // Author + community drilldowns: surface sibling packets in the same context
+  // so the drawer is actionable even when the packet has no real URL/thread.
+  const relatedByAuthor = packet.author_ref
+    ? db.prepare(
+        `SELECT * FROM evidence_packets
+         WHERE context_id = ? AND author_ref = ? AND id != ?
+         ORDER BY evidence_weight DESC, published_at DESC
+         LIMIT 8`
+      ).all(packet.context_id, packet.author_ref, packet.id).map(formatEvidencePacket)
+    : [];
+
+  const relatedByCommunity = packet.community
+    ? db.prepare(
+        `SELECT * FROM evidence_packets
+         WHERE context_id = ? AND community = ? AND id != ?
+         ORDER BY evidence_weight DESC, published_at DESC
+         LIMIT 8`
+      ).all(packet.context_id, packet.community, packet.id).map(formatEvidencePacket)
+    : [];
+
+  const authorTotal = packet.author_ref
+    ? db.prepare(
+        `SELECT COUNT(*) AS c FROM evidence_packets
+         WHERE context_id = ? AND author_ref = ? AND id != ?`
+      ).get(packet.context_id, packet.author_ref, packet.id).c
+    : 0;
+  const communityTotal = packet.community
+    ? db.prepare(
+        `SELECT COUNT(*) AS c FROM evidence_packets
+         WHERE context_id = ? AND community = ? AND id != ?`
+      ).get(packet.context_id, packet.community, packet.id).c
+    : 0;
+
+  res.json({
+    packet: formatEvidencePacket(packet),
+    thread,
+    citingSignals,
+    unifiedSignals,
+    relatedByAuthor,
+    relatedByCommunity,
+    authorTotal,
+    communityTotal,
+    contextId: packet.context_id,
+  });
+});
+
+/**
+ * Re-fetch a missing thread from its surviving hints. Used by the drawer
+ * when /api/threads/:id 404s — usually because the thread was wiped but the
+ * `intelligence_units` referencing it survived. The thread_id encodes the
+ * Reddit post id (`thread:<post_id>`), so we can re-pull from Reddit.
+ */
+router.post("/api/threads/:id/regenerate", async (req, res) => {
+  try {
+    const result = await regenerateThread({
+      threadId: req.params.id,
+      contextId: req.body?.context_id,
+    });
+    res.status(result.ok ? 200 : 422).json(result);
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+router.get("/api/threads/:id", (req, res) => {
+  const db = getDb();
+  const thread = db.prepare("SELECT * FROM threads WHERE id = ?").get(req.params.id);
+  if (!thread) return res.status(404).json({ error: "Thread not found" });
+
+  const packets = db.prepare(
+    `SELECT ep.* FROM evidence_packets ep
+     JOIN thread_packets tp ON tp.evidence_id = ep.id
+     WHERE tp.thread_id = ?
+     ORDER BY tp.position, ep.published_at`
+  ).all(thread.id);
+
+  const intel = db.prepare(
+    "SELECT * FROM thread_intelligence WHERE thread_id = ? ORDER BY created_at DESC LIMIT 1"
+  ).get(thread.id);
+
+  const citingSignals = db.prepare(
+    `SELECT DISTINCT s.id, s.title, s.context_id
+     FROM signals s
+     JOIN signal_evidence se ON se.signal_id = s.id
+     JOIN thread_packets tp ON tp.evidence_id = se.evidence_id
+     WHERE tp.thread_id = ?`
+  ).all(thread.id);
+
+  res.json({
+    thread: {
+      id: thread.id,
+      title: thread.title,
+      url: thread.url,
+      community: thread.community,
+      comment_count: thread.comment_count,
+      total_score: thread.total_score,
+      quality_tier: thread.quality_tier,
+    },
+    packets: packets.map(formatEvidencePacket),
+    intelligence: intel ? formatThreadIntelligence(intel) : null,
+    citingSignals,
+  });
+});
+
+router.get("/api/signals/:id/chain-full", (req, res) => {
+  const db = getDb();
+  const signal = db.prepare("SELECT * FROM signals WHERE id = ?").get(req.params.id);
+  if (!signal) return res.status(404).json({ error: "Signal not found" });
+
+  // Base signal fields
+  const evidence = db.prepare(
+    `SELECT ep.* FROM evidence_packets ep
+     JOIN signal_evidence se ON se.evidence_id = ep.id
+     WHERE se.signal_id = ?`
+  ).all(signal.id);
+
+  // Lifecycle row (1:1)
+  const lifecycle = db.prepare(
+    "SELECT * FROM signal_lifecycle WHERE signal_id = ?"
+  ).get(signal.id) || null;
+
+  // Case membership + siblings count
+  const cases = db.prepare(
+    `SELECT sc.id, sc.title, sc.description, sc.status,
+            (SELECT COUNT(*) FROM signal_case_members WHERE case_id = sc.id) as member_count
+     FROM signal_cases sc
+     JOIN signal_case_members scm ON scm.case_id = sc.id
+     WHERE scm.signal_id = ?`
+  ).all(signal.id);
+
+  // Unified signals that share at least one evidence packet with this signal
+  const unified = db.prepare(
+    `SELECT DISTINCT us.id, us.topic, us.description, us.thesis,
+            us.temporal_state, us.corroboration_score,
+            us.layer_coverage, us.missing_evidence, us.recommended_actions
+     FROM unified_signals us
+     JOIN unified_signal_evidence use_ ON use_.unified_signal_id = us.id
+     JOIN signal_evidence se ON se.evidence_id = use_.evidence_id
+     WHERE se.signal_id = ?
+     ORDER BY us.corroboration_score DESC NULLS LAST`
+  ).all(signal.id);
+
+  // 7-layer coverage (covered vs missing) — same logic as /api/signals/:id, plus
+  // an "augmented" flag if the layer is reachable through a unified signal.
+  const allLayers = db.prepare("SELECT id, label, note FROM evidence_layers ORDER BY sort_order").all();
+  const localLayerCounts = {};
+  for (const ev of evidence) {
+    if (!ev.source_layer) continue;
+    localLayerCounts[ev.source_layer] = (localLayerCounts[ev.source_layer] || 0) + 1;
+  }
+  const unifiedLayerCounts = {};
+  for (const u of unified) {
+    const coverage = safeJson(u.layer_coverage, {});
+    for (const [layer, count] of Object.entries(coverage)) {
+      unifiedLayerCounts[layer] = (unifiedLayerCounts[layer] || 0) + (count || 0);
+    }
+  }
+  // Aggregate missing-evidence callouts from unified signals
+  const missingNotes = [];
+  for (const u of unified) {
+    const arr = safeJson(u.missing_evidence, []);
+    for (const m of arr) if (typeof m === "string") missingNotes.push({ topic: u.topic, note: m });
+  }
+
+  const layerCoverage = allLayers.map(l => ({
+    id: l.id,
+    label: l.label,
+    note: l.note,
+    local_count: localLayerCounts[l.id] || 0,
+    unified_count: unifiedLayerCounts[l.id] || 0,
+    state: localLayerCounts[l.id]
+      ? "covered"
+      : (unifiedLayerCounts[l.id] ? "corroborated" : "missing"),
+  }));
+
+  res.json({
+    ...signal,
+    tags: safeJson(signal.tags, []),
+    communities: safeJson(signal.communities, []),
+    dominant_intent: signal.dominant_intent || "question",
+    intent_mix: safeJson(signal.intent_mix, {}),
+    awareness_distribution: safeJson(signal.awareness_distribution, {}),
+    dominant_awareness: signal.dominant_awareness || null,
+    desire_type: signal.desire_type || null,
+    top_extractions: safeJson(signal.top_extractions, []),
+    failed_solutions: safeJson(signal.failed_solutions, []),
+    evidence: evidence.map(formatEvidencePacket),
+    layerCoverage,
+    lifecycle,
+    cases,
+    unified_signals: unified.map(u => ({
+      id: u.id,
+      topic: u.topic,
+      description: u.description,
+      thesis: u.thesis,
+      temporal_state: u.temporal_state,
+      corroboration_score: u.corroboration_score,
+      layer_coverage: safeJson(u.layer_coverage, {}),
+      missing_evidence: safeJson(u.missing_evidence, []),
+      recommended_actions: safeJson(u.recommended_actions, []),
+    })),
+    missing_notes: missingNotes,
+    freshness: computeFreshnessSummary(evidence),
+    intelligence: getSignalIntelligenceSummary(signal.id),
+    chain: getSignalChain(signal.id),
+  });
+});
+
+/**
+ * Reduce a list of evidence packets to {newest, oldest, median} ISO dates +
+ * a day count for each. Powers the "Freshness" caption on the detail pane.
+ */
+function computeFreshnessSummary(packets) {
+  const dates = (packets || [])
+    .map(p => p.published_at)
+    .filter(Boolean)
+    .map(d => new Date(d).getTime())
+    .filter(t => !Number.isNaN(t))
+    .sort((a, b) => a - b);
+  if (!dates.length) return null;
+  const now = Date.now();
+  const days = t => Math.max(0, Math.round((now - t) / 86400000));
+  const median = dates[Math.floor(dates.length / 2)];
+  return {
+    count: dates.length,
+    newest_at: new Date(dates[dates.length - 1]).toISOString(),
+    oldest_at: new Date(dates[0]).toISOString(),
+    median_at: new Date(median).toISOString(),
+    newest_days: days(dates[dates.length - 1]),
+    oldest_days: days(dates[0]),
+    median_days: days(median),
+  };
+}
+
+// --- Unified signals ---
+
+router.get("/api/contexts/:id/unified-signals", (req, res) => {
+  const db = getDb();
+  const rows = db.prepare(
+    `SELECT id, context_id, topic, description, thesis, temporal_state,
+            corroboration_score, layer_coverage, missing_evidence,
+            recommended_actions, first_detected, peak_at, updated_at
+     FROM unified_signals
+     WHERE context_id = ?
+     ORDER BY corroboration_score DESC NULLS LAST, updated_at DESC`
+  ).all(req.params.id);
+
+  res.json(rows.map(r => ({
+    id: r.id,
+    context_id: r.context_id,
+    topic: r.topic,
+    description: r.description,
+    thesis: r.thesis,
+    temporal_state: r.temporal_state,
+    corroboration_score: r.corroboration_score,
+    layer_coverage: safeJson(r.layer_coverage, {}),
+    missing_evidence: safeJson(r.missing_evidence, []),
+    recommended_actions: safeJson(r.recommended_actions, []),
+    first_detected: r.first_detected,
+    peak_at: r.peak_at,
+    updated_at: r.updated_at,
+  })));
+});
+
+router.get("/api/unified-signals/:id", (req, res) => {
+  const db = getDb();
+  const u = db.prepare("SELECT * FROM unified_signals WHERE id = ?").get(req.params.id);
+  if (!u) return res.status(404).json({ error: "Unified signal not found" });
+
+  const evRows = db.prepare(
+    `SELECT use_.layer, use_.relevance, ep.*
+     FROM unified_signal_evidence use_
+     JOIN evidence_packets ep ON ep.id = use_.evidence_id
+     WHERE use_.unified_signal_id = ?
+     ORDER BY use_.layer, use_.relevance DESC NULLS LAST`
+  ).all(u.id);
+
+  const layerAnalysis = safeJson(u.layer_analysis, {});
+  const layers = {};
+  for (const row of evRows) {
+    if (!layers[row.layer]) {
+      layers[row.layer] = { analysis: layerAnalysis[row.layer] || null, evidence: [] };
+    }
+    layers[row.layer].evidence.push({
+      ...formatEvidencePacket(row),
+      relevance: row.relevance,
+    });
+  }
+  // Ensure every layer mentioned in layer_analysis has an entry even if no
+  // evidence is currently linked (keeps the "what each layer said" coverage
+  // visible even when packets were trimmed).
+  for (const [layer, analysis] of Object.entries(layerAnalysis)) {
+    if (!layers[layer]) layers[layer] = { analysis, evidence: [] };
+  }
+
+  // Signals that share evidence with this unified signal
+  const linkedSignals = db.prepare(
+    `SELECT DISTINCT s.id, s.title, s.context_id, s.rank
+     FROM signals s
+     JOIN signal_evidence se ON se.signal_id = s.id
+     JOIN unified_signal_evidence use_ ON use_.evidence_id = se.evidence_id
+     WHERE use_.unified_signal_id = ?
+     ORDER BY s.rank`
+  ).all(u.id);
+
+  res.json({
+    id: u.id,
+    context_id: u.context_id,
+    topic: u.topic,
+    description: u.description,
+    thesis: u.thesis,
+    temporal_state: u.temporal_state,
+    temporal_reasoning: u.temporal_reasoning,
+    corroboration_score: u.corroboration_score,
+    key_terms: safeJson(u.key_terms, []),
+    layer_coverage: safeJson(u.layer_coverage, {}),
+    missing_evidence: safeJson(u.missing_evidence, []),
+    recommended_actions: safeJson(u.recommended_actions, []),
+    first_detected: u.first_detected,
+    peak_at: u.peak_at,
+    layers,
+    linkedSignals,
+  });
+});
+
+router.get("/api/signals/:id/unified", (req, res) => {
+  const db = getDb();
+  const rows = db.prepare(
+    `SELECT DISTINCT us.id, us.topic, us.temporal_state, us.corroboration_score,
+            us.layer_coverage, us.missing_evidence
+     FROM unified_signals us
+     JOIN unified_signal_evidence use_ ON use_.unified_signal_id = us.id
+     JOIN signal_evidence se ON se.evidence_id = use_.evidence_id
+     WHERE se.signal_id = ?
+     ORDER BY us.corroboration_score DESC NULLS LAST`
+  ).all(req.params.id);
+
+  res.json(rows.map(r => ({
+    id: r.id,
+    topic: r.topic,
+    temporal_state: r.temporal_state,
+    corroboration_score: r.corroboration_score,
+    layer_coverage: safeJson(r.layer_coverage, {}),
+    missing_evidence: safeJson(r.missing_evidence, []),
+  })));
+});
+
+// --- Watched sources (the periodic-crawl registry) ---
+
+router.get("/api/contexts/:id/watched-sources", (req, res) => {
+  const db = getDb();
+  const rows = db.prepare(
+    `SELECT id, producer, kind, handle, label, url,
+            evidence_count, signal_count, thread_count,
+            first_seen_at, last_seen_at, pinned, muted, added_at, added_by
+     FROM watched_sources
+     WHERE context_id = ?
+     ORDER BY pinned DESC, muted ASC, evidence_count DESC`
+  ).all(req.params.id);
+
+  // Group by producer for the UI
+  const byProducer = {};
+  for (const r of rows) {
+    if (!byProducer[r.producer]) byProducer[r.producer] = [];
+    byProducer[r.producer].push(r);
+  }
+  res.json({
+    total: rows.length,
+    pinned: rows.filter(r => r.pinned).length,
+    muted: rows.filter(r => r.muted).length,
+    sources: rows,
+    byProducer,
+  });
+});
+
+router.post("/api/watched-sources/:id/pin", (req, res) => {
+  const db = getDb();
+  const row = db.prepare("SELECT id, pinned FROM watched_sources WHERE id = ?").get(req.params.id);
+  if (!row) return res.status(404).json({ error: "Watched source not found" });
+  const v = row.pinned ? 0 : 1;
+  db.prepare("UPDATE watched_sources SET pinned = ?, muted = 0 WHERE id = ?").run(v, row.id);
+  res.json({ id: row.id, pinned: v });
+});
+
+router.post("/api/watched-sources/:id/mute", (req, res) => {
+  const db = getDb();
+  const row = db.prepare("SELECT id, muted FROM watched_sources WHERE id = ?").get(req.params.id);
+  if (!row) return res.status(404).json({ error: "Watched source not found" });
+  const v = row.muted ? 0 : 1;
+  db.prepare("UPDATE watched_sources SET muted = ?, pinned = 0 WHERE id = ?").run(v, row.id);
+  res.json({ id: row.id, muted: v });
+});
+
+// --- Cases (group/compare) ---
+
+router.get("/api/contexts/:id/cases", (req, res) => {
+  const db = getDb();
+  const rows = db.prepare(
+    `SELECT sc.id, sc.title, sc.description, sc.status, sc.created_at,
+            COUNT(scm.signal_id) as member_count
+     FROM signal_cases sc
+     LEFT JOIN signal_case_members scm ON scm.case_id = sc.id
+     WHERE sc.context_id = ?
+     GROUP BY sc.id
+     ORDER BY member_count DESC, sc.updated_at DESC`
+  ).all(req.params.id);
+  res.json(rows);
+});
+
+router.get("/api/cases/:id", (req, res) => {
+  const db = getDb();
+  const c = db.prepare("SELECT * FROM signal_cases WHERE id = ?").get(req.params.id);
+  if (!c) return res.status(404).json({ error: "Case not found" });
+
+  const members = db.prepare(
+    `SELECT s.id, s.title, s.context_id, s.rank, s.confidence_tier,
+            s.communities, s.mentions, s.dominant_state, s.dominant_intent,
+            s.failed_solutions
+     FROM signals s
+     JOIN signal_case_members m ON m.signal_id = s.id
+     WHERE m.case_id = ?
+     ORDER BY s.rank`
+  ).all(c.id);
+
+  const facets = db.prepare(
+    `SELECT sf.signal_id, sf.tag, sf.evidence_count, sf.thread_count,
+            sf.quotes, sf.not_x_its_y, sf.failed_solutions, sf.avatar_clues,
+            sf.awareness_level, sf.summary
+     FROM signal_facets sf
+     WHERE sf.signal_id IN (${members.map(() => "?").join(",") || "''"})`
+  ).all(...members.map(m => m.id));
+
+  // Build a tag → [{signal_id, facet}] overlap matrix so the UI can render
+  // shared vs distinct patterns without recomputing on the client.
+  const overlap = {};
+  for (const f of facets) {
+    if (!overlap[f.tag]) overlap[f.tag] = [];
+    overlap[f.tag].push({
+      signal_id: f.signal_id,
+      evidence_count: f.evidence_count,
+      thread_count: f.thread_count,
+      quotes: safeJson(f.quotes, []),
+      not_x_its_y: safeJson(f.not_x_its_y, []),
+      failed_solutions: safeJson(f.failed_solutions, []),
+      avatar_clues: safeJson(f.avatar_clues, []),
+      awareness_level: f.awareness_level,
+      summary: f.summary,
+    });
+  }
+
+  res.json({
+    case: c,
+    members: members.map(m => ({
+      ...m,
+      communities: safeJson(m.communities, []),
+      failed_solutions: safeJson(m.failed_solutions, []),
+    })),
+    overlap,
+  });
+});
+
+function formatThreadIntelligence(ti) {
+  return {
+    id: ti.id,
+    keyInsight: ti.key_insight,
+    signalQuality: ti.signal_quality,
+    conversationArc: ti.conversation_arc,
+    awarenessLevel: ti.awareness_level,
+    desireType: ti.desire_type,
+    confidenceTier: ti.confidence_tier,
+    painLanguage: safeJson(ti.pain_language, []),
+    notXItsY: safeJson(ti.not_x_its_y, []),
+    failedSolutions: safeJson(ti.failed_solutions, []),
+    avatarClues: safeJson(ti.avatar_clues, []),
+    emotionalDepth: ti.emotional_depth,
+  };
+}
+
 function getSignalIntelligence(signalId) {
   const db = getDb();
 
@@ -1248,6 +1775,7 @@ function formatEvidencePacket(row) {
     source: row.community || row.source_id || "source",
     source_id: row.source_id || "",
     source_layer: row.source_layer || "",
+    source_kind: row.source_kind || null,
     intent: row.intent || "question",
     awareness_level: row.awareness_level || null,
     sentiment: row.sentiment || "neutral",
@@ -1256,6 +1784,8 @@ function formatEvidencePacket(row) {
     quality_score: row.quality_score || null,
     author: row.author_ref || "anonymous",
     age: relativeAge(row.published_at),
+    published_at: row.published_at || null,
+    observed_at: row.observed_at || null,
     score: metrics.score || 0,
     replies: metrics.comments || metrics.replies || 0,
     url: row.url || "#",

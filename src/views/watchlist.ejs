@@ -20,15 +20,96 @@
         </div>
       </header>
 
-      <div class="evidence-library-header">
-        <span class="evidence-count"><%= saved.length %> saved signals</span>
-      </div>
-
       <div class="evidence-library" id="watchlistBody">
-        <% if (!saved.length && !dismissed.length) { %>
+
+        <!-- ===== Sources to keep watching ===== -->
+        <div class="evidence-library-header" style="display:flex;justify-content:space-between;align-items:baseline">
+          <div>
+            <h2 style="margin:0;font-size:16px">Sources to keep watching</h2>
+            <span class="evidence-count" style="font-weight:400;color:var(--muted);font-size:12px">
+              <%= watchedTotal %> hubs derived from past evidence
+              <% if (watchedPinned) { %>· <strong><%= watchedPinned %> pinned</strong><% } %>
+              <% if (watchedMuted) { %>· <%= watchedMuted %> muted<% } %>
+            </span>
+          </div>
+          <div style="font-size:11px;color:var(--muted)">
+            <code>pnpm refresh <%= activeContext.id %></code> re-hits pinned hubs first.
+          </div>
+        </div>
+
+        <% if (!watchedTotal) { %>
           <div class="empty-state">
+            <div class="empty-icon">&#9678;</div>
+            <div class="empty-title">No hubs cached yet</div>
+            <div class="empty-sub">Run <code>pnpm sync-watchlist --context <%= activeContext.id %></code> to derive the list from existing evidence.</div>
+          </div>
+        <% } else { %>
+          <% for (const producer of Object.keys(watchedByProducer)) { %>
+            <% const list = watchedByProducer[producer]; %>
+            <div style="margin:18px 0 6px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);font-weight:700"><%= producer %> (<%= list.length %>)</div>
+            <table class="evidence-table">
+              <thead>
+                <tr>
+                  <th style="width:34px"></th>
+                  <th>Handle</th>
+                  <th style="width:80px">Kind</th>
+                  <th style="width:60px">Evidence</th>
+                  <th style="width:50px">Signals</th>
+                  <th style="width:60px">Threads</th>
+                  <th>Last seen</th>
+                  <th style="width:120px"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% for (const w of list) { %>
+                  <tr class="evidence-row" data-watched-id="<%= w.id %>" style="<%= w.muted ? 'opacity:0.45' : '' %>">
+                    <td style="text-align:center">
+                      <% if (w.pinned) { %><span title="Pinned" style="color:#bd842f">★</span><% } %>
+                    </td>
+                    <td>
+                      <% if (w.url) { %>
+                        <a href="<%= w.url %>" target="_blank" rel="noopener" class="evidence-signal-link"><%= w.label || w.handle %></a>
+                      <% } else { %>
+                        <span><%= w.label || w.handle %></span>
+                      <% } %>
+                    </td>
+                    <td><span class="mini-chip"><%= w.kind %></span></td>
+                    <td class="evidence-score"><%= w.evidence_count %></td>
+                    <td class="evidence-score"><%= w.signal_count %></td>
+                    <td class="evidence-score"><%= w.thread_count %></td>
+                    <td class="evidence-community">
+                      <% if (w.last_seen_at) {
+                           const ageDays = Math.max(0, Math.round((Date.now() - new Date(w.last_seen_at).getTime()) / 86400000));
+                           const tier = ageDays <= 7 ? 'fresh' : ageDays <= 30 ? 'warm' : ageDays <= 90 ? 'stale' : 'cold';
+                           const label = ageDays === 0 ? 'today' : ageDays === 1 ? '1d' : ageDays < 7 ? ageDays + 'd' : ageDays < 30 ? Math.round(ageDays/7) + 'w' : ageDays < 365 ? Math.round(ageDays/30) + 'mo' : Math.round(ageDays/365) + 'y';
+                      %>
+                        <span class="age-chip age-<%= tier %>" title="<%= new Date(w.last_seen_at).toLocaleString() %>"><%= label %></span>
+                        <% if (w.first_seen_at && w.first_seen_at !== w.last_seen_at) { %>
+                          <div class="faint" style="font-size:10px;margin-top:2px">first <%= w.first_seen_at.slice(0,10) %></div>
+                        <% } %>
+                      <% } else { %>—<% } %>
+                    </td>
+                    <td>
+                      <button type="button" class="mini-chip btn-pin-source" data-id="<%= w.id %>" style="cursor:pointer;<%= w.pinned ? 'background:rgba(189,132,47,0.12);color:#8b5e1f' : '' %>"><%= w.pinned ? 'Unpin' : 'Pin' %></button>
+                      <button type="button" class="mini-chip btn-mute-source" data-id="<%= w.id %>" style="cursor:pointer;margin-left:4px;<%= w.muted ? 'background:rgba(0,0,0,0.06)' : '' %>"><%= w.muted ? 'Unmute' : 'Mute' %></button>
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          <% } %>
+        <% } %>
+
+        <!-- ===== Saved signals ===== -->
+        <div class="evidence-library-header" style="margin-top:42px">
+          <h2 style="margin:0;font-size:16px">Saved signals</h2>
+          <span class="evidence-count" style="font-weight:400;color:var(--muted);font-size:12px"><%= saved.length %></span>
+        </div>
+
+        <% if (!saved.length && !dismissed.length) { %>
+          <div class="empty-state" style="margin-top:12px">
             <div class="empty-icon">&#9633;</div>
-            <div class="empty-title">No saved signals</div>
+            <div class="empty-title">No saved signals yet</div>
             <div class="empty-sub">Save signals from the Radar to track them here.</div>
           </div>
         <% } %>
@@ -112,6 +193,22 @@
     var btnNew = document.getElementById("btnNewContext");
     if (btnNew) btnNew.addEventListener("click", function() {
       if (typeof openNewContextModal === "function") openNewContextModal();
+    });
+
+    // Pin / mute toggles for watched sources
+    document.querySelectorAll(".btn-pin-source").forEach(function(btn) {
+      btn.addEventListener("click", function() {
+        fetch("/api/watched-sources/" + encodeURIComponent(btn.dataset.id) + "/pin", { method: "POST" })
+          .then(function(r) { return r.json(); })
+          .then(function() { window.location.reload(); });
+      });
+    });
+    document.querySelectorAll(".btn-mute-source").forEach(function(btn) {
+      btn.addEventListener("click", function() {
+        fetch("/api/watched-sources/" + encodeURIComponent(btn.dataset.id) + "/mute", { method: "POST" })
+          .then(function(r) { return r.json(); })
+          .then(function() { window.location.reload(); });
+      });
     });
   </script>
 </body>

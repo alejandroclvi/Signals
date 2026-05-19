@@ -444,6 +444,7 @@ function renderSignalList() {
 
 function renderLineChart() {
   var svg = document.getElementById("timelineSvg");
+  if (!svg) return;
   svg.innerHTML = "";
   var width = 430;
   var height = 142;
@@ -461,6 +462,7 @@ function renderLineChart() {
 
 function renderHeatmap() {
   var svg = document.getElementById("heatmapSvg");
+  if (!svg) return;
   svg.innerHTML = "";
   var cellW = 54;
   var cellH = 22;
@@ -484,6 +486,7 @@ function renderHeatmap() {
 
 function renderIntentBars() {
   var root = document.getElementById("intentBars");
+  if (!root) return;
   root.innerHTML = intent.map(function(entry) {
     var label = entry[0], value = entry[1], color = entry[2];
     return '<div class="intent-row">' +
@@ -601,7 +604,7 @@ function toggleNode(nodeId) {
 function renderControlPlane() {
   var signal = selectedSignal();
   var activeLayers = evidenceLayers.filter(function(layer) { return activeNodeNamesForLayer(layer.id).length; });
-  document.getElementById("coverageCaption").textContent = activeLayers.length + "/" + evidenceLayers.length + " active for selected signal";
+  document.getElementById("coverageCaption").textContent = activeLayers.length + "/" + evidenceLayers.length + " layers active in this context";
 
   document.getElementById("layerLadder").innerHTML = evidenceLayers.map(function(layer) {
     var status = layerStatus(layer);
@@ -692,6 +695,39 @@ function scoreComponents(signal) {
   ];
 }
 
+/**
+ * Hide a detail-pane section (and its preceding <div class="section-label">)
+ * when its content is empty. Operator goal: no wasted UI real estate on
+ * sections we have nothing to show for. Re-shows on subsequent renders when
+ * data returns.
+ *
+ *   hideSectionIfEmpty("phraseGrid")
+ *   hideSectionIfEmpty("layerCoverage", { test: function(el) { return el.querySelector(".covered"); } })
+ */
+function hideSectionIfEmpty(elIdOrEl, options) {
+  options = options || {};
+  var el = typeof elIdOrEl === "string" ? document.getElementById(elIdOrEl) : elIdOrEl;
+  if (!el) return;
+
+  var hasContent;
+  if (typeof options.test === "function") {
+    hasContent = !!options.test(el);
+  } else {
+    var text = (el.textContent || "").trim();
+    var children = el.children.length;
+    hasContent = !!text || children > 0;
+  }
+
+  // Walk back to find the preceding .section-label sibling that titles us.
+  var label = el.previousElementSibling;
+  while (label && !label.classList.contains("section-label")) {
+    label = label.previousElementSibling;
+  }
+
+  el.style.display = hasContent ? "" : "none";
+  if (label) label.style.display = hasContent ? "" : "none";
+}
+
 function renderDetail() {
   var signal = selectedSignal();
   if (!signal) return;
@@ -779,7 +815,7 @@ function renderDetail() {
     // Root post
     evHtml += '<div class="ev-root">';
     evHtml += '<div class="ev-branch-root"></div>';
-    evHtml += '<div class="ev-node" style="border-left: 3px solid ' + postBorderColor + '">';
+    evHtml += '<div class="ev-node" data-ev-id="' + escapeAttr(post.id) + '" style="border-left: 3px solid ' + postBorderColor + '; cursor:pointer">';
     evHtml += '<div class="ev-node-head">';
     var postState = post.evidence_state || "sharing_insight";
     var postStateColor = stateColorsMap[postState] || "#9aa3ad";
@@ -850,7 +886,7 @@ function renderDetail() {
 
       evHtml += '<div class="ev-comment' + (collapsed && ci === visibleComments.length - 1 ? ' ev-last-peek' : '') + '">';
       evHtml += '<div class="ev-branch ' + (isLastVisible ? 'ev-branch-last' : '') + '"><div class="ev-branch-line"></div><div class="ev-branch-arm"></div></div>';
-      evHtml += '<div class="ev-node ev-node-comment" style="border-left: 2px solid ' + cBorderColor + '">';
+      evHtml += '<div class="ev-node ev-node-comment" data-ev-id="' + escapeAttr(c.id) + '" style="border-left: 2px solid ' + cBorderColor + '; cursor:pointer">';
       evHtml += '<div class="ev-node-head">';
       var cState = c.evidence_state || "sharing_insight";
       var cStateColor = stateColorsMap[cState] || "#9aa3ad";
@@ -876,7 +912,7 @@ function renderDetail() {
         var hExcerpt = extractStateExcerpt(h.quote, hState);
         evHtml += '<div class="ev-comment">';
         evHtml += '<div class="ev-branch"><div class="ev-branch-line"></div><div class="ev-branch-arm"></div></div>';
-        evHtml += '<div class="ev-node ev-node-comment" style="border-left: 2px solid ' + hBorderColor + '">';
+        evHtml += '<div class="ev-node ev-node-comment" data-ev-id="' + escapeAttr(h.id) + '" style="border-left: 2px solid ' + hBorderColor + '; cursor:pointer">';
         evHtml += '<div class="ev-node-head">';
         evHtml += '<span class="ev-score">\u25b2 ' + h.score + '</span>';
         evHtml += '<span class="ev-chip evidence-chip" style="background:' + hStateColor + '18;color:' + hStateColor + ';font-size:10px;border:1px solid ' + hStateColor + '30" data-chip-excerpt="' + escapeAttr(hExcerpt) + '">' + (stateLabelsMap[hState] || hState) + '</span>';
@@ -896,7 +932,7 @@ function renderDetail() {
   for (var oi = 0; oi < orphans.length; oi++) {
     var o = orphans[oi];
     var oUrl = o.url && o.url !== "#";
-    evHtml += '<article class="evidence">' +
+    evHtml += '<article class="evidence" data-ev-id="' + escapeAttr(o.id) + '" style="cursor:pointer">' +
       '<div class="evidence-id">' + (o.isComment ? 'comm' : 'post') + '</div>' +
       '<div>' +
         '<div class="quote">"' + escapeHtml(o.quote.slice(0, 200)) + '"</div>' +
@@ -907,6 +943,17 @@ function renderDetail() {
   }
 
   document.getElementById("evidenceList").innerHTML = evHtml;
+  hideSectionIfEmpty("evidenceList");
+
+  // Wire evidence click-through to drilldown drawer. Skip clicks on links and
+  // expand buttons so they retain their existing behavior.
+  document.querySelectorAll('#evidenceList [data-ev-id]').forEach(function(node) {
+    node.addEventListener('click', function(e) {
+      if (e.target.closest('a, .ev-expand-btn, [data-thread-expand]')) return;
+      var id = node.getAttribute('data-ev-id');
+      if (id) openEvidenceDrawer(id);
+    });
+  });
 
   // Wire expand buttons
   document.querySelectorAll(".ev-expand-btn").forEach(function(btn) {
@@ -1028,8 +1075,9 @@ function renderDetail() {
       }).join("");
       tiEl.innerHTML = tiHtml;
     } else {
-      tiEl.innerHTML = '<span class="faint">No thread intelligence yet — click Analyze</span>';
+      tiEl.innerHTML = "";
     }
+    hideSectionIfEmpty(tiEl);
   }
 
   // Deep extractions — "Not X, it's Y" and failed solutions
@@ -1063,7 +1111,8 @@ function renderDetail() {
       }).join("");
     }
 
-    extractionsEl.innerHTML = html || '<span class="faint">No deep patterns detected</span>';
+    extractionsEl.innerHTML = html || "";
+    hideSectionIfEmpty(extractionsEl);
   }
 
   // Vocabulary — categorized language from evidence
@@ -1105,13 +1154,15 @@ function renderDetail() {
       }
       vocabEl.innerHTML = vhtml;
     } else {
-      vocabEl.innerHTML = '<span class="faint">No vocabulary extracted yet</span>';
+      vocabEl.innerHTML = "";
     }
+    hideSectionIfEmpty(vocabEl);
   }
 
   document.getElementById("phraseGrid").innerHTML = signal.phrases.map(function(entry) {
     return '<span class="phrase">' + entry[0] + ' <b>' + entry[1] + '</b></span>';
   }).join("");
+  hideSectionIfEmpty("phraseGrid");
 
   document.getElementById("communityBars").innerHTML = signal.spread.map(function(entry) {
     return '<div class="community-row">' +
@@ -1120,6 +1171,7 @@ function renderDetail() {
       '<span>' + entry[1] + '%</span>' +
     '</div>';
   }).join("");
+  hideSectionIfEmpty("communityBars");
 
   document.getElementById("relatedSignals").innerHTML = signal.related.map(function(entry) {
     var catColor = categories[entry[1]] ? categories[entry[1]].color : "#68717d";
@@ -1129,6 +1181,7 @@ function renderDetail() {
       '<span>' + entry[2] + ' \u203a</span>' +
     '</div>';
   }).join("");
+  hideSectionIfEmpty("relatedSignals");
 
   document.getElementById("scoreComponents").innerHTML = scoreComponents(signal).map(function(entry) {
     return '<div class="score-row">' +
@@ -1169,7 +1222,663 @@ function renderDetail() {
 
   // Intelligence chain — async fetch and render
   renderIntelligenceChain(signal.id);
+
+  // Drilldown payload: lifecycle, cases, unified signals, cross-layer coverage.
+  // Same fetch hydrates several panels so the operator sees the whole chain
+  // without N parallel requests.
+  renderChainFull(signal.id);
   } catch(err) { console.error("renderDetail error:", err); }
+}
+
+// --- Age / freshness helpers --------------------------------------------
+// Every evidence / fact / link in the UI shows an age chip computed from
+// the source date (published_at, created_at, last_seen_at, …). The color
+// tier tells the operator how fresh the signal is at a glance:
+//   fresh ≤7d   warm ≤30d   stale ≤90d   cold >90d   unknown (no date)
+function freshnessTier(days) {
+  if (days == null) return "unknown";
+  if (days <= 7) return "fresh";
+  if (days <= 30) return "warm";
+  if (days <= 90) return "stale";
+  return "cold";
+}
+function daysSince(iso) {
+  if (!iso) return null;
+  var t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  return Math.max(0, Math.round((Date.now() - t) / 86400000));
+}
+function formatAge(iso) {
+  var d = daysSince(iso);
+  if (d == null) return "—";
+  if (d === 0) return "today";
+  if (d === 1) return "1d";
+  if (d < 7)   return d + "d";
+  if (d < 30)  return Math.round(d / 7) + "w";
+  if (d < 365) return Math.round(d / 30) + "mo";
+  return Math.round(d / 365) + "y";
+}
+function ageChip(iso, opts) {
+  opts = opts || {};
+  var d = daysSince(iso);
+  var tier = freshnessTier(d);
+  var label = formatAge(iso);
+  var title = iso ? new Date(iso).toLocaleString() : "no timestamp";
+  return '<span class="age-chip age-' + tier + (opts.compact ? ' age-compact' : '') + '" title="' + escapeAttr(title) + '">' + label + '</span>';
+}
+
+function renderChainFull(signalId) {
+  var badgesEl = document.getElementById("signalBadges");
+  var crossEl = document.getElementById("crossLayer");
+  var unifiedEl = document.getElementById("unifiedList");
+  var freshEl = document.getElementById("signalFreshness");
+  if (badgesEl) badgesEl.innerHTML = '<span class="faint">Loading lifecycle…</span>';
+  if (crossEl) crossEl.innerHTML = '<span class="faint">Loading layers…</span>';
+  if (unifiedEl) unifiedEl.innerHTML = '<span class="faint">Loading unified signals…</span>';
+  if (freshEl) freshEl.innerHTML = '';
+
+  fetch("/api/signals/" + encodeURIComponent(signalId) + "/chain-full")
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      renderLifecycleAndCaseBadges(badgesEl, data);
+      renderFreshnessSummary(freshEl, data);
+      renderCrossLayer(crossEl, data);
+      renderUnifiedList(unifiedEl, data);
+    })
+    .catch(function(err) {
+      console.error("chain-full failed", err);
+      if (badgesEl) badgesEl.innerHTML = '';
+      if (crossEl)  crossEl.innerHTML = '<span class="faint">Cross-layer unavailable</span>';
+      if (unifiedEl) unifiedEl.innerHTML = '<span class="faint">Unified signals unavailable</span>';
+    });
+}
+
+function renderFreshnessSummary(el, data) {
+  if (!el) return;
+  var f = data.freshness;
+  if (!f || !f.count) {
+    el.innerHTML = '';
+    hideSectionIfEmpty(el);
+    return;
+  }
+  el.innerHTML =
+    '<span class="freshness-label">Freshness</span>' +
+    ' newest ' + ageChip(f.newest_at) +
+    ' · median ' + ageChip(f.median_at) +
+    ' · oldest ' + ageChip(f.oldest_at) +
+    ' <span class="faint">(across ' + f.count + ' packet' + (f.count === 1 ? '' : 's') + ')</span>';
+  hideSectionIfEmpty(el);
+}
+
+function renderLifecycleAndCaseBadges(el, data) {
+  if (!el) return;
+  var html = '';
+  if (data.lifecycle && data.lifecycle.state) {
+    var lc = data.lifecycle;
+    var stateColors = { forming:"#9aa3ad", emerging:"#2d6fbb", fresh:"#3e9558", mature:"#bd842f", fading:"#e67e22", stalled:"#875fb4", dormant:"#de5c56" };
+    var color = stateColors[lc.state] || "#9aa3ad";
+    html += '<span class="lifecycle-badge" style="border-color:' + color + ';color:' + color + '">';
+    html += '<strong>' + lc.state.toUpperCase() + '</strong>';
+    if (lc.evidence_7d != null && lc.evidence_30d != null) {
+      html += ' <span class="lifecycle-stats">' + lc.evidence_7d + ' in 7d · ' + lc.evidence_30d + ' in 30d';
+      if (lc.trend_ratio != null) html += ' · trend ×' + (Math.round(lc.trend_ratio * 100) / 100);
+      html += '</span>';
+    }
+    if (lc.state_reason) html += '<div class="lifecycle-reason">' + escapeHtml(lc.state_reason) + '</div>';
+    html += '</span>';
+  }
+  if (Array.isArray(data.cases) && data.cases.length) {
+    for (var i = 0; i < data.cases.length; i++) {
+      var c = data.cases[i];
+      html += '<button class="case-badge" type="button" data-case-id="' + escapeAttr(c.id) + '">' +
+        'CASE · ' + escapeHtml(c.title || c.id) + ' · ' + (c.member_count || 0) + ' sibling signal' + ((c.member_count || 0) === 1 ? '' : 's') +
+      '</button>';
+    }
+  }
+  el.innerHTML = html;
+  hideSectionIfEmpty(el);
+  // Wire case-badge clicks
+  var caseBtns = el.querySelectorAll('[data-case-id]');
+  for (var ci = 0; ci < caseBtns.length; ci++) {
+    (function(btn) {
+      btn.addEventListener('click', function() { openCaseDrawer(btn.getAttribute('data-case-id')); });
+    })(caseBtns[ci]);
+  }
+}
+
+function renderCrossLayer(el, data) {
+  if (!el) return;
+  if (!Array.isArray(data.layerCoverage) || !data.layerCoverage.length) {
+    el.innerHTML = '';
+    hideSectionIfEmpty(el);
+    return;
+  }
+  // Pre-bucket missing-evidence notes by layer name (best-effort string match
+  // against the layer label or id, so we can pin the unified signal's missing
+  // hints to the right empty chip).
+  var noteByLayer = {};
+  if (Array.isArray(data.missing_notes)) {
+    for (var n = 0; n < data.missing_notes.length; n++) {
+      var note = data.missing_notes[n];
+      var hay = (note.note || '').toLowerCase();
+      for (var li = 0; li < data.layerCoverage.length; li++) {
+        var L = data.layerCoverage[li];
+        if (hay.indexOf(L.id) !== -1 || hay.indexOf((L.label || '').toLowerCase()) !== -1) {
+          (noteByLayer[L.id] = noteByLayer[L.id] || []).push(note);
+        }
+      }
+    }
+  }
+
+  var stateClass = { covered: "chip-covered", corroborated: "chip-corroborated", missing: "chip-missing" };
+  var html = '<div class="cross-layer-strip">';
+  for (var i = 0; i < data.layerCoverage.length; i++) {
+    var l = data.layerCoverage[i];
+    var cls = stateClass[l.state] || "chip-missing";
+    var count = l.local_count || l.unified_count || 0;
+    var via = l.state === "corroborated" ? " <span class=\"chip-via\">via unified</span>" : "";
+    var title = l.note || '';
+    if (noteByLayer[l.id]) {
+      title = (title ? title + ' — ' : '') + noteByLayer[l.id].map(function(n){return n.note;}).join('; ');
+      if (cls === "chip-missing") cls = "chip-missing-flagged";
+    }
+    html += '<button class="layer-chip ' + cls + '" type="button" ' +
+      'data-layer-id="' + escapeAttr(l.id) + '" data-signal-id="' + escapeAttr(data.id) + '" ' +
+      'title="' + escapeAttr(title) + '">' +
+      escapeHtml(l.label) + ' <span class="chip-count">' + count + '</span>' + via +
+    '</button>';
+  }
+  html += '</div>';
+  // Inline missing-evidence callouts beneath the strip
+  if (Array.isArray(data.missing_notes) && data.missing_notes.length) {
+    html += '<ul class="missing-notes">';
+    for (var m = 0; m < Math.min(data.missing_notes.length, 6); m++) {
+      var mn = data.missing_notes[m];
+      html += '<li><span class="missing-tag">missing</span> ' +
+        escapeHtml(mn.note) +
+        ' <span class="faint">(· ' + escapeHtml(mn.topic || '') + ')</span></li>';
+    }
+    html += '</ul>';
+  }
+  el.innerHTML = html;
+  hideSectionIfEmpty(el);
+  // Click → open evidence list per layer
+  var chips = el.querySelectorAll('.layer-chip');
+  for (var ch = 0; ch < chips.length; ch++) {
+    (function(btn) {
+      btn.addEventListener('click', function() {
+        openLayerDrawer(btn.getAttribute('data-signal-id'), btn.getAttribute('data-layer-id'));
+      });
+    })(chips[ch]);
+  }
+}
+
+function renderUnifiedList(el, data) {
+  if (!el) return;
+  var us = data.unified_signals || [];
+  if (!us.length) {
+    el.innerHTML = '';
+    hideSectionIfEmpty(el);
+    return;
+  }
+  var stateBadge = { early: "🌱 EARLY", current: "🔥 CURRENT", late: "🌒 LATE" };
+  var html = '';
+  for (var i = 0; i < us.length; i++) {
+    var u = us[i];
+    var layerKeys = Object.keys(u.layer_coverage || {}).filter(function(k) { return (u.layer_coverage[k] || 0) > 0; });
+    var corr = u.corroboration_score != null ? Math.round(u.corroboration_score * 100) / 100 : '?';
+    html += '<button class="unified-card" type="button" data-unified-id="' + escapeAttr(u.id) + '">';
+    var freshAt = u.peak_at || u.first_detected || u.updated_at;
+    html += '<div class="unified-head">';
+    html += '<span class="unified-state">' + (stateBadge[u.temporal_state] || u.temporal_state || '—') + '</span>';
+    html += '<span class="unified-corr">corr ' + corr + '</span>';
+    html += '<span class="unified-layers">' + layerKeys.length + '/7 layers</span>';
+    html += ageChip(freshAt, { compact: true });
+    html += '</div>';
+    html += '<div class="unified-topic">' + escapeHtml(u.topic || '(untitled)') + '</div>';
+    if (u.thesis) html += '<div class="unified-thesis">' + escapeHtml((u.thesis || '').slice(0, 220)) + '</div>';
+    if ((u.missing_evidence || []).length) {
+      html += '<div class="unified-missing"><span class="missing-tag">' + u.missing_evidence.length + ' missing</span></div>';
+    }
+    html += '</button>';
+  }
+  el.innerHTML = html;
+  hideSectionIfEmpty(el);
+  var cards = el.querySelectorAll('[data-unified-id]');
+  for (var ci = 0; ci < cards.length; ci++) {
+    (function(btn) {
+      btn.addEventListener('click', function() { openUnifiedDrawer(btn.getAttribute('data-unified-id')); });
+    })(cards[ci]);
+  }
+}
+
+// --- Drilldown drawer (used by layer / unified / case / thread / evidence) ---
+
+function openDrawer(kicker, title, bodyHtml) {
+  var drawer = document.getElementById('drilldownDrawer');
+  if (!drawer) return;
+  document.getElementById('drilldownKicker').textContent = kicker || '';
+  document.getElementById('drilldownTitle').textContent = title || '';
+  document.getElementById('drilldownBody').innerHTML = bodyHtml || '';
+  drawer.hidden = false;
+}
+
+function closeDrawer() {
+  var drawer = document.getElementById('drilldownDrawer');
+  if (drawer) drawer.hidden = true;
+}
+
+document.addEventListener('click', function(e) {
+  if (e.target.matches('[data-drawer-close]')) closeDrawer();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeDrawer();
+});
+
+function evidenceCard(p) {
+  var who = escapeHtml(p.author || 'anonymous');
+  var src = escapeHtml(p.source || '');
+  var layer = p.source_layer ? '<span class="ev-chip">' + escapeHtml(p.source_layer) + '</span>' : '';
+  var url = p.url && p.url !== '#' ? '<a class="ev-link" href="' + p.url + '" target="_blank" rel="noopener">source ›</a>' : '';
+  var body = escapeHtml((p.quote || '').slice(0, 280)) + ((p.quote || '').length > 280 ? '…' : '');
+  var age = ageChip(p.published_at);
+  return '<article class="drill-ev" data-ev-id="' + escapeAttr(p.id) + '">' +
+    '<div class="drill-ev-head">' + layer + ' ' + age + ' <span class="ev-author">' + who + '</span> <span class="faint">· ' + src + '</span> ' + url + '</div>' +
+    (p.title ? '<div class="drill-ev-title">' + escapeHtml(p.title) + '</div>' : '') +
+    '<div class="drill-ev-body">' + body + '</div>' +
+  '</article>';
+}
+
+function openLayerDrawer(signalId, layerId) {
+  // Filter the currently-loaded signal's evidence by layer; lazy fetch chain-full
+  // again so the drawer is correct after a context reload.
+  openDrawer('LAYER · ' + layerId, 'Packets contributing to ' + layerId, '<span class="faint">Loading…</span>');
+  fetch('/api/signals/' + encodeURIComponent(signalId) + '/chain-full')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var packets = (data.evidence || []).filter(function(p) { return p.source_layer === layerId; });
+      // Augment with unified-signal-only packets for this layer
+      var unifiedLayerPackets = [];
+      var unifiedFetches = (data.unified_signals || []).map(function(u) {
+        return fetch('/api/unified-signals/' + encodeURIComponent(u.id))
+          .then(function(r) { return r.json(); })
+          .then(function(ud) {
+            var layerEntry = (ud.layers || {})[layerId];
+            if (!layerEntry || !layerEntry.evidence) return;
+            for (var i = 0; i < layerEntry.evidence.length; i++) {
+              var p = layerEntry.evidence[i];
+              p.__via = ud.topic;
+              unifiedLayerPackets.push(p);
+            }
+          })
+          .catch(function() {});
+      });
+      Promise.all(unifiedFetches).then(function() {
+        var seen = {};
+        for (var i = 0; i < packets.length; i++) seen[packets[i].id] = true;
+        var addl = unifiedLayerPackets.filter(function(p) { return !seen[p.id]; });
+        var html = '';
+        if (!packets.length && !addl.length) {
+          html = '<p class="faint">No packets in this layer. ' +
+            (data.missing_notes && data.missing_notes.length
+              ? 'Unified signals flag: ' + escapeHtml(data.missing_notes.map(function(n){return n.note;}).join('; '))
+              : 'Try the <em>Discover</em> action to fill it.') + '</p>';
+        } else {
+          if (packets.length) {
+            html += '<h4 class="drill-section">Direct evidence (' + packets.length + ')</h4>' +
+                    packets.map(evidenceCard).join('');
+          }
+          if (addl.length) {
+            html += '<h4 class="drill-section">Via unified signal (' + addl.length + ')</h4>' +
+                    addl.map(function(p) {
+                      return '<div class="drill-via faint">via <em>' + escapeHtml(p.__via || '') + '</em></div>' + evidenceCard(p);
+                    }).join('');
+          }
+        }
+        document.getElementById('drilldownBody').innerHTML = html;
+        wireEvidenceClicks();
+      });
+    })
+    .catch(function() {
+      document.getElementById('drilldownBody').innerHTML = '<span class="faint">Failed to load layer evidence.</span>';
+    });
+}
+
+function openUnifiedDrawer(unifiedId) {
+  openDrawer('UNIFIED SIGNAL', 'Loading…', '<span class="faint">Loading…</span>');
+  fetch('/api/unified-signals/' + encodeURIComponent(unifiedId))
+    .then(function(r) { return r.json(); })
+    .then(function(u) {
+      document.getElementById('drilldownTitle').textContent = u.topic || unifiedId;
+      var stateBadge = { early: '🌱 EARLY', current: '🔥 CURRENT', late: '🌒 LATE' };
+      var html = '';
+      html += '<div class="unified-meta">';
+      html += '<span class="unified-state">' + (stateBadge[u.temporal_state] || u.temporal_state || '—') + '</span>';
+      html += ' <span>corroboration <strong>' + (u.corroboration_score != null ? Math.round(u.corroboration_score * 100) / 100 : '?') + '</strong></span>';
+      if (u.first_detected) html += ' <span class="faint">first detected ' + escapeHtml(u.first_detected) + '</span>';
+      if (u.peak_at)        html += ' <span class="faint">peak ' + escapeHtml(u.peak_at) + '</span>';
+      html += '</div>';
+      if (u.thesis)            html += '<p class="unified-thesis-full"><strong>Thesis.</strong> ' + escapeHtml(u.thesis) + '</p>';
+      if (u.temporal_reasoning) html += '<p class="faint">' + escapeHtml(u.temporal_reasoning) + '</p>';
+      // Layer-by-layer panel
+      var LAYER_ORDER = ['truth','conversation','intent','behavior','expectation','economic','capital'];
+      html += '<h4 class="drill-section">What each layer says</h4>';
+      for (var i = 0; i < LAYER_ORDER.length; i++) {
+        var layer = LAYER_ORDER[i];
+        var l = (u.layers || {})[layer];
+        if (!l && !(u.layer_coverage || {})[layer]) continue;
+        var packets = (l && l.evidence) || [];
+        html += '<details class="drill-layer" ' + (i < 2 ? 'open' : '') + '>';
+        html += '<summary><strong>' + layer + '</strong> · ' + packets.length + ' packet' + (packets.length === 1 ? '' : 's') + '</summary>';
+        if (l && l.analysis) html += '<p>' + escapeHtml(l.analysis) + '</p>';
+        if (packets.length)  html += packets.slice(0, 5).map(evidenceCard).join('');
+        else                  html += '<p class="faint">No evidence linked.</p>';
+        html += '</details>';
+      }
+      // Missing evidence
+      if ((u.missing_evidence || []).length) {
+        html += '<h4 class="drill-section">Missing evidence</h4><ul>';
+        for (var mi = 0; mi < u.missing_evidence.length; mi++) {
+          html += '<li><span class="missing-tag">missing</span> ' + escapeHtml(u.missing_evidence[mi]) + '</li>';
+        }
+        html += '</ul>';
+      }
+      // Recommended actions
+      if ((u.recommended_actions || []).length) {
+        html += '<h4 class="drill-section">Recommended actions</h4><ul>';
+        for (var ai = 0; ai < u.recommended_actions.length; ai++) {
+          var a = u.recommended_actions[ai];
+          if (typeof a === 'string') html += '<li>' + escapeHtml(a) + '</li>';
+          else html += '<li><strong>' + escapeHtml(a.action || '') + '</strong> — ' + escapeHtml(a.why || '') + '</li>';
+        }
+        html += '</ul>';
+      }
+      // Linked signals (back-navigation)
+      if ((u.linkedSignals || []).length) {
+        html += '<h4 class="drill-section">Linked signals (' + u.linkedSignals.length + ')</h4>';
+        html += '<div class="drill-signals">';
+        for (var si = 0; si < u.linkedSignals.length; si++) {
+          var s = u.linkedSignals[si];
+          html += '<button class="drill-sig-link" type="button" data-signal-link="' + escapeAttr(s.id) + '">#' + (s.rank || '?') + ' · ' + escapeHtml(s.title || s.id) + '</button>';
+        }
+        html += '</div>';
+      }
+      document.getElementById('drilldownBody').innerHTML = html;
+      wireEvidenceClicks();
+      var sigBtns = document.querySelectorAll('[data-signal-link]');
+      for (var bi = 0; bi < sigBtns.length; bi++) {
+        (function(btn) {
+          btn.addEventListener('click', function() {
+            var id = btn.getAttribute('data-signal-link');
+            closeDrawer();
+            selectedId = id;
+            try { renderDetail(); } catch (e) { console.error(e); }
+          });
+        })(sigBtns[bi]);
+      }
+    })
+    .catch(function() {
+      document.getElementById('drilldownBody').innerHTML = '<span class="faint">Failed to load unified signal.</span>';
+    });
+}
+
+function openCaseDrawer(caseId) {
+  openDrawer('CASE', 'Loading…', '<span class="faint">Loading…</span>');
+  fetch('/api/cases/' + encodeURIComponent(caseId))
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      document.getElementById('drilldownTitle').textContent = d.case && d.case.title || caseId;
+      var html = '';
+      if (d.case && d.case.description) html += '<p>' + escapeHtml(d.case.description) + '</p>';
+      var members = d.members || [];
+      if (!members.length) {
+        html += '<p class="faint">This case has no linked signals yet. The case row was created but <code>signal_case_members</code> is empty — fix the writer in <code>src/pipeline/signal-cases.mjs</code> (see audit issue G-17).</p>';
+      } else {
+        html += '<h4 class="drill-section">Members (' + members.length + ')</h4>';
+        html += '<table class="case-table"><thead><tr><th>#</th><th>Signal</th><th>State</th><th>Communities</th><th>Failed solutions</th></tr></thead><tbody>';
+        for (var i = 0; i < members.length; i++) {
+          var m = members[i];
+          var failedNames = (m.failed_solutions || []).slice(0, 3).map(function(f) { return f.name || JSON.stringify(f); }).join(', ');
+          html += '<tr>';
+          html += '<td>' + (m.rank || '?') + '</td>';
+          html += '<td><button class="drill-sig-link" type="button" data-signal-link="' + escapeAttr(m.id) + '">' + escapeHtml(m.title || m.id) + '</button></td>';
+          html += '<td>' + escapeHtml(m.dominant_state || '') + '</td>';
+          html += '<td>' + escapeHtml((m.communities || []).slice(0, 3).join(', ')) + '</td>';
+          html += '<td>' + escapeHtml(failedNames) + '</td>';
+          html += '</tr>';
+        }
+        html += '</tbody></table>';
+        var tags = Object.keys(d.overlap || {});
+        if (tags.length) {
+          html += '<h4 class="drill-section">Shared facets</h4>';
+          for (var ti = 0; ti < tags.length; ti++) {
+            var tag = tags[ti];
+            html += '<div class="facet-tag"><strong>' + escapeHtml(tag) + '</strong> · covered by ' + d.overlap[tag].length + ' member' + (d.overlap[tag].length === 1 ? '' : 's') + '</div>';
+          }
+        }
+      }
+      document.getElementById('drilldownBody').innerHTML = html;
+      var sigBtns = document.querySelectorAll('[data-signal-link]');
+      for (var bi = 0; bi < sigBtns.length; bi++) {
+        (function(btn) {
+          btn.addEventListener('click', function() {
+            var id = btn.getAttribute('data-signal-link');
+            closeDrawer();
+            selectedId = id;
+            try { renderDetail(); } catch (e) { console.error(e); }
+          });
+        })(sigBtns[bi]);
+      }
+    })
+    .catch(function() {
+      document.getElementById('drilldownBody').innerHTML = '<span class="faint">Failed to load case.</span>';
+    });
+}
+
+/**
+ * Render the full evidence-packet drawer. The packet card renders identical
+ * to the cards used elsewhere; the rest of the body adds drilldown depth so
+ * the operator can navigate even when the packet has no real source URL
+ * (synthetic/fixture data, deleted Reddit threads, etc.):
+ *   - full body (no truncation) + metrics + classification chips
+ *   - thread siblings if reconstructed
+ *   - cited-by signals
+ *   - unified signals containing this packet
+ *   - other packets by the same author in this context
+ *   - other packets from the same community in this context
+ */
+function openEvidenceDrawer(evidenceId) {
+  openDrawer('EVIDENCE PACKET', 'Loading…', '<span class="faint">Loading…</span>');
+  fetch('/api/evidence/' + encodeURIComponent(evidenceId))
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var p = d.packet || {};
+      document.getElementById('drilldownTitle').textContent = p.title || p.id || evidenceId;
+
+      var html = '';
+      html += evidenceCardFull(p);
+
+      if (d.thread) {
+        var threadPackets = d.thread.packets || [];
+        html += '<h4 class="drill-section">Thread (' + threadPackets.length + ' packets)</h4>';
+        if (d.thread.intelligence && d.thread.intelligence.keyInsight) {
+          html += '<p class="drill-insight"><strong>Key insight:</strong> ' + escapeHtml(d.thread.intelligence.keyInsight) + '</p>';
+        }
+        for (var i = 0; i < Math.min(6, threadPackets.length); i++) {
+          html += evidenceCard(threadPackets[i]);
+        }
+        if (threadPackets.length > 6) html += '<p class="faint">+ ' + (threadPackets.length - 6) + ' more</p>';
+      }
+
+      if ((d.citingSignals || []).length) {
+        html += '<h4 class="drill-section">Cited by ' + d.citingSignals.length + ' signal' + (d.citingSignals.length === 1 ? '' : 's') + '</h4>';
+        for (var si = 0; si < d.citingSignals.length; si++) {
+          var s = d.citingSignals[si];
+          html += '<button class="drill-sig-link" type="button" data-signal-link="' + escapeAttr(s.id) + '">#' + (s.rank || '?') + ' · ' + escapeHtml(s.title || s.id) + '</button>';
+        }
+      }
+
+      if ((d.unifiedSignals || []).length) {
+        html += '<h4 class="drill-section">Part of ' + d.unifiedSignals.length + ' unified signal' + (d.unifiedSignals.length === 1 ? '' : 's') + '</h4>';
+        for (var ui = 0; ui < d.unifiedSignals.length; ui++) {
+          var u = d.unifiedSignals[ui];
+          html += '<button class="drill-unified-link" type="button" data-unified-link="' + escapeAttr(u.id) + '">' + escapeHtml(u.topic || u.id) + ' <span class="faint">· ' + escapeHtml(u.layer || '') + '</span></button>';
+        }
+      }
+
+      if ((d.relatedByAuthor || []).length) {
+        var moreAuthor = Math.max(0, (d.authorTotal || 0) - d.relatedByAuthor.length);
+        html += '<h4 class="drill-section">By same author · ' + escapeHtml(p.author || 'anonymous') + ' (' + (d.authorTotal || d.relatedByAuthor.length) + ')</h4>';
+        for (var ai = 0; ai < d.relatedByAuthor.length; ai++) {
+          html += evidenceCard(d.relatedByAuthor[ai]);
+        }
+        if (moreAuthor > 0) html += '<p class="faint">+ ' + moreAuthor + ' more by this author</p>';
+      }
+
+      if ((d.relatedByCommunity || []).length) {
+        var moreComm = Math.max(0, (d.communityTotal || 0) - d.relatedByCommunity.length);
+        html += '<h4 class="drill-section">From same community · ' + escapeHtml(p.source || '') + ' (' + (d.communityTotal || d.relatedByCommunity.length) + ')</h4>';
+        for (var ci = 0; ci < d.relatedByCommunity.length; ci++) {
+          html += evidenceCard(d.relatedByCommunity[ci]);
+        }
+        if (moreComm > 0) html += '<p class="faint">+ ' + moreComm + ' more from this community</p>';
+      }
+
+      document.getElementById('drilldownBody').innerHTML = html;
+
+      // Re-bind clicks on every embedded evidence card so the drawer recurses.
+      var evNodes = document.querySelectorAll('#drilldownBody .drill-ev[data-ev-id]');
+      for (var ei = 0; ei < evNodes.length; ei++) {
+        (function(node) {
+          var id = node.getAttribute('data-ev-id');
+          if (!id || id === evidenceId) return;
+          node.style.cursor = 'pointer';
+          node.addEventListener('click', function(ev) {
+            // Don't hijack clicks on the source link inside the card.
+            if (ev.target.closest('a.ev-link')) return;
+            openEvidenceDrawer(id);
+          });
+        })(evNodes[ei]);
+      }
+
+      var sigBtns = document.querySelectorAll('[data-signal-link]');
+      for (var bi = 0; bi < sigBtns.length; bi++) {
+        (function(btn) {
+          btn.addEventListener('click', function() {
+            var id = btn.getAttribute('data-signal-link');
+            closeDrawer();
+            selectedId = id;
+            try { renderDetail(); } catch (e) { console.error(e); }
+          });
+        })(sigBtns[bi]);
+      }
+      var uniBtns = document.querySelectorAll('[data-unified-link]');
+      for (var ui2 = 0; ui2 < uniBtns.length; ui2++) {
+        (function(btn) {
+          btn.addEventListener('click', function() { openUnifiedDrawer(btn.getAttribute('data-unified-link')); });
+        })(uniBtns[ui2]);
+      }
+    })
+    .catch(function(err) {
+      console.error('evidence drawer failed', err);
+      document.getElementById('drilldownBody').innerHTML = '<span class="faint">Failed to load packet.</span>';
+    });
+}
+
+/**
+ * Map source_id to a human-readable "Open on …" CTA label. Falls back to a
+ * generic "Open source" when the source isn't in the table.
+ */
+function sourceCtaLabel(sourceId) {
+  switch ((sourceId || '').toLowerCase()) {
+    case 'reddit':         return 'Open on Reddit';
+    case 'reddit-finance': return 'Open on Reddit';
+    case 'hackernews':     return 'Open on Hacker News';
+    case 'hn-hiring':      return 'Open on Hacker News';
+    case 'polymarket':     return 'Open on Polymarket';
+    case 'github':         return 'Open on GitHub';
+    case 'google':         return 'Open page';
+    case 'anthropic':      return 'Open release notes';
+    case 'yfinance':       return 'Open on Yahoo Finance';
+    case 'stocktwits':     return 'Open on Stocktwits';
+    default:               return 'Open source';
+  }
+}
+
+/**
+ * Richer card used in the header of the drawer — full body, prominent
+ * source-open CTA, metrics chips, classification chips. The compact
+ * `evidenceCard` is still used for sibling lists below to keep them scannable.
+ */
+function evidenceCardFull(p) {
+  var who = escapeHtml(p.author || 'anonymous');
+  var src = escapeHtml(p.source || '');
+  var layer = p.source_layer ? '<span class="ev-chip">' + escapeHtml(p.source_layer) + '</span>' : '';
+  var body = escapeHtml(p.quote || '').replace(/\n/g, '<br>');
+  var age = ageChip(p.published_at);
+
+  // Prominent "Open on <source>" CTA row, OR a clear synthetic-fixture badge
+  // when the packet doesn't resolve to a live URL. This is the single most
+  // important affordance on the drawer — operators need to verify evidence at
+  // the source.
+  var ctaHtml;
+  if (p.url && p.url !== '#') {
+    ctaHtml =
+      '<a class="drill-source-cta" href="' + p.url + '" target="_blank" rel="noopener">' +
+        '<span class="drill-source-cta-label">' + escapeHtml(sourceCtaLabel(p.source_id)) + '</span>' +
+        '<span class="drill-source-cta-arrow">↗</span>' +
+      '</a>';
+  } else {
+    ctaHtml =
+      '<div class="drill-source-cta drill-source-cta-missing" title="This packet is seeded fixture data or was ingested without a live source URL. Re-ingest from a real producer (reddit, hackernews, …) to drill through to source.">' +
+        '<span class="drill-source-cta-label">No live source</span>' +
+        '<span class="drill-source-cta-arrow">·</span>' +
+        '<span class="drill-source-cta-hint">synthetic / fixture data</span>' +
+      '</div>';
+  }
+
+  // Metrics row — render only chips with non-zero / non-null values.
+  var metricBits = [];
+  if (p.score)                 metricBits.push('▲ ' + p.score);
+  if (p.replies)               metricBits.push('💬 ' + p.replies);
+  if (p.evidence_weight)       metricBits.push('w ' + Number(p.evidence_weight).toFixed(1));
+  if (p.quality_score != null) metricBits.push('q ' + Number(p.quality_score).toFixed(2));
+  if (p.source_kind)           metricBits.push(escapeHtml(p.source_kind));
+  var metricsHtml = metricBits.length
+    ? '<div class="drill-ev-metrics">' + metricBits.map(function(b) { return '<span class="ev-metric">' + b + '</span>'; }).join('') + '</div>'
+    : '';
+
+  // Classification chips — only show fields that have meaningful values.
+  var classBits = [];
+  if (p.intent && p.intent !== 'question')                       classBits.push(['intent', p.intent]);
+  if (p.awareness_level)                                         classBits.push(['awareness', p.awareness_level]);
+  if (p.evidence_state && p.evidence_state !== 'sharing_insight') classBits.push(['state', p.evidence_state]);
+  if (p.sentiment && p.sentiment !== 'neutral')                  classBits.push(['sentiment', p.sentiment]);
+  var classHtml = classBits.length
+    ? '<div class="drill-ev-class">' + classBits.map(function(b) {
+        return '<span class="ev-class-chip"><span class="ev-class-label">' + b[0] + '</span>' + escapeHtml(b[1]) + '</span>';
+      }).join('') + '</div>'
+    : '';
+
+  return '<article class="drill-ev drill-ev-full" data-ev-id="' + escapeAttr(p.id) + '">' +
+    '<div class="drill-ev-head">' + layer + ' ' + age + ' <span class="ev-author">' + who + '</span> <span class="faint">· ' + src + '</span></div>' +
+    (p.title ? '<div class="drill-ev-title">' + escapeHtml(p.title) + '</div>' : '') +
+    '<div class="drill-ev-body drill-ev-body-full">' + body + '</div>' +
+    ctaHtml +
+    metricsHtml +
+    classHtml +
+  '</article>';
+}
+
+function wireEvidenceClicks() {
+  var els = document.querySelectorAll('.drill-ev[data-ev-id]');
+  for (var i = 0; i < els.length; i++) {
+    (function(node) {
+      node.addEventListener('click', function() {
+        openEvidenceDrawer(node.getAttribute('data-ev-id'));
+      });
+    })(els[i]);
+  }
 }
 
 function renderIntelligenceChain(signalId) {
@@ -1181,7 +1890,8 @@ function renderIntelligenceChain(signalId) {
     .then(function(r) { return r.json(); })
     .then(function(chain) {
       if (!chain || chain.totalUnits === 0) {
-        el.innerHTML = '<span class="faint">No intelligence chain yet</span>';
+        el.innerHTML = '';
+        hideSectionIfEmpty(el);
         return;
       }
 
@@ -1225,8 +1935,23 @@ function renderIntelligenceChain(signalId) {
           var u = cunits[cj];
           var conf = Math.round((u.confidence || 0) * 100);
           var confColor = conf >= 70 ? "#3e9558" : conf >= 40 ? "#bd842f" : "#9aa3ad";
-          claimsHtml += '<div class="chain-claim">';
+          // Make the claim clickable when its source resolves to a packet,
+          // thread, or signal — so the operator can walk straight to evidence.
+          var srcType = u.sourceType || '';
+          var srcId   = u.sourceId   || '';
+          var drillAttr = '';
+          var cursor    = '';
+          if ((srcType === 'evidence_packet' || srcType === 'thread_intelligence') && srcId) {
+            drillAttr = ' data-drill-src-type="' + escapeAttr(srcType) + '" data-drill-src-id="' + escapeAttr(srcId) + '" data-drill-thread="' + escapeAttr(u.threadId || '') + '"';
+            cursor    = 'cursor:pointer;';
+          } else if (srcType === 'signal' && srcId) {
+            drillAttr = ' data-signal-link="' + escapeAttr(srcId) + '"';
+            cursor    = 'cursor:pointer;';
+          }
+          var basis = u.confidenceBasis ? ' title="' + escapeAttr(u.confidenceBasis) + '"' : '';
+          claimsHtml += '<div class="chain-claim"' + drillAttr + basis + ' style="' + cursor + '">';
           claimsHtml += '<span class="chain-conf" style="color:' + confColor + '">' + conf + '%</span>';
+          claimsHtml += ageChip(u.createdAt, { compact: true });
           claimsHtml += '<span class="chain-text">' + escapeHtml((u.claim || "").slice(0, 120)) + '</span>';
           claimsHtml += '</div>';
         }
@@ -1237,10 +1962,146 @@ function renderIntelligenceChain(signalId) {
       }
 
       el.innerHTML = barHtml + claimsHtml;
+      hideSectionIfEmpty(el);
+      // Wire claim drilldowns
+      el.querySelectorAll('[data-drill-src-type]').forEach(function(node) {
+        node.addEventListener('click', function() {
+          var srcType = node.getAttribute('data-drill-src-type');
+          var srcId   = node.getAttribute('data-drill-src-id');
+          var threadId = node.getAttribute('data-drill-thread');
+          if (srcType === 'evidence_packet')      openEvidenceDrawer(srcId);
+          else if (srcType === 'thread_intelligence') openThreadDrawer(threadId || srcId);
+        });
+      });
+      el.querySelectorAll('[data-signal-link]').forEach(function(node) {
+        node.addEventListener('click', function() {
+          selectedId = node.getAttribute('data-signal-link');
+          try { renderDetail(); } catch (e) { console.error(e); }
+        });
+      });
     })
     .catch(function() {
       el.innerHTML = '<span class="faint">Chain unavailable</span>';
     });
+}
+
+function openThreadDrawer(threadId) {
+  if (!threadId) return;
+  openDrawer('THREAD', 'Loading…', '<span class="faint">Loading…</span>');
+  loadThreadIntoDrawer(threadId);
+}
+
+function loadThreadIntoDrawer(threadId) {
+  fetch('/api/threads/' + encodeURIComponent(threadId))
+    .then(function(r) {
+      // 404 means the thread row is missing — we may still have surviving
+      // hints (Reddit post id inside thread:<id>) we can use to regenerate.
+      if (!r.ok) { var e = new Error('http ' + r.status); e.status = r.status; throw e; }
+      return r.json();
+    })
+    .then(function(d) {
+      document.getElementById('drilldownTitle').textContent = (d.thread && d.thread.title) || threadId;
+      var html = '';
+      if (d.thread) {
+        html += '<div class="drill-ev-head"><span class="ev-chip">' + escapeHtml(d.thread.community || '') + '</span>';
+        if (d.thread.url) html += ' <a class="ev-link" href="' + d.thread.url + '" target="_blank" rel="noopener">open thread ›</a>';
+        html += ' <span class="faint">· ' + (d.thread.comment_count || 0) + ' comments · score ' + (d.thread.total_score || 0) + '</span></div>';
+      }
+      if (d.intelligence) {
+        var it = d.intelligence;
+        if (it.keyInsight) html += '<p class="drill-insight"><strong>Key insight:</strong> ' + escapeHtml(it.keyInsight) + '</p>';
+        if (it.conversationArc) html += '<p><strong>Arc.</strong> ' + escapeHtml(it.conversationArc) + '</p>';
+        if (it.signalQuality) html += '<p class="faint">Quality: ' + escapeHtml(it.signalQuality) + ' · awareness: ' + escapeHtml(it.awarenessLevel || '?') + ' · desire: ' + escapeHtml(it.desireType || '?') + '</p>';
+      }
+      html += '<h4 class="drill-section">Packets (' + (d.packets || []).length + ')</h4>';
+      html += (d.packets || []).slice(0, 12).map(evidenceCard).join('');
+      if ((d.packets || []).length > 12) html += '<p class="faint">+ ' + ((d.packets || []).length - 12) + ' more</p>';
+      if ((d.citingSignals || []).length) {
+        html += '<h4 class="drill-section">Cited by ' + d.citingSignals.length + ' signal' + (d.citingSignals.length === 1 ? '' : 's') + '</h4>';
+        for (var i = 0; i < d.citingSignals.length; i++) {
+          var s = d.citingSignals[i];
+          html += '<button class="drill-sig-link" type="button" data-signal-link="' + escapeAttr(s.id) + '">' + escapeHtml(s.title || s.id) + '</button>';
+        }
+      }
+      document.getElementById('drilldownBody').innerHTML = html;
+      wireEvidenceClicks();
+      document.querySelectorAll('[data-signal-link]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          selectedId = btn.getAttribute('data-signal-link');
+          closeDrawer();
+          try { renderDetail(); } catch (e) { console.error(e); }
+        });
+      });
+    })
+    .catch(function(err) {
+      renderThreadFailure(threadId, err && err.status);
+    });
+}
+
+function renderThreadFailure(threadId, httpStatus) {
+  // Pull whatever hints survived in intelligence_units so the operator sees
+  // *what* is missing, not just an opaque error. The chain endpoint already
+  // walks the unit graph; one shot is cheap.
+  fetch('/api/intelligence/' + encodeURIComponent(threadId)).catch(function(){}); // fire-and-forget warm
+
+  // Derive the reddit post id from the convention "thread:<id>".
+  var redditPostId = (threadId.indexOf('thread:') === 0) ? threadId.slice('thread:'.length) : threadId;
+  var redditUrl = 'https://www.reddit.com/comments/' + redditPostId;
+
+  var body = '';
+  body += '<div class="drill-failure">';
+  body += '<div class="drill-failure-status">' + (httpStatus === 404
+    ? 'Thread row not found in the local database.'
+    : 'Failed to load thread (HTTP ' + (httpStatus || '?') + ').'
+  ) + '</div>';
+  body += '<p class="faint">Known hints from surviving intelligence:</p>';
+  body += '<ul class="drill-failure-hints">';
+  body += '<li><strong>Thread id:</strong> <code>' + escapeHtml(threadId) + '</code></li>';
+  body += '<li><strong>Likely Reddit url:</strong> <a href="' + redditUrl + '" target="_blank" rel="noopener">' + redditUrl + '</a></li>';
+  body += '</ul>';
+  body += '<div class="drill-failure-actions">';
+  body += '<button type="button" class="button" id="drillThreadRetry">↻ Retry</button>';
+  body += '<button type="button" class="button button-primary" id="drillThreadRegen">⟳ Re-pull from Reddit</button>';
+  body += '<a class="button" href="' + redditUrl + '" target="_blank" rel="noopener">Open on Reddit</a>';
+  body += '</div>';
+  body += '<div class="drill-failure-log" id="drillThreadLog" style="display:none"></div>';
+  body += '</div>';
+  document.getElementById('drilldownBody').innerHTML = body;
+
+  document.getElementById('drillThreadRetry').addEventListener('click', function() {
+    document.getElementById('drilldownBody').innerHTML = '<span class="faint">Retrying…</span>';
+    loadThreadIntoDrawer(threadId);
+  });
+  document.getElementById('drillThreadRegen').addEventListener('click', function() {
+    var btn = document.getElementById('drillThreadRegen');
+    var log = document.getElementById('drillThreadLog');
+    btn.disabled = true;
+    btn.textContent = '⟳ Re-pulling from Reddit…';
+    log.style.display = '';
+    log.textContent = 'Calling /api/threads/' + threadId + '/regenerate …';
+    fetch('/api/threads/' + encodeURIComponent(threadId) + '/regenerate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+      .then(function(r) { return r.json().then(function(j) { return { status: r.status, body: j }; }); })
+      .then(function(res) {
+        if (res.body && res.body.ok) {
+          log.textContent = 'Re-fetched ' + (res.body.inserted || 0) + ' packets. Loading thread…';
+          setTimeout(function() { loadThreadIntoDrawer(threadId); }, 250);
+        } else {
+          btn.disabled = false;
+          btn.textContent = '⟳ Re-pull from Reddit';
+          log.textContent = 'Regenerate failed (HTTP ' + res.status + '): ' + (res.body && res.body.error || 'unknown') +
+            (res.body && res.body.hint ? '\nHint: ' + res.body.hint : '');
+        }
+      })
+      .catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = '⟳ Re-pull from Reddit';
+        log.textContent = 'Network error: ' + err.message;
+      });
+  });
 }
 
 function renderContextBrief() {
@@ -1398,18 +2259,18 @@ function openNewContextModal() {
   overlay.innerHTML =
     '<div class="modal">' +
       '<div class="modal-head">' +
-        '<h3>New research context</h3>' +
+        '<h3>New topic</h3>' +
         '<button type="button" class="modal-close" id="modalClose">&times;</button>' +
       '</div>' +
       '<div class="modal-tabs" id="contextModeTabs">' +
-        '<button class="modal-tab active" data-mode="ai">AI-generated</button>' +
-        '<button class="modal-tab" data-mode="manual">Manual</button>' +
+        '<button class="modal-tab active" data-mode="ai">Quick (AI sets it up)</button>' +
+        '<button class="modal-tab" data-mode="manual">Manual (advanced)</button>' +
       '</div>' +
       '<form id="newContextForm">' +
         '<div id="aiFields">' +
-          '<label class="form-label">Topic<input type="text" name="topic" class="form-input" placeholder="e.g. AI agents replacing SaaS subscriptions" id="topicInput"></label>' +
-          '<label class="form-label">Description <span class="form-hint">optional — adds context for the AI</span><input type="text" name="ai_description" class="form-input" placeholder="What angle? Who cares? Why now?"></label>' +
-          '<p class="form-hint" style="padding:4px 0 0;font-size:11px;color:var(--muted)">The AI will generate thesis, avatar, 30+ search queries, and state-targeted research passes.</p>' +
+          '<label class="form-label">What are you watching?<input type="text" name="topic" class="form-input" placeholder="e.g. AI agents replacing SaaS subscriptions" id="topicInput"></label>' +
+          '<label class="form-label">Why does it matter? <span class="form-hint">optional</span><input type="text" name="ai_description" class="form-input" placeholder="What angle? Who would care? Why now?"></label>' +
+          '<p class="form-hint" style="padding:4px 0 0;font-size:11px;color:var(--muted)">We\'ll generate the search queries for you. Takes about 10 seconds.</p>' +
         '</div>' +
         '<div id="manualFields" style="display:none">' +
           '<label class="form-label">Label<input type="text" name="label" class="form-input" placeholder="e.g. AI tools for small law firms"></label>' +

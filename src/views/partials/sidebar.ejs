@@ -8,14 +8,14 @@
   </div>
 
   <div class="context-box">
-    <div class="eyebrow">Active context</div>
-    <select class="context-select" id="contextSelect" aria-label="Active context">
+    <div class="eyebrow">Active topic</div>
+    <select class="context-select" id="contextSelect" aria-label="Active topic">
       <% for (const ctx of contexts) { %>
         <option value="<%= ctx.id %>" <%= ctx.id === activeContext.id ? 'selected' : '' %>><%= ctx.label %></option>
       <% } %>
     </select>
-    <button class="context-add" type="button" id="btnNewContext" title="New context">+</button>
-    <button class="context-add context-delete" type="button" id="btnDeleteContext" title="Delete this context">&times;</button>
+    <button class="context-add" type="button" id="btnNewContext" title="New topic">+</button>
+    <button class="context-add context-delete" type="button" id="btnDeleteContext" title="Delete this topic">&times;</button>
   </div>
 
   <nav class="nav-block" aria-label="Workspace">
@@ -24,10 +24,10 @@
       <span class="nav-icon">&#9678;</span><span>Radar</span><span></span>
     </a>
     <a class="nav-item<%= page === 'evidence' ? ' active' : '' %>" href="/evidence?context=<%= activeContext.id %>">
-      <span class="nav-icon">&#9636;</span><span>Evidence Library</span><span class="nav-count"><%= stats.evidence %></span>
+      <span class="nav-icon">&#9636;</span><span>Observations</span><span class="nav-count"><%= stats.evidence %></span>
     </a>
     <a class="nav-item<%= page === 'watchlist' ? ' active' : '' %>" href="/watchlist?context=<%= activeContext.id %>">
-      <span class="nav-icon">&#8801;</span><span>Watchlist</span><span class="nav-count"><%= stats.saved %></span>
+      <span class="nav-icon">&#8801;</span><span>Watchlist</span><span class="nav-count"><%= stats.watchlist %></span>
     </a>
     <a class="nav-item<%= page === 'communities' ? ' active' : '' %>" href="/communities?context=<%= activeContext.id %>">
       <span class="nav-icon">#</span><span>Communities</span><span class="nav-count"><%= stats.communities %></span>
@@ -39,10 +39,10 @@
   </nav>
 
   <div class="account">
-    <div class="avatar">MK</div>
+    <div class="avatar">S</div>
     <div>
-      <div class="account-name">Maya K.</div>
-      <div class="account-org">Harbor Research</div>
+      <div class="account-name">Signals</div>
+      <div class="account-org">local · v0.1</div>
     </div>
     <span>&#8250;</span>
   </div>

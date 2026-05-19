@@ -13,52 +13,55 @@
     <main class="main">
       <header class="topbar">
         <div>
-          <div class="crumbs">Evidence / <%= activeContext.label %></div>
+          <div class="crumbs">Observations / <%= activeContext.label %></div>
           <div class="title-row">
-            <h1>Evidence Library</h1>
+            <h1>Observations</h1>
           </div>
         </div>
         <div class="top-actions">
           <div class="search-wrap">
             <span>&#8981;</span>
-            <input id="evidenceSearch" type="search" placeholder="Search evidence..." aria-label="Search evidence">
+            <input id="evidenceSearch" type="search" placeholder="Search observations…" aria-label="Search observations">
             <kbd>&#8984;K</kbd>
           </div>
-          <select class="select" id="filterSource" aria-label="Filter by source">
-            <option value="">All sources</option>
-            <% for (const src of sources) { %>
-              <option value="<%= src %>"><%= src %></option>
-            <% } %>
-          </select>
-          <select class="select" id="filterCommunity" aria-label="Filter by community">
-            <option value="">All communities</option>
-            <% for (const c of communities) { %>
-              <option value="<%= c %>"><%= c %></option>
-            <% } %>
-          </select>
-          <select class="select" id="filterIntent" aria-label="Filter by intent">
-            <option value="">All intents</option>
-            <% for (const i of intents) { %>
-              <option value="<%= i %>"><%= i %></option>
-            <% } %>
-          </select>
-          <select class="select" id="filterAwareness" aria-label="Filter by awareness">
-            <option value="">All awareness</option>
-            <option value="unaware">Unaware</option>
-            <option value="problem_aware">Problem Aware</option>
-            <option value="solution_aware">Solution Aware</option>
-            <option value="product_aware">Product Aware</option>
-            <option value="most_aware">Most Aware</option>
-          </select>
-          <select class="select" id="filterSentiment" aria-label="Filter by sentiment">
-            <option value="">All sentiment</option>
-            <option value="positive">Positive</option>
-            <option value="negative">Negative</option>
-            <option value="neutral">Neutral</option>
-            <option value="mixed">Mixed</option>
-          </select>
         </div>
       </header>
+
+      <div class="filter-toolbar" role="toolbar" aria-label="Filter observations">
+        <select class="select" id="filterSource" aria-label="Filter by source">
+          <option value="">All sources</option>
+          <% for (const src of sources) { %>
+            <option value="<%= src %>"><%= src %></option>
+          <% } %>
+        </select>
+        <select class="select" id="filterCommunity" aria-label="Filter by community">
+          <option value="">All communities</option>
+          <% for (const c of communities) { %>
+            <option value="<%= c %>"><%= c %></option>
+          <% } %>
+        </select>
+        <select class="select" id="filterIntent" aria-label="Filter by intent">
+          <option value="">All intents</option>
+          <% for (const i of intents) { %>
+            <option value="<%= i %>"><%= i %></option>
+          <% } %>
+        </select>
+        <select class="select" id="filterAwareness" aria-label="Filter by awareness">
+          <option value="">All awareness</option>
+          <option value="unaware">Unaware</option>
+          <option value="problem_aware">Problem Aware</option>
+          <option value="solution_aware">Solution Aware</option>
+          <option value="product_aware">Product Aware</option>
+          <option value="most_aware">Most Aware</option>
+        </select>
+        <select class="select" id="filterSentiment" aria-label="Filter by sentiment">
+          <option value="">All sentiment</option>
+          <option value="positive">Positive</option>
+          <option value="negative">Negative</option>
+          <option value="neutral">Neutral</option>
+          <option value="mixed">Mixed</option>
+        </select>
+      </div>
 
       <div class="evidence-library-header">
         <span class="evidence-count"><%= evidence.length %> evidence packets</span>
@@ -251,21 +254,36 @@
             <% } %>
 
             <% if (orphans.length > 0) { %>
-              <div class="thread-group-label">Unthreaded evidence (<%= orphans.length %>)</div>
-              <% for (const ep of orphans.slice(0, 50)) { %>
-                <% let m; try { m = JSON.parse(ep.metrics || '{}'); } catch { m = {}; } %>
-                <div class="thread-root evidence-row" data-source="<%= ep.source_id %>" data-community="<%= ep.community %>" data-intent="<%= ep.intent || '' %>" data-awareness="<%= ep.awareness_level || '' %>">
-                  <div class="thread-branch-root"></div>
-                  <div class="thread-node">
-                    <div class="thread-node-head">
-                      <span class="mini-chip"><%= ep.community || '' %></span>
-                      <span class="thread-score">&#9650; <%= m.score || 0 %></span>
-                      <span class="thread-author"><%= ep.author_ref || '' %></span>
-                    </div>
-                    <div class="thread-body"><%= (ep.body || '').slice(0, 200) %></div>
-                  </div>
+              <% const ORPHAN_CAP = 500; const orphansShown = orphans.slice(0, ORPHAN_CAP); %>
+              <div class="thread-group" id="unthreadedGroup" data-source="" data-community="">
+                <div class="thread-group-label" id="unthreadedLabel">
+                  Unthreaded evidence
+                  <span class="thread-group-count" id="unthreadedCount"
+                        data-shown="<%= orphansShown.length %>" data-total="<%= orphans.length %>">
+                    (<%= orphansShown.length === orphans.length ? orphans.length : orphansShown.length + ' of ' + orphans.length %>)
+                  </span>
                 </div>
-              <% } %>
+                <% for (const ep of orphansShown) { %>
+                  <% let m; try { m = JSON.parse(ep.metrics || '{}'); } catch { m = {}; } %>
+                  <div class="thread-root evidence-row" data-source="<%= ep.source_id %>" data-community="<%= ep.community %>" data-intent="<%= ep.intent || '' %>" data-awareness="<%= ep.awareness_level || '' %>">
+                    <div class="thread-branch-root"></div>
+                    <div class="thread-node">
+                      <div class="thread-node-head">
+                        <span class="mini-chip"><%= ep.community || '' %></span>
+                        <span class="thread-score">&#9650; <%= m.score || 0 %></span>
+                        <span class="thread-author"><%= ep.author_ref || '' %></span>
+                      </div>
+                      <div class="thread-body"><%= (ep.body || '').slice(0, 200) %></div>
+                    </div>
+                  </div>
+                <% } %>
+                <div class="empty-state" id="unthreadedEmpty" style="display:none;padding:20px;text-align:center;color:var(--muted);font-size:12px">
+                  No unthreaded evidence matches the current filter.
+                  <% if (orphans.length > ORPHAN_CAP) { %>
+                    Only the first <%= ORPHAN_CAP %> of <%= orphans.length %> unthreaded packets are loaded — the match may live in the rest.
+                  <% } %>
+                </div>
+              </div>
             <% } %>
           </div>
 
@@ -356,12 +374,31 @@
       // Filter thread groups — show group if any child matches
       var groups = document.querySelectorAll(".thread-group");
       groups.forEach(function(group) {
-        var matchComm = !community || group.dataset.community === community;
-        var matchSource = !source || group.dataset.source === source;
+        // The unthreaded group has empty data attrs so it never gets filtered
+        // by source/community at the group level — only its children do.
+        var isUnthreaded = group.id === "unthreadedGroup";
+        var matchComm = isUnthreaded || !community || group.dataset.community === community;
+        var matchSource = isUnthreaded || !source || group.dataset.source === source;
         var childRows = group.querySelectorAll(".evidence-row");
-        var anyChildVisible = false;
-        childRows.forEach(function(r) { if (r.style.display !== "none") anyChildVisible = true; });
-        group.style.display = (matchComm && matchSource && anyChildVisible) ? "" : "none";
+        var visibleChildren = 0;
+        childRows.forEach(function(r) { if (r.style.display !== "none") visibleChildren++; });
+        // For the unthreaded group, swap its body for an empty-state when no
+        // children match; keep the group itself mounted so the label can
+        // explain why nothing is showing.
+        if (isUnthreaded) {
+          var emptyEl = document.getElementById("unthreadedEmpty");
+          var countEl = document.getElementById("unthreadedCount");
+          if (emptyEl) emptyEl.style.display = visibleChildren === 0 ? "" : "none";
+          if (countEl) {
+            var total = countEl.dataset.total;
+            var anyFilter = !!(community || source || intent || awareness || sentiment || term);
+            countEl.textContent = anyFilter
+              ? "(" + visibleChildren + " of " + total + " matching)"
+              : "(" + countEl.dataset.shown + (countEl.dataset.shown !== total ? " of " + total : "") + ")";
+          }
+        } else {
+          group.style.display = (matchComm && matchSource && visibleChildren > 0) ? "" : "none";
+        }
       });
 
       document.querySelector(".evidence-count").textContent = visible + " evidence packets";

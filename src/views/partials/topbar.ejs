@@ -1,8 +1,8 @@
 <header class="topbar">
   <div>
-    <div class="crumbs" id="crumbs">Radar / <%= activeContext.label %></div>
+    <div class="crumbs" id="crumbs">Topic: <%= activeContext.label %></div>
     <div class="title-row">
-      <h1>Signal Radar</h1>
+      <h1>Signals</h1>
       <span class="live-dot" aria-hidden="true"></span>
       <span class="live-text">Live</span>
     </div>
@@ -15,7 +15,7 @@
     </div>
     <% let hasReddit = false; try { hasReddit = JSON.parse(activeContext.subreddits || '[]').length > 0; } catch(e) {} %>
     <% if (hasReddit) { %>
-    <button class="button" type="button" id="btnRefresh" title="Pull live Reddit data">&#8635; Refresh</button>
+    <button class="button" type="button" id="btnRefresh" title="Pull live Reddit data">&#8635; Refresh from sources</button>
     <% } %>
   </div>
 </header>

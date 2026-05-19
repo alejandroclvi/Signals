@@ -6,9 +6,16 @@ import { listAgentModes, getAgentMode } from "../pipeline/agent-modes.mjs";
 const router = Router();
 
 function getStats(db, contextId) {
+  const saved = db.prepare("SELECT COUNT(*) as c FROM signals WHERE context_id = ? AND saved = 1").get(contextId).c;
+  // The sidebar Watchlist count reflects the full watchlist (saved signals +
+  // productive surfaces we've cached for periodic crawling), so the badge
+  // matches what the user actually sees on the /watchlist page.
+  const watched = db.prepare("SELECT COUNT(*) as c FROM watched_sources WHERE context_id = ? AND muted = 0").get(contextId).c;
   return {
     signals: db.prepare("SELECT COUNT(*) as c FROM signals WHERE context_id = ? AND dismissed = 0").get(contextId).c,
-    saved: db.prepare("SELECT COUNT(*) as c FROM signals WHERE context_id = ? AND saved = 1").get(contextId).c,
+    saved,
+    watched,
+    watchlist: saved + watched,
     evidence: db.prepare("SELECT COUNT(*) as c FROM evidence_packets WHERE context_id = ?").get(contextId).c,
     communities: db.prepare("SELECT COUNT(DISTINCT community) as c FROM evidence_packets WHERE context_id = ?").get(contextId).c,
   };
@@ -122,6 +129,24 @@ router.get("/watchlist", (req, res) => {
      ORDER BY s.updated_at DESC`
   ).all(activeContext.id);
 
+  // Watched sources: hubs we've learned are productive. Periodic refresh
+  // hits these first instead of re-discovering hubs from scratch.
+  const watched = db.prepare(
+    `SELECT id, producer, kind, handle, label, url,
+            evidence_count, signal_count, thread_count,
+            first_seen_at, last_seen_at, pinned, muted, added_by
+     FROM watched_sources
+     WHERE context_id = ?
+     ORDER BY pinned DESC, muted ASC, evidence_count DESC`
+  ).all(activeContext.id);
+
+  // Group for the template
+  const watchedByProducer = {};
+  for (const w of watched) {
+    if (!watchedByProducer[w.producer]) watchedByProducer[w.producer] = [];
+    watchedByProducer[w.producer].push(w);
+  }
+
   res.render("watchlist", {
     contexts,
     activeContext,
@@ -129,6 +154,11 @@ router.get("/watchlist", (req, res) => {
     stats,
     saved,
     dismissed,
+    watched,
+    watchedByProducer,
+    watchedTotal: watched.length,
+    watchedPinned: watched.filter(w => w.pinned).length,
+    watchedMuted: watched.filter(w => w.muted).length,
   });
 });
 
