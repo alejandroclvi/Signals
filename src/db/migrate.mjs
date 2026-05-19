@@ -295,8 +295,69 @@ db.exec(`CREATE TABLE IF NOT EXISTS signal_scores (
   PRIMARY KEY (signal_id, lens)
 )`);
 
+// Cross-layer topic synthesis. A unified_signal is a NARRATIVE (e.g. "Trust
+// crisis: quota change") supported by evidence from multiple layers
+// (conversation + capital + truth + …). This is the agent-synthesis layer
+// above the community-grouped signal extractor.
+db.exec(`CREATE TABLE IF NOT EXISTS unified_signals (
+  id                   TEXT PRIMARY KEY,
+  context_id           TEXT NOT NULL REFERENCES contexts(id) ON DELETE CASCADE,
+  topic                TEXT NOT NULL,
+  description          TEXT,
+  thesis               TEXT,
+  temporal_state       TEXT,         -- early | current | late
+  temporal_reasoning   TEXT,
+  key_terms            TEXT,         -- JSON array used for cross-layer matching
+  first_detected       TEXT,
+  peak_at              TEXT,
+  layer_coverage       TEXT,         -- JSON {layer: evidence_count}
+  layer_analysis       TEXT,         -- JSON {layer: prose_analysis}
+  corroboration_score  REAL,
+  missing_evidence     TEXT,         -- JSON array of strings
+  recommended_actions  TEXT,         -- JSON array of {action, why}
+  model_used           TEXT,
+  created_at           TEXT DEFAULT (datetime('now')),
+  updated_at           TEXT DEFAULT (datetime('now'))
+)`);
+
+db.exec(`CREATE TABLE IF NOT EXISTS unified_signal_evidence (
+  unified_signal_id  TEXT NOT NULL REFERENCES unified_signals(id) ON DELETE CASCADE,
+  evidence_id        TEXT NOT NULL REFERENCES evidence_packets(id) ON DELETE CASCADE,
+  layer              TEXT NOT NULL,
+  relevance          REAL,
+  PRIMARY KEY (unified_signal_id, evidence_id)
+)`);
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_unified_signals_context ON unified_signals(context_id)"); } catch {}
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_unified_signal_evidence_signal ON unified_signal_evidence(unified_signal_id)"); } catch {}
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_unified_signal_evidence_layer ON unified_signal_evidence(layer)"); } catch {}
+
+// Watched sources — the registry of "places worth crawling again".
+// One row per (context, producer, handle). Derived from evidence_packets via
+// `pnpm sync-watchlist`. Used by the dashboard's /watchlist page and by
+// `pnpm refresh` to prioritize known-productive surfaces.
+db.exec(`CREATE TABLE IF NOT EXISTS watched_sources (
+  id              TEXT PRIMARY KEY,
+  context_id      TEXT NOT NULL REFERENCES contexts(id) ON DELETE CASCADE,
+  producer        TEXT NOT NULL,        -- reddit, hackernews, google, github, polymarket, …
+  kind            TEXT NOT NULL,        -- subreddit | website | repo | market | hn-thread | hiring-post
+  handle          TEXT NOT NULL,        -- r/ClaudeCode | news.ycombinator.com | anthropics/claude-code | …
+  label           TEXT,                 -- display label (defaults to handle)
+  url             TEXT,                 -- canonical url for the handle
+  evidence_count  INTEGER DEFAULT 0,
+  signal_count    INTEGER DEFAULT 0,
+  thread_count    INTEGER DEFAULT 0,
+  last_seen_at    TEXT,                 -- max(observed_at) of evidence from this handle
+  first_seen_at   TEXT,
+  pinned          INTEGER DEFAULT 0,
+  muted           INTEGER DEFAULT 0,
+  added_at        TEXT DEFAULT (datetime('now')),
+  added_by        TEXT DEFAULT 'auto'   -- 'auto' (derived) or 'user' (pinned manually)
+)`);
+
 // Performance indexes for key join paths
 const safeIndex = (sql) => { try { db.exec(sql); } catch {} };
+safeIndex("CREATE INDEX IF NOT EXISTS idx_watched_sources_context ON watched_sources(context_id, pinned DESC, evidence_count DESC)");
+safeIndex("CREATE INDEX IF NOT EXISTS idx_watched_sources_handle ON watched_sources(producer, handle)");
 safeIndex("CREATE INDEX IF NOT EXISTS idx_evidence_context ON evidence_packets(context_id)");
 safeIndex("CREATE INDEX IF NOT EXISTS idx_evidence_thread ON evidence_packets(thread_id)");
 safeIndex("CREATE INDEX IF NOT EXISTS idx_signal_evidence_signal ON signal_evidence(signal_id)");

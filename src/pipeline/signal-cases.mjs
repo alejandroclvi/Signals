@@ -203,14 +203,26 @@ function deriveCaseTitle(group) {
 }
 
 /**
- * Store detected cases in the database.
+ * Store detected cases for a context.
+ *
+ * Idempotent: clears existing case rows for the context first, then re-inserts.
+ * Necessary because `refresh-signals.mjs` periodically deletes stale signal
+ * rows; the `ON DELETE CASCADE` on `signal_case_members.signal_id` then empties
+ * membership while leaving `signal_cases` rows as orphans. Without this clear
+ * step, calling `storeCases` again with the same data would create duplicate
+ * case rows because the UUIDs are freshly generated. (Audit issue G-17.)
  */
 export function storeCases(cases, contextId) {
   const db = getDb();
   let stored = 0;
+  let skippedMembers = 0;
+
+  const deleteOldCases = db.prepare(
+    `DELETE FROM signal_cases WHERE context_id = ?`
+  );
 
   const insertCase = db.prepare(`
-    INSERT OR IGNORE INTO signal_cases (id, context_id, title, description, status)
+    INSERT INTO signal_cases (id, context_id, title, description, status)
     VALUES (?, ?, ?, ?, 'open')
   `);
 
@@ -223,31 +235,45 @@ export function storeCases(cases, contextId) {
     `UPDATE signals SET case_id = ? WHERE id = ?`
   );
 
+  const signalExists = db.prepare(
+    `SELECT 1 FROM signals WHERE id = ?`
+  );
+
   const store = db.transaction(() => {
+    deleteOldCases.run(contextId);
+
     for (const c of cases) {
+      // Skip stale signals (refreshed under different IDs) so the FK insert
+      // doesn't silently no-op via INSERT OR IGNORE.
+      const liveSignals = c.signals.filter(s => signalExists.get(s.id));
+      if (liveSignals.length < 2) {
+        skippedMembers += c.signals.length - liveSignals.length;
+        continue;
+      }
+
       const caseId = crypto.randomUUID();
-      const description = `Signals: ${c.signals.map(s => s.title).join(", ")}`;
+      const description = `Signals: ${liveSignals.map(s => s.title).join(", ")}`;
 
       insertCase.run(caseId, contextId, c.title, description);
 
-      for (const signal of c.signals) {
+      for (const signal of liveSignals) {
         insertMember.run(caseId, signal.id);
         updateSignal.run(caseId, signal.id);
       }
 
       // Intelligence chain: create L3 cross_community unit
       try {
-        const parentIds = c.signals.flatMap(s => getCrossThreadIds(s.id));
+        const parentIds = liveSignals.flatMap(s => getCrossThreadIds(s.id));
         createUnit({
           unitType: "cross_community",
-          claim: `"${c.title}" \u2014 pattern confirmed across ${c.signals.length} communities`,
-          detail: c.signals.map(s => s.title).join(", "),
+          claim: `"${c.title}" \u2014 pattern confirmed across ${liveSignals.length} communities`,
+          detail: liveSignals.map(s => s.title).join(", "),
           sourceType: "signal_case", sourceId: caseId,
           method: "aggregation",
           parentIds,
           contextId,
-          confidence: Math.min(0.95, 0.5 + c.signals.length * 0.1),
-          confidenceBasis: c.signals.length + " independent communities",
+          confidence: Math.min(0.95, 0.5 + liveSignals.length * 0.1),
+          confidenceBasis: liveSignals.length + " independent communities",
           createdBy: "signal-cases",
         });
       } catch (e) { /* non-blocking */ }
@@ -257,5 +283,15 @@ export function storeCases(cases, contextId) {
   });
 
   store();
-  return stored;
+  return { stored, skippedMembers };
+}
+
+/**
+ * One-shot rebuild for a context. Wraps detect + store so callers (refresh
+ * paths, scripts, smoke tests) don't have to know about the two-step API.
+ */
+export function rebuildCases(contextId) {
+  const cases = detectCases(contextId);
+  const result = storeCases(cases, contextId);
+  return { detected: cases.length, ...result };
 }

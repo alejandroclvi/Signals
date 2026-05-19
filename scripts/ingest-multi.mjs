@@ -16,6 +16,7 @@
 import "../src/lib/env.mjs";
 import { getDb } from "../src/db/connection.mjs";
 import { getProducer, listProducers } from "../src/pipeline/producers/registry.mjs";
+import { ensureNodeForProducer } from "../src/pipeline/producers/node-info.mjs";
 
 function safeJson(v, f) {
   if (typeof v === "object" && v !== null) return v;
@@ -23,12 +24,13 @@ function safeJson(v, f) {
 }
 
 function parseArgs(argv) {
-  const args = { producer: [], slugs: [] };
+  const args = { producer: [], slugs: [], tags: null };
   args.contextId = argv[2];
   for (let i = 3; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--producer")  args.producer = argv[++i].split(",");
     else if (a === "--slugs") args.slugs = argv[++i].split(",");
+    else if (a === "--tags")  args.tags  = argv[++i].split(",").map(s => Number(s.trim())).filter(Boolean);
     else if (a === "--limit") args.limit = parseInt(argv[++i], 10);
     else if (a === "--after") args.afterDate = argv[++i];
     else if (a === "--before") args.beforeDate = argv[++i];
@@ -77,6 +79,7 @@ async function main() {
       contextId: args.contextId,
       queries,
       marketSlugs: args.slugs,
+      tagIds: args.tags,
       limit: args.limit,
       afterDate: args.afterDate,
       beforeDate: args.beforeDate,
@@ -94,6 +97,13 @@ async function main() {
           p.sentiment, p.evidence_state, p.source_kind
         );
         if (r.changes > 0) inserted++;
+      }
+      // Register the producer as a source_node for this context so the
+      // dashboard's layer ladder reflects the new coverage. Only register
+      // when we actually wrote evidence — otherwise the node would appear
+      // empty in the UI.
+      if (inserted > 0) {
+        ensureNodeForProducer(db, producerId, args.contextId, { packets: inserted });
       }
     });
     tx();

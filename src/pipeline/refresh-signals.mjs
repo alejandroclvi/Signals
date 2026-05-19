@@ -19,6 +19,7 @@ import { computeSignalConfidenceTier } from "./thread-reconciler.mjs";
 import { synthesizeFacets } from "./facet-synthesizer.mjs";
 import { synthesizeVocabulary } from "./vocabulary-extractor.mjs";
 import { refreshSupportCounts } from "./intelligence-chain.mjs";
+import { rebuildCases } from "./signal-cases.mjs";
 import crypto from "node:crypto";
 
 function safeParseJson(value, fallback) {
@@ -148,5 +149,12 @@ export function refreshSignals(contextId) {
   // Propagate confidence across intelligence chain
   try { refreshSupportCounts(contextId); } catch {}
 
-  return { signalCount: signals.length, updated, facetCount, vocabCount };
+  // Rebuild cross-community case groupings (memberships get cascaded-deleted
+  // when stale signals were removed above — see G-17 in SIGNAL_AGENT_MVP_REPORT).
+  let cases = { detected: 0, stored: 0, skippedMembers: 0 };
+  try { cases = rebuildCases(contextId); } catch (e) {
+    console.error("rebuildCases failed:", e.message);
+  }
+
+  return { signalCount: signals.length, updated, facetCount, vocabCount, cases };
 }

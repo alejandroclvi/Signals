@@ -219,8 +219,8 @@ async function main() {
   console.log(`\n--- Phase E: Signal Cases ---`);
   const cases = detectCases(contextId);
   if (cases.length > 0) {
-    const stored = storeCases(cases, contextId);
-    console.log(`Detected ${cases.length} signal cases (${stored} stored):`);
+    const { stored, skippedMembers } = storeCases(cases, contextId);
+    console.log(`Detected ${cases.length} signal cases (${stored} stored${skippedMembers ? `, ${skippedMembers} stale members skipped` : ""}):`);
     for (const c of cases) {
       console.log(`  "${c.title}" — ${c.signals.length} signals`);
       for (const s of c.signals) {

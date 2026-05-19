@@ -7,10 +7,26 @@
 
 import { hackernews } from "./hackernews.mjs";
 import { polymarket } from "./polymarket.mjs";
+import { reddit } from "./reddit.mjs";
+import { github } from "./github.mjs";
+import { google } from "./google.mjs";
+import { anthropic } from "./anthropic.mjs";
+import { hnHiring } from "./hn-hiring.mjs";
+import { yfinance } from "./yfinance.mjs";
+import { stocktwits } from "./stocktwits.mjs";
+import { redditFinance } from "./reddit-finance.mjs";
 
 export const PRODUCERS = {
+  reddit,
   hackernews,
   polymarket,
+  github,
+  google,
+  anthropic,
+  "hn-hiring": hnHiring,
+  yfinance,
+  stocktwits,
+  "reddit-finance": redditFinance,
 };
 
 export function getProducer(id) {
