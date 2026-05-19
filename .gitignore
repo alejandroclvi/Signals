@@ -1,7 +1,60 @@
+# Dependencies
 node_modules/
+
+# Local data (runtime artifacts, never check in)
 data/
-*.db
-.DS_Store
 output/
 tmp/
+
+# Databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Environment / secrets (never check in)
 .env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+
+# Build artifacts
+dist/
+build/
+coverage/
+.cache/
+
+# Playwright
+playwright-report/
+test-results/
+
+# Personal note vault (not part of the codebase)
+.obsidian/
+00 Home/
+02 Projects/
+03 Research/
+04 Concepts/
+05 Visual Maps/
+07 Sources/
+
+# Tool-local config
+.claude/

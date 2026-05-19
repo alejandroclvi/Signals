@@ -110,10 +110,13 @@ console.log("Verifying with: uv run -m linkedin_mcp_server --status");
 console.log("");
 
 // 4) verify with --status
+// Point LINKEDIN_MCP_DIR at your local checkout of linkedin-mcp-server. If
+// unset, we'll try to run from the current working directory.
+const linkedinMcpDir = process.env.LINKEDIN_MCP_DIR || process.cwd();
 const proc = spawn(
   "uv",
   ["run", "-m", "linkedin_mcp_server", "--status"],
-  { cwd: "/Users/manuel/Dev/linkedin/linkedin-mcp-server", stdio: "inherit" }
+  { cwd: linkedinMcpDir, stdio: "inherit" }
 );
 proc.on("exit", code => {
   console.log("");
