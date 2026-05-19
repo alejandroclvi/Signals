@@ -34,4 +34,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to set up a dev environment, ru
 
 ## License
 
-[MIT](./LICENSE) © 2026 Manuel Calvo
+[MIT](./LICENSE) © 2026 Manuel Alejandro Calvino Laguardia
